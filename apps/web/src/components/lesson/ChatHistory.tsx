@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { cn } from "@/lib/utils";
 import { ExerciseCard } from "./ExerciseCard";
 
 interface Exercise {
@@ -45,27 +46,31 @@ export function ChatHistory({
       {messages.map((msg, i) => (
         <div key={i}>
           <div
-            className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+            className={cn(
+              "flex",
+              msg.role === "user" ? "justify-end" : "justify-start"
+            )}
           >
             <div
-              className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+              className={cn(
+                "max-w-[80%] rounded-2xl px-4 py-3",
                 msg.role === "user"
                   ? "bg-blue-500 text-white rounded-br-md"
                   : "bg-white/20 text-white backdrop-blur-sm rounded-bl-md"
-              }`}
+              )}
             >
               <p className="text-sm leading-relaxed">{msg.text}</p>
               <p
-                className={`text-[10px] mt-1 ${
+                className={cn(
+                  "text-[10px] mt-1",
                   msg.role === "user" ? "text-blue-100" : "text-white/50"
-                }`}
+                )}
               >
                 {formatTime(msg.timestamp)}
               </p>
             </div>
           </div>
 
-          {/* Show inline exercise if the message has one attached */}
           {msg.exercise && (
             <div className="mt-2">
               <ExerciseCard
@@ -98,7 +103,6 @@ export function ChatHistory({
         </div>
       )}
 
-      {/* Show the active exercise at the bottom if it's not already inline */}
       {currentExercise &&
         !messages.some(
           (m) => m.exercise && m.exercise.id === currentExercise.id,

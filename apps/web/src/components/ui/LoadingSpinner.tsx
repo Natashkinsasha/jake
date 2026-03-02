@@ -1,6 +1,8 @@
-export function LoadingSpinner({ className = "" }: { className?: string }) {
+import { cn } from "@/lib/utils";
+
+export function LoadingSpinner({ className }: { className?: string }) {
   return (
-    <div className={`flex items-center justify-center ${className}`}>
+    <div className={cn("flex items-center justify-center", className)}>
       <div className="w-8 h-8 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
     </div>
   );

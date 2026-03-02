@@ -2,6 +2,18 @@ import { Injectable } from "@nestjs/common";
 import { LlmService } from "../../../../@lib/llm/src/llm.service";
 import { HomeworkDao } from "../../infrastructure/dao/homework.dao";
 
+interface LessonSummary {
+  levelAssessment: string | null;
+  errorsFound: Array<{ text: string; correction: string; topic: string }>;
+  topics: string[];
+  newWords: string[];
+}
+
+interface UserPreferences {
+  preferredExerciseTypes?: string[];
+  interests?: string[];
+}
+
 @Injectable()
 export class HomeworkGeneratorService {
   constructor(
@@ -12,13 +24,13 @@ export class HomeworkGeneratorService {
   async generateAndSave(
     lessonId: string,
     userId: string,
-    summary: any,
-    preferences: any,
+    summary: LessonSummary,
+    preferences: UserPreferences,
   ) {
     const prompt = `Generate homework exercises based on today's lesson.
 
 Student level: ${summary.levelAssessment || "A2"}
-Weak areas: ${summary.errorsFound?.map((e: any) => e.topic).join(", ")}
+Weak areas: ${summary.errorsFound?.map((e) => e.topic).join(", ")}
 Topics covered: ${summary.topics?.join(", ")}
 New words: ${summary.newWords?.join(", ")}
 Student prefers: ${preferences.preferredExerciseTypes?.join(", ") || "no preference"}

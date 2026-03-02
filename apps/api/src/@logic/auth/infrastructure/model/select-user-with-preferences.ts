@@ -1,7 +1,12 @@
-import { userTable } from "../table/user.table";
+import { SelectUser } from "./select-user";
+import { z } from "zod";
+import { createSelectSchema } from "drizzle-zod";
 import { userPreferenceTable } from "../table/user-preference.table";
 
+const selectUserPreferenceSchema = createSelectSchema(userPreferenceTable);
+type SelectUserPreference = z.infer<typeof selectUserPreferenceSchema>;
+
 export type SelectUserWithPreferences = {
-  users: typeof userTable.$inferSelect;
-  user_preferences: typeof userPreferenceTable.$inferSelect | null;
+  users: SelectUser;
+  user_preferences: SelectUserPreference | null;
 };

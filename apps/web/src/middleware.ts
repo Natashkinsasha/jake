@@ -8,6 +8,7 @@ export default withAuth({
 
 export const config = {
   matcher: [
+    "/prototype/:path*",
     "/dashboard/:path*",
     "/lesson/:path*",
     "/homework/:path*",

@@ -4,41 +4,30 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
-import { ProgressBar } from "@/components/ui/ProgressBar";
-import { RecentActivity } from "@/components/dashboard/RecentActivity";
-
-interface ProgressData {
-  currentLevel: string | null;
-  grammarTopics: { topic: string; level: number; errorCount: number }[];
-  totalLessons: number;
-  totalWords: number;
-}
 
 export default function DashboardPage() {
   const { data: session } = useSession();
   const router = useRouter();
-  const [progress, setProgress] = useState<ProgressData | null>(null);
   const [recentLessons, setRecentLessons] = useState<any[]>([]);
 
   useEffect(() => {
-    const user = (session as any)?.backendUser;
-    if (user?.id) {
-      api.progress.get(user.id).then(setProgress).catch(console.error);
+    const backendToken = (session as any)?.backendToken;
+    if (backendToken) {
+      localStorage.setItem("session_token", backendToken);
     }
+
     api.lessons.list().then(setRecentLessons).catch(console.error);
   }, [session]);
 
   const user = (session as any)?.backendUser;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            G'day{user?.name ? `, ${user.name.split(" ")[0]}` : ""}! 👋
-          </h1>
-          <p className="text-gray-500 mt-1">Ready for a chat with Jake?</p>
-        </div>
+    <div className="max-w-2xl mx-auto space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">
+          G'day{user?.name ? `, ${user.name.split(" ")[0]}` : ""}!
+        </h1>
+        <p className="text-gray-500 mt-1">Ready for a chat with Jake?</p>
       </div>
 
       {/* Start Lesson CTA */}
@@ -57,57 +46,41 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="card text-center">
-          <p className="text-3xl font-bold text-primary-600">{progress?.totalLessons ?? 0}</p>
-          <p className="text-sm text-gray-500 mt-1">Lessons</p>
-        </div>
-        <div className="card text-center">
-          <p className="text-3xl font-bold text-green-600">{progress?.totalWords ?? 0}</p>
-          <p className="text-sm text-gray-500 mt-1">Words learned</p>
-        </div>
-        <div className="card text-center">
-          <p className="text-3xl font-bold text-accent-600">
-            {progress?.currentLevel || "—"}
-          </p>
-          <p className="text-sm text-gray-500 mt-1">Level</p>
-        </div>
-        <div className="card text-center">
-          <p className="text-3xl font-bold text-orange-500">
-            {progress?.grammarTopics?.length ?? 0}
-          </p>
-          <p className="text-sm text-gray-500 mt-1">Grammar topics</p>
-        </div>
-      </div>
-
-      {/* Weak areas */}
-      {progress?.grammarTopics && progress.grammarTopics.length > 0 && (
+      {/* Recent Lessons */}
+      {recentLessons.length > 0 && (
         <div className="card">
-          <h3 className="font-semibold text-gray-900 mb-4">Grammar Focus</h3>
+          <h3 className="font-semibold text-gray-900 mb-4">Recent lessons</h3>
           <div className="space-y-3">
-            {progress.grammarTopics.slice(0, 5).map((topic) => (
-              <div key={topic.topic}>
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-medium text-gray-700">{topic.topic}</span>
-                  <span className="text-xs text-gray-400">{topic.errorCount} errors</span>
+            {recentLessons.slice(0, 10).map((lesson: any) => (
+              <div
+                key={lesson.id}
+                className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0"
+              >
+                <div>
+                  <p className="text-sm font-medium text-gray-900">
+                    {lesson.topic || "Conversation with Jake"}
+                  </p>
+                  <p className="text-xs text-gray-400">
+                    {lesson.createdAt
+                      ? new Date(lesson.createdAt).toLocaleString([], {
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })
+                      : ""}
+                  </p>
                 </div>
-                <ProgressBar value={topic.level} max={10} color="bg-orange-400" />
+                {lesson.duration && (
+                  <span className="text-xs text-gray-400">
+                    {lesson.duration} min
+                  </span>
+                )}
               </div>
             ))}
           </div>
         </div>
       )}
-
-      {/* Recent Activity */}
-      <RecentActivity
-        items={recentLessons.slice(0, 5).map((lesson: any) => ({
-          type: "lesson" as const,
-          title: lesson.topic || "Conversation with Jake",
-          subtitle: `${lesson.duration ? Math.round(lesson.duration / 60) + " min" : "Lesson"}${lesson.level ? " - " + lesson.level : ""}`,
-          date: lesson.createdAt ? new Date(lesson.createdAt).toLocaleDateString() : "",
-        }))}
-      />
     </div>
   );
 }

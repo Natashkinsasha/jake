@@ -1,7 +1,8 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { UserDao } from "../../infrastructure/dao/user.dao";
-import { Transaction } from "../../../../@shared/shared-cls/transaction";
+import { GoogleAuthBody } from "../../presentation/dto/body/google-auth.body";
+import { UpdatePreferencesBody } from "../../presentation/dto/body/update-preferences.body";
 
 @Injectable()
 export class AuthMaintainer {
@@ -10,13 +11,7 @@ export class AuthMaintainer {
     private jwtService: JwtService,
   ) {}
 
-  @Transaction()
-  async googleAuth(googleUser: {
-    googleId: string;
-    email: string;
-    name: string;
-    avatarUrl: string | null;
-  }) {
+  async googleAuth(googleUser: GoogleAuthBody) {
     let user = await this.userDao.findByGoogleId(googleUser.googleId);
 
     if (!user) {
@@ -42,7 +37,7 @@ export class AuthMaintainer {
     return user;
   }
 
-  async updatePreferences(userId: string, data: any) {
+  async updatePreferences(userId: string, data: UpdatePreferencesBody) {
     await this.userDao.updatePreferences(userId, data);
   }
 }

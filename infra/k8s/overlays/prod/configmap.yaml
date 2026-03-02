@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: jake-config
-data:
-  NODE_ENV: "production"
-  FRONTEND_URL: "https://app.jake.com"
-  REDIS_URL: "redis://redis-service:6379"
-  DATABASE_URL: "postgresql://jake:CHANGE_ME@postgres-service:5432/jake"

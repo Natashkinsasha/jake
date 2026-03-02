@@ -1,8 +1,8 @@
-SpeakBuddy — AI English Tutor
+Jake — AI English Tutor
 Подробная инструкция по разработке (NestJS Edition)
 
 1. Обзор проекта
-   SpeakBuddy — голосовой AI-преподаватель английского языка. Урок — это живой разговор с дружелюбным тьютором, который запоминает всё о тебе, адаптируется под твой стиль и создаёт персонализированные упражнения.
+   Jake — голосовой AI-преподаватель английского языка. Урок — это живой разговор с дружелюбным тьютором, который запоминает всё о тебе, адаптируется под твой стиль и создаёт персонализированные упражнения.
    Ключевые фичи
 
 Голосовые уроки в формате дружеской беседы
@@ -17,7 +17,7 @@ AI запоминает мелкие детали о ученике (факты,
 КомпонентТехнологияФронтендNext.js 14+ (App Router), TypeScript, Tailwind CSSБэкендNestJS + Fastify, TypeScriptБДPostgreSQL + pgvectorORMDrizzle ORMВалидацияZodКэш / ОчередиRedis + BullMQСобытияKafka (между сервисами) + BullMQ (фоновые задачи)LLMClaude API (Anthropic) или OpenAI GPT-4oSTTDeepgram (речь → текст)TTSElevenLabs (текст → речь, выбор голосов)АвторизацияAuth.js (NextAuth) + Google OAuthТранзакцииCLS (AsyncLocalStorage) + @Transaction() декораторМонорепоTurborepoДеплойKubernetes (k8s)КонтейнеризацияDocker
 
 2. Структура монорепо
-   speakbuddy/
+   jake/
    ├── turbo.json
    ├── package.json
    ├── pnpm-workspace.yaml
@@ -551,7 +551,7 @@ ELEVENLABS_API_KEY: z.string(),
 
 // Kafka
 KAFKA_BROKERS: z.string().default("localhost:9092"),
-KAFKA_GROUP_ID: z.string().default("speakbuddy-api"),
+KAFKA_GROUP_ID: z.string().default("jake-api"),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
@@ -1577,7 +1577,7 @@ apps/api/src/@logic/memory/application/service/fact-extraction.service.ts:
 typescriptimport { Injectable } from "@nestjs/common";
 import { LlmService, LlmMessage } from "@lib/llm/src/llm.service";
 import { MemoryFactDao } from "../../infrastructure/dao/memory-fact.dao";
-import { FactExtractionResultSchema } from "@speakbuddy/shared";
+import { FactExtractionResultSchema } from "@jake/shared";
 
 const FACT_EXTRACTION_PROMPT = `
 Analyze the student's message in the context of the conversation.
@@ -2023,8 +2023,8 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/packages/shared/node_modules ./packages/shared/node_modules
 COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 COPY . .
-RUN pnpm --filter @speakbuddy/shared build
-RUN pnpm --filter @speakbuddy/api build
+RUN pnpm --filter @jake/shared build
+RUN pnpm --filter @jake/api build
 
 FROM base AS runner
 WORKDIR /app
@@ -2040,9 +2040,9 @@ services:
 postgres:
 image: pgvector/pgvector:pg16
 environment:
-POSTGRES_USER: speakbuddy
-POSTGRES_PASSWORD: speakbuddy_dev
-POSTGRES_DB: speakbuddy
+POSTGRES_USER: jake
+POSTGRES_PASSWORD: jake_dev
+POSTGRES_DB: jake
 ports:
 - "5432:5432"
 volumes:
@@ -2084,26 +2084,26 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
     yamlapiVersion: v1
     kind: Namespace
     metadata:
-    name: speakbuddy
+    name: jake
     infra/k8s/configmap.yaml:
     yamlapiVersion: v1
     kind: ConfigMap
     metadata:
-    name: speakbuddy-config
-    namespace: speakbuddy
+    name: jake-config
+    namespace: jake
     data:
     NODE_ENV: "production"
-    FRONTEND_URL: "https://app.speakbuddy.com"
+    FRONTEND_URL: "https://app.jake.com"
     REDIS_URL: "redis://redis-service:6379"
-    DATABASE_URL: "postgresql://speakbuddy:CHANGE_ME@postgres-service:5432/speakbuddy"
+    DATABASE_URL: "postgresql://jake:CHANGE_ME@postgres-service:5432/jake"
     KAFKA_BROKERS: "kafka-service:9092"
-    KAFKA_GROUP_ID: "speakbuddy-api"
+    KAFKA_GROUP_ID: "jake-api"
     infra/k8s/secrets.yaml:
     yamlapiVersion: v1
     kind: Secret
     metadata:
-    name: speakbuddy-secrets
-    namespace: speakbuddy
+    name: jake-secrets
+    namespace: jake
     type: Opaque
     stringData:
     JWT_SECRET: "your-jwt-secret"
@@ -2119,7 +2119,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
     kind: Deployment
     metadata:
     name: api
-    namespace: speakbuddy
+    namespace: jake
     spec:
     replicas: 2
     selector:
@@ -2132,14 +2132,14 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
     spec:
     containers:
     - name: api
-    image: your-registry/speakbuddy-api:latest
+    image: your-registry/jake-api:latest
     ports:
     - containerPort: 4000
     envFrom:
     - configMapRef:
-    name: speakbuddy-config
+    name: jake-config
     - secretRef:
-    name: speakbuddy-secrets
+    name: jake-secrets
     resources:
     requests:
     cpu: "250m"
@@ -2158,7 +2158,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
     kind: Service
     metadata:
     name: api-service
-    namespace: speakbuddy
+    namespace: jake
     spec:
     selector:
     app: api
@@ -2171,7 +2171,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
       kind: HorizontalPodAutoscaler
       metadata:
       name: api-hpa
-      namespace: speakbuddy
+      namespace: jake
       spec:
       scaleTargetRef:
       apiVersion: apps/v1
@@ -2192,7 +2192,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
       kind: Deployment
       metadata:
       name: worker
-      namespace: speakbuddy
+      namespace: jake
       spec:
       replicas: 1
       selector:
@@ -2205,13 +2205,13 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
       spec:
       containers:
         - name: worker
-          image: your-registry/speakbuddy-api:latest
+          image: your-registry/jake-api:latest
           command: ["node", "dist/worker.js"]
           envFrom:
             - configMapRef:
-              name: speakbuddy-config
+              name: jake-config
             - secretRef:
-              name: speakbuddy-secrets
+              name: jake-secrets
               resources:
               requests:
               cpu: "250m"
@@ -2225,7 +2225,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
               kind: Deployment
               metadata:
               name: web
-              namespace: speakbuddy
+              namespace: jake
               spec:
               replicas: 2
               selector:
@@ -2238,12 +2238,12 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
               spec:
               containers:
         - name: web
-          image: your-registry/speakbuddy-web:latest
+          image: your-registry/jake-web:latest
           ports:
             - containerPort: 3000
               envFrom:
             - configMapRef:
-              name: speakbuddy-config
+              name: jake-config
               resources:
               requests:
               cpu: "100m"
@@ -2257,7 +2257,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
               kind: StatefulSet
               metadata:
               name: postgres
-              namespace: speakbuddy
+              namespace: jake
               spec:
               serviceName: postgres-service
               replicas: 1
@@ -2276,14 +2276,14 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
             - containerPort: 5432
               env:
             - name: POSTGRES_USER
-              value: speakbuddy
+              value: jake
             - name: POSTGRES_PASSWORD
               valueFrom:
               secretKeyRef:
-              name: speakbuddy-secrets
+              name: jake-secrets
               key: POSTGRES_PASSWORD
             - name: POSTGRES_DB
-              value: speakbuddy
+              value: jake
               volumeMounts:
             - name: postgres-storage
               mountPath: /var/lib/postgresql/data
@@ -2308,7 +2308,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
       kind: StatefulSet
       metadata:
       name: kafka
-      namespace: speakbuddy
+      namespace: jake
       spec:
       serviceName: kafka-service
       replicas: 1
@@ -2361,8 +2361,8 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
       yamlapiVersion: networking.k8s.io/v1
       kind: Ingress
       metadata:
-      name: speakbuddy-ingress
-      namespace: speakbuddy
+      name: jake-ingress
+      namespace: jake
       annotations:
       nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
       nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
@@ -2376,11 +2376,11 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
       ingressClassName: nginx
       tls:
     - hosts:
-        - app.speakbuddy.com
-        - api.speakbuddy.com
-          secretName: speakbuddy-tls
+        - app.jake.com
+        - api.jake.com
+          secretName: jake-tls
           rules:
-    - host: app.speakbuddy.com
+    - host: app.jake.com
       http:
       paths:
       - path: /
@@ -2390,7 +2390,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
       name: web-service
       port:
       number: 3000
-    - host: api.speakbuddy.com
+    - host: api.jake.com
       http:
       paths:
       - path: /
@@ -2468,16 +2468,16 @@ steps:
 - uses: azure/setup-kubectl@v3
 - run: echo "${{ secrets.KUBE_CONFIG }}" | base64 -d > $HOME/.kube/config
 - run: |
-kubectl set image deployment/api api=${{ env.API_IMAGE }}:${{ github.sha }} -n speakbuddy
-kubectl set image deployment/web web=${{ env.WEB_IMAGE }}:${{ github.sha }} -n speakbuddy
-kubectl set image deployment/worker worker=${{ env.API_IMAGE }}:${{ github.sha }} -n speakbuddy
+kubectl set image deployment/api api=${{ env.API_IMAGE }}:${{ github.sha }} -n jake
+kubectl set image deployment/web web=${{ env.WEB_IMAGE }}:${{ github.sha }} -n jake
+kubectl set image deployment/worker worker=${{ env.API_IMAGE }}:${{ github.sha }} -n jake
 - run: |
-kubectl rollout status deployment/api -n speakbuddy --timeout=300s
-kubectl rollout status deployment/web -n speakbuddy --timeout=300s
+kubectl rollout status deployment/api -n jake --timeout=300s
+kubectl rollout status deployment/web -n jake --timeout=300s
 
 14. Quick Start
     bash# 1. Клонируй и установи
-    git clone <repo> && cd speakbuddy
+    git clone <repo> && cd jake
     pnpm install
 
 # 2. Подними инфраструктуру

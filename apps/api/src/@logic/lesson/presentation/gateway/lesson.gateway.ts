@@ -10,9 +10,16 @@ import {
 import { UseGuards } from "@nestjs/common";
 import { Server, Socket } from "socket.io";
 import { JwtService } from "@nestjs/jwt";
+import { z } from "zod";
 import { WsAuthGuard } from "../../../../@shared/shared-ws/ws-auth.guard";
 import { LessonMaintainer } from "../../application/maintainer/lesson.maintainer";
 import { LlmMessage } from "../../../../@lib/llm/src/llm.service";
+import { wsAudioMessageSchema } from "../dto/ws/ws-audio-message";
+import { wsExerciseAnswerSchema } from "../dto/ws/ws-exercise-answer";
+
+const wsTextMessageSchema = z.object({
+  text: z.string().min(1),
+});
 
 interface LessonSession {
   lessonId: string;
@@ -95,8 +102,14 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage("audio")
   async handleAudio(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { audio: string },
+    @MessageBody() data: unknown,
   ) {
+    const parsed = wsAudioMessageSchema.safeParse(data);
+    if (!parsed.success) {
+      client.emit("error", { message: "Invalid audio message" });
+      return;
+    }
+
     const session = this.sessions.get(client.id);
     if (!session) return;
 
@@ -108,7 +121,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const result = await this.lessonMaintainer.processUserAudio(
         session.lessonId,
         userId,
-        data.audio,
+        parsed.data.audio,
         session.systemPrompt,
         session.history,
         session.voiceId,
@@ -133,8 +146,14 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage("text")
   async handleText(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { text: string },
+    @MessageBody() data: unknown,
   ) {
+    const parsed = wsTextMessageSchema.safeParse(data);
+    if (!parsed.success) {
+      client.emit("error", { message: "Invalid text message" });
+      return;
+    }
+
     const session = this.sessions.get(client.id);
     if (!session) return;
 
@@ -144,14 +163,14 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const result = await this.lessonMaintainer.processTextMessage(
         session.lessonId,
         client.data.userId,
-        data.text,
+        parsed.data.text,
         session.systemPrompt,
         session.history,
         session.voiceId,
       );
 
       session.history.push(
-        { role: "user", content: data.text },
+        { role: "user", content: parsed.data.text },
         { role: "assistant", content: result.tutorText },
       );
 
@@ -168,14 +187,20 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage("exercise_answer")
   async handleExerciseAnswer(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { exerciseId: string; answer: string },
+    @MessageBody() data: unknown,
   ) {
+    const parsed = wsExerciseAnswerSchema.safeParse(data);
+    if (!parsed.success) {
+      client.emit("error", { message: "Invalid exercise answer" });
+      return;
+    }
+
     const session = this.sessions.get(client.id);
     if (!session) return;
 
     session.history.push({
       role: "user",
-      content: `[Exercise answer: ${data.answer}]`,
+      content: `[Exercise answer: ${parsed.data.answer}]`,
     });
 
     const result = await this.lessonMaintainer.processUserAudio(

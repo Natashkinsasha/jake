@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
 interface Toast {
   id: number;
@@ -36,13 +37,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`px-4 py-3 rounded-xl shadow-lg text-sm font-medium animate-slide-up ${
-              toast.type === "success"
-                ? "bg-green-500 text-white"
-                : toast.type === "error"
-                  ? "bg-red-500 text-white"
-                  : "bg-gray-800 text-white"
-            }`}
+            className={cn(
+              "px-4 py-3 rounded-xl shadow-lg text-sm font-medium animate-slide-up",
+              toast.type === "success" && "bg-green-500 text-white",
+              toast.type === "error" && "bg-red-500 text-white",
+              toast.type === "info" && "bg-gray-800 text-white"
+            )}
           >
             {toast.message}
           </div>

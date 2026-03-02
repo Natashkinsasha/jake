@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: jake-config
-data:
-  NODE_ENV: "development"
-  FRONTEND_URL: "https://CHANGE_ME.sslip.io"
-  REDIS_URL: "redis://redis-service:6379"
-  DATABASE_URL: "postgresql://jake:CHANGE_ME@postgres-service:5432/jake"

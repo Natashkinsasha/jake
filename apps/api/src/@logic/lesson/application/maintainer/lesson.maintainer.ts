@@ -26,7 +26,16 @@ export class LessonMaintainer {
   ) {}
 
   async listLessons(userId: string) {
-    return this.lessonDao.findRecentByUser(userId);
+    const lessons = await this.lessonDao.findRecentByUser(userId);
+    return lessons.map((l) => ({
+      id: l.id,
+      status: l.status,
+      topic: l.topics?.length ? l.topics.join(", ") : null,
+      createdAt: l.startedAt,
+      duration: l.durationMinutes,
+      summary: l.summary,
+      lessonNumber: l.lessonNumber,
+    }));
   }
 
   async startLesson(userId: string) {

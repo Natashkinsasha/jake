@@ -1,13 +1,14 @@
-import { Global, Module } from "@nestjs/common";
-import { APP_FILTER, APP_PIPE } from "@nestjs/core";
-import { ZodValidationPipe } from "./zod-validation.pipe";
-import { ZodExceptionFilter } from "./zod-exception.filter";
+import { Module } from "@nestjs/common";
+import { APP_PIPE, APP_INTERCEPTOR } from "@nestjs/core";
+import { ZodValidationPipe, ZodSerializerInterceptor } from "nestjs-zod";
+import { HttpExceptionFilter } from "./http-exception.filter";
 
-@Global()
 @Module({
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },
-    { provide: APP_FILTER, useClass: ZodExceptionFilter },
+    { provide: APP_INTERCEPTOR, useClass: ZodSerializerInterceptor },
+    HttpExceptionFilter,
   ],
+  exports: [HttpExceptionFilter],
 })
 export class SharedZodHttpModule {}

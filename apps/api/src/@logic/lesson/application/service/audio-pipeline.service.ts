@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import { SttService } from "../../../../@lib/voice/src/stt.service";
 import { TtsService } from "../../../../@lib/voice/src/tts.service";
 import { LessonResponseService } from "./lesson-response.service";
@@ -22,6 +22,10 @@ export class AudioPipelineService {
     const transcript = audioBase64
       ? await this.stt.transcribe(audioBase64)
       : history[history.length - 1]?.content || "";
+
+    if (!transcript) {
+      throw new BadRequestException("Could not understand the audio");
+    }
 
     // 2. Add to history
     const updatedHistory: LlmMessage[] = [

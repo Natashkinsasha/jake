@@ -1,7 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { LessonDao } from "../dao/lesson.dao";
 import { LessonMessageDao } from "../dao/lesson-message.dao";
-import { Transaction } from "../../../../@shared/shared-cls/transaction";
 
 @Injectable()
 export class LessonRepository {
@@ -10,7 +9,6 @@ export class LessonRepository {
     private messageDao: LessonMessageDao,
   ) {}
 
-  @Transaction()
   async createWithGreeting(
     lessonData: Parameters<LessonDao["create"]>[0],
     greeting: string,

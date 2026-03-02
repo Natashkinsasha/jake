@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 interface SentenceBuilderProps {
   exercise: {
@@ -57,11 +58,12 @@ export function SentenceBuilder({ exercise, onSubmit }: SentenceBuilderProps) {
               key={key}
               onClick={() => !isUsed && addWord(word, i)}
               disabled={isUsed}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
+              className={cn(
+                "px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
                 isUsed
                   ? "bg-gray-100 text-gray-300 cursor-not-allowed"
                   : "bg-white border border-gray-300 text-gray-700 hover:border-primary-400 hover:text-primary-600"
-              }`}
+              )}
             >
               {word}
             </button>

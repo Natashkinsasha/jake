@@ -1,7 +1,9 @@
-import { Body, Controller, Get, Post, Put, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Post, Put, UseGuards } from "@nestjs/common";
 import { AuthMaintainer } from "../../application/maintainer/auth.maintainer";
 import { GoogleAuthBody } from "../dto/body/google-auth.body";
+import { UpdatePreferencesBody } from "../dto/body/update-preferences.body";
 import { JwtAuthGuard } from "../../../../@shared/shared-auth/jwt-auth.guard";
+import { CurrentUser } from "../../../../@shared/shared-auth/current-user.decorator";
 
 @Controller("auth")
 export class AuthController {
@@ -14,14 +16,17 @@ export class AuthController {
 
   @Get("me")
   @UseGuards(JwtAuthGuard)
-  async getProfile(@Req() req: any) {
-    return this.authMaintainer.getProfile(req.user.sub);
+  async getProfile(@CurrentUser() userId: string) {
+    return this.authMaintainer.getProfile(userId);
   }
 
   @Put("me/preferences")
   @UseGuards(JwtAuthGuard)
-  async updatePreferences(@Req() req: any, @Body() body: any) {
-    await this.authMaintainer.updatePreferences(req.user.sub, body);
+  async updatePreferences(
+    @CurrentUser() userId: string,
+    @Body() body: UpdatePreferencesBody,
+  ) {
+    await this.authMaintainer.updatePreferences(userId, body);
     return { success: true };
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { UserDao } from "../../../auth/infrastructure/dao/user.dao";
 import { LessonDao } from "../../infrastructure/dao/lesson.dao";
 import { MemoryRetrievalService } from "../../../memory/application/service/memory-retrieval.service";
@@ -33,7 +33,7 @@ export class LessonContextService {
       this.lessonDao.countByUser(userId),
     ]);
 
-    if (!user || !activeTutor) throw new Error("User or tutor not found");
+    if (!user || !activeTutor) throw new NotFoundException("User or tutor not found");
 
     const suggestedTopic = grammarProgress.find((g) => g.level < 30)?.topic || null;
 

@@ -9,6 +9,16 @@ import { GrammarProgressDao } from "../../../progress/infrastructure/dao/grammar
 import { MemoryEmbeddingDao } from "../../../memory/infrastructure/dao/memory-embedding.dao";
 import { HomeworkGeneratorService } from "../../../homework/application/service/homework-generator.service";
 
+interface PostLessonSummary {
+  summary: string;
+  topics: string[];
+  newWords: string[];
+  errorsFound: Array<{ text: string; correction: string; topic: string }>;
+  emotionalSummary: string | null;
+  levelAssessment: string | null;
+  suggestedNextTopics: string[];
+}
+
 const SUMMARY_PROMPT = `Analyze the full lesson conversation and generate a structured summary.
 Return ONLY valid JSON:
 {
@@ -43,10 +53,10 @@ export class PostLessonBullHandler extends WorkerHost {
     if (!lesson) return;
 
     const historyText = conversationHistory
-      .map((m: any) => `${m.role}: ${m.content}`)
+      .map((m: { role: string; content: string }) => `${m.role}: ${m.content}`)
       .join("\n");
 
-    const summary = await this.llm.generateJson<any>(
+    const summary = await this.llm.generateJson<PostLessonSummary>(
       SUMMARY_PROMPT,
       [{ role: "user", content: historyText }],
     );
@@ -96,7 +106,7 @@ export class PostLessonBullHandler extends WorkerHost {
       lessonId,
       lesson.userId,
       summary,
-      user?.user_preferences || {},
+      (user?.user_preferences || {}) as any,
     );
   }
 }

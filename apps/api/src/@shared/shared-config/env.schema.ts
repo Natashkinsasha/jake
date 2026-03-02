@@ -23,8 +23,8 @@ export const EnvSchema = z.object({
   OPENAI_API_KEY: z.string().optional(),
 
   // Voice
-  DEEPGRAM_API_KEY: z.string(),
-  ELEVENLABS_API_KEY: z.string(),
+  DEEPGRAM_API_KEY: z.string().optional(),
+  ELEVENLABS_API_KEY: z.string().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

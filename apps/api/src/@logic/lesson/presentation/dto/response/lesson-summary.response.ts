@@ -1,10 +1,15 @@
-export interface LessonSummaryResponse {
-  id: string;
-  status: string;
-  startedAt: string;
-  endedAt: string | null;
-  durationMinutes: number | null;
-  summary: string | null;
-  topics: string[];
-  newWords: string[];
-}
+import { z } from "zod";
+import { createZodDto } from "nestjs-zod";
+
+const lessonSummaryResponseSchema = z.object({
+  id: z.string().uuid(),
+  status: z.string(),
+  startedAt: z.string(),
+  endedAt: z.string().nullable(),
+  durationMinutes: z.number().nullable(),
+  summary: z.string().nullable(),
+  topics: z.array(z.string()),
+  newWords: z.array(z.string()),
+});
+
+export class LessonSummaryResponse extends createZodDto(lessonSummaryResponseSchema) {}

@@ -9,7 +9,10 @@ interface UseWebSocketOptions {
 
 export function useWebSocket({ url, token, onEvent }: UseWebSocketOptions) {
   const socketRef = useRef<Socket | null>(null);
+  const onEventRef = useRef(onEvent);
   const [connected, setConnected] = useState(false);
+
+  onEventRef.current = onEvent;
 
   useEffect(() => {
     if (!token) return;
@@ -29,7 +32,7 @@ export function useWebSocket({ url, token, onEvent }: UseWebSocketOptions) {
       "lesson_started", "tutor_message", "transcript",
       "exercise_feedback", "lesson_ended", "status", "error",
     ];
-    events.forEach((event) => socket.on(event, (data) => onEvent(event, data)));
+    events.forEach((event) => socket.on(event, (data) => onEventRef.current(event, data)));
 
     socketRef.current = socket;
     return () => { socket.disconnect(); };

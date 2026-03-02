@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { HomeworkDao } from "../../infrastructure/dao/homework.dao";
 import { HomeworkCheckerService } from "../service/homework-checker.service";
 
@@ -19,7 +19,7 @@ export class HomeworkMaintainer {
 
   async submit(id: string, answers: Record<string, string>) {
     const homework = await this.homeworkDao.findById(id);
-    if (!homework) throw new Error("Homework not found");
+    if (!homework) throw new NotFoundException("Homework not found");
 
     const score = this.checker.check(homework.exercises, answers);
     await this.homeworkDao.complete(id, score);

@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { FactExtractionService } from "../service/fact-extraction.service";
 import { MemoryRetrievalService } from "../service/memory-retrieval.service";
+import { LlmMessage } from "../../../../@lib/llm/src/llm.service";
 
 @Injectable()
 export class MemoryMaintainer {
@@ -9,7 +10,7 @@ export class MemoryMaintainer {
     private memoryRetrieval: MemoryRetrievalService,
   ) {}
 
-  async extractFacts(userId: string, lessonId: string, userMessage: string, history: any[]) {
+  async extractFacts(userId: string, lessonId: string, userMessage: string, history: LlmMessage[]) {
     return this.factExtraction.extractAndSave(userId, lessonId, userMessage, history);
   }
 

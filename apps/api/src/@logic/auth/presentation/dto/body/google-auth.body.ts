@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { createZodDto } from "nestjs-zod";
 
 export const googleAuthBodySchema = z.object({
   googleId: z.string(),
@@ -7,4 +8,4 @@ export const googleAuthBodySchema = z.object({
   avatarUrl: z.string().url().nullable(),
 });
 
-export type GoogleAuthBody = z.infer<typeof googleAuthBodySchema>;
+export class GoogleAuthBody extends createZodDto(googleAuthBodySchema) {}

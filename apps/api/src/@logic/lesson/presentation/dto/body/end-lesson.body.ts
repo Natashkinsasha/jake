@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { createZodDto } from "nestjs-zod";
 
 export const endLessonBodySchema = z.object({
   history: z.array(z.object({
@@ -7,4 +8,4 @@ export const endLessonBodySchema = z.object({
   })),
 });
 
-export type EndLessonBody = z.infer<typeof endLessonBodySchema>;
+export class EndLessonBody extends createZodDto(endLessonBodySchema) {}

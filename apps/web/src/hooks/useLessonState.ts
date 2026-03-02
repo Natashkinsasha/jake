@@ -1,6 +1,5 @@
 import { useState, useCallback, useRef } from "react";
 import { useWebSocket } from "./useWebSocket";
-import { useVoiceRecorder } from "./useVoiceRecorder";
 import { useAudioPlayer } from "./useAudioPlayer";
 
 interface Exercise {
@@ -16,12 +15,19 @@ interface Message {
   exercise?: Exercise | null;
 }
 
+interface PendingTutorMessage {
+  text: string;
+  audio?: string;
+  exercise?: Exercise | null;
+}
+
 interface LessonState {
   lessonId: string | null;
   messages: Message[];
   currentExercise: Exercise | null;
   status: "idle" | "connecting" | "listening" | "thinking" | "speaking";
   lessonEnded: boolean;
+  hasPending: boolean;
 }
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "http://localhost:4000/ws/lesson";
@@ -33,34 +39,75 @@ export function useLessonState(token?: string | null) {
     currentExercise: null,
     status: "connecting",
     lessonEnded: false,
+    hasPending: false,
   });
 
-  const onEventRef = useRef((event: string, data: any) => {});
+  const pendingRef = useRef<PendingTutorMessage | null>(null);
 
-  const audioPlayer = useAudioPlayer();
+  const showPendingMessage = useCallback((pending: PendingTutorMessage) => {
+    setState((prev) => ({
+      ...prev,
+      messages: [
+        ...prev.messages,
+        {
+          role: "assistant",
+          text: pending.text,
+          timestamp: Date.now(),
+          exercise: pending.exercise || null,
+        },
+      ],
+      currentExercise: pending.exercise || null,
+      status: "speaking",
+    }));
+  }, []);
 
-  onEventRef.current = (event: string, data: any) => {
+  const audioPlayer = useAudioPlayer({
+    onPlay: () => {
+      const pending = pendingRef.current;
+      if (pending) {
+        pendingRef.current = null;
+        setState((prev) => ({ ...prev, hasPending: false }));
+        showPendingMessage(pending);
+      }
+    },
+    onEnd: () => {
+      setState((prev) => ({
+        ...prev,
+        status: prev.status === "speaking" ? "idle" : prev.status,
+      }));
+    },
+  });
+
+  const handleEvent = useCallback((event: string, data: any) => {
     switch (event) {
       case "lesson_started":
         setState((prev) => ({ ...prev, lessonId: data.lessonId, status: "idle" }));
         break;
       case "tutor_message":
-        setState((prev) => ({
-          ...prev,
-          messages: [
-            ...prev.messages,
-            {
-              role: "assistant",
-              text: data.text,
-              timestamp: Date.now(),
-              exercise: data.exercise || null,
-            },
-          ],
-          currentExercise: data.exercise || null,
-          status: "speaking",
-        }));
         if (data.audio) {
+          pendingRef.current = {
+            text: data.text,
+            audio: data.audio,
+            exercise: data.exercise || null,
+          };
+          setState((prev) => ({ ...prev, hasPending: true }));
+          // Try to play immediately — may fail if no user gesture yet
           audioPlayer.play(data.audio);
+        } else {
+          setState((prev) => ({
+            ...prev,
+            messages: [
+              ...prev.messages,
+              {
+                role: "assistant",
+                text: data.text,
+                timestamp: Date.now(),
+                exercise: data.exercise || null,
+              },
+            ],
+            currentExercise: data.exercise || null,
+            status: "idle",
+          }));
         }
         break;
       case "transcript":
@@ -73,17 +120,20 @@ export function useLessonState(token?: string | null) {
         }));
         break;
       case "exercise_feedback":
-        setState((prev) => ({
-          ...prev,
-          messages: [
-            ...prev.messages,
-            { role: "assistant", text: data.text, timestamp: Date.now() },
-          ],
-          currentExercise: null,
-          status: "speaking",
-        }));
         if (data.audio) {
+          pendingRef.current = { text: data.text, exercise: null };
+          setState((prev) => ({ ...prev, hasPending: true }));
           audioPlayer.play(data.audio);
+        } else {
+          setState((prev) => ({
+            ...prev,
+            messages: [
+              ...prev.messages,
+              { role: "assistant", text: data.text, timestamp: Date.now() },
+            ],
+            currentExercise: null,
+            status: "idle",
+          }));
         }
         break;
       case "status":
@@ -100,28 +150,12 @@ export function useLessonState(token?: string | null) {
         setState((prev) => ({ ...prev, status: "idle" }));
         break;
     }
-  };
-
-  const handleEvent = useCallback((event: string, data: any) => {
-    onEventRef.current(event, data);
-  }, []);
+  }, [audioPlayer, showPendingMessage]);
 
   const { emit, connected } = useWebSocket({
     url: WS_URL,
     token: token || null,
     onEvent: handleEvent,
-  });
-
-  const handleRecordingComplete = useCallback(
-    (audioBase64: string) => {
-      emit("audio", { audio: audioBase64 });
-      setState((prev) => ({ ...prev, status: "thinking" }));
-    },
-    [emit],
-  );
-
-  const { isRecording, startRecording, stopRecording } = useVoiceRecorder({
-    onRecordingComplete: handleRecordingComplete,
   });
 
   const sendText = useCallback(
@@ -151,16 +185,33 @@ export function useLessonState(token?: string | null) {
     emit("end_lesson", {});
   }, [emit]);
 
+  const interruptTutor = useCallback(() => {
+    pendingRef.current = null;
+    audioPlayer.stop();
+    setState((prev) => ({
+      ...prev,
+      hasPending: false,
+      status: prev.status === "speaking" ? "idle" : prev.status,
+    }));
+  }, [audioPlayer]);
+
+  // Retry playing the pending first message (called after mic permission grants user gesture)
+  const playPending = useCallback(() => {
+    const pending = pendingRef.current;
+    if (pending?.audio) {
+      audioPlayer.play(pending.audio);
+    }
+  }, [audioPlayer]);
+
   return {
     ...state,
     connected,
-    isRecording,
     isPlaying: audioPlayer.isPlaying,
-    startRecording,
-    stopRecording,
     sendText,
     submitExerciseAnswer,
     endLesson,
+    interruptTutor,
     stopAudio: audioPlayer.stop,
+    playPending: state.hasPending ? playPending : null,
   };
 }

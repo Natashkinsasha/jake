@@ -14,6 +14,10 @@ import { PostLessonBullHandler } from "./infrastructure/bull-handler/post-lesson
 import { LlmModule } from "../../@lib/llm/src/llm.module";
 import { VoiceModule } from "../../@lib/voice/src/voice.module";
 import { EmbeddingModule } from "../../@lib/embedding/src/embedding.module";
+import { SharedAuthModule } from "../../@shared/shared-auth/shared-auth.module";
+import { SharedDrizzlePgModule } from "../../@shared/shared-drizzle-pg/shared-drizzle-pg.module";
+import { SharedWsModule } from "../../@shared/shared-ws/shared-ws.module";
+import { SharedJobModule } from "../../@shared/shared-job/shared-job.module";
 import { AuthModule } from "../auth/auth.module";
 import { TutorModule } from "../tutor/tutor.module";
 import { MemoryModule } from "../memory/memory.module";
@@ -26,6 +30,10 @@ import { HomeworkModule } from "../homework/homework.module";
     LlmModule,
     VoiceModule,
     EmbeddingModule,
+    SharedAuthModule,
+    SharedDrizzlePgModule,
+    SharedWsModule,
+    SharedJobModule,
     AuthModule,
     TutorModule,
     MemoryModule,

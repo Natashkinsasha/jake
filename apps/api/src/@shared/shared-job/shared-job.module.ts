@@ -1,11 +1,13 @@
-import { Global, Module } from "@nestjs/common";
+import { Module } from "@nestjs/common";
 import { BullModule } from "@nestjs/bullmq";
 import { EnvService } from "../shared-config/env.service";
+import { SharedConfigModule } from "../shared-config/shared-config.module";
 
-@Global()
 @Module({
   imports: [
+    SharedConfigModule,
     BullModule.forRootAsync({
+      imports: [SharedConfigModule],
       inject: [EnvService],
       useFactory: (env: EnvService) => ({
         connection: {
