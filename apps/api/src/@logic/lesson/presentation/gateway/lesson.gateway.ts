@@ -9,6 +9,7 @@ import {
 } from "@nestjs/websockets";
 import { UseGuards } from "@nestjs/common";
 import { Server, Socket } from "socket.io";
+import { JwtService } from "@nestjs/jwt";
 import { WsAuthGuard } from "../../../../@shared/shared-ws/ws-auth.guard";
 import { LessonMaintainer } from "../../application/maintainer/lesson.maintainer";
 import { LlmMessage } from "../../../../@lib/llm/src/llm.service";
@@ -28,14 +29,33 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   private sessions = new Map<string, LessonSession>();
 
-  constructor(private lessonMaintainer: LessonMaintainer) {}
+  constructor(
+    private lessonMaintainer: LessonMaintainer,
+    private jwtService: JwtService,
+  ) {}
 
   async handleConnection(client: Socket) {
-    const userId = client.data.userId;
-    if (!userId) {
+    // Guards don't run for handleConnection, authenticate manually
+    const token =
+      client.handshake?.auth?.token ||
+      client.handshake?.query?.token;
+
+    if (!token) {
+      client.emit("error", { message: "No auth token" });
       client.disconnect();
       return;
     }
+
+    try {
+      const payload = await this.jwtService.verifyAsync(token as string);
+      client.data = { userId: payload.sub };
+    } catch {
+      client.emit("error", { message: "Invalid token" });
+      client.disconnect();
+      return;
+    }
+
+    const userId = client.data.userId;
 
     try {
       const result = await this.lessonMaintainer.startLesson(userId);
@@ -58,6 +78,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
         exercise: result.greeting.exercise,
       });
     } catch (error) {
+      console.error("Failed to start lesson:", error);
       client.emit("error", { message: "Failed to start lesson" });
       client.disconnect();
     }

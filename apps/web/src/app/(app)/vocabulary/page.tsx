@@ -25,7 +25,7 @@ export default function VocabularyPage() {
     if (user?.id) {
       api.vocabulary
         .list(user.id)
-        .then((data) => setWords(data.words))
+        .then((data) => setWords(data.words ?? []))
         .catch(console.error)
         .finally(() => setLoading(false));
     }

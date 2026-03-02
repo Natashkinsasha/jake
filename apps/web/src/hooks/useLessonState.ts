@@ -26,7 +26,7 @@ interface LessonState {
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "http://localhost:4000/ws/lesson";
 
-export function useLessonState() {
+export function useLessonState(token?: string | null) {
   const [state, setState] = useState<LessonState>({
     lessonId: null,
     messages: [],
@@ -108,6 +108,7 @@ export function useLessonState() {
 
   const { emit, connected } = useWebSocket({
     url: WS_URL,
+    token: token || null,
     onEvent: handleEvent,
   });
 

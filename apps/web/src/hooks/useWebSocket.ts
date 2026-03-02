@@ -3,15 +3,17 @@ import { io, Socket } from "socket.io-client";
 
 interface UseWebSocketOptions {
   url: string;
+  token: string | null;
   onEvent: (event: string, data: any) => void;
 }
 
-export function useWebSocket({ url, onEvent }: UseWebSocketOptions) {
+export function useWebSocket({ url, token, onEvent }: UseWebSocketOptions) {
   const socketRef = useRef<Socket | null>(null);
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem("session_token");
+    if (!token) return;
+
     const socket = io(url, {
       auth: { token },
       transports: ["websocket"],
@@ -19,6 +21,9 @@ export function useWebSocket({ url, onEvent }: UseWebSocketOptions) {
 
     socket.on("connect", () => setConnected(true));
     socket.on("disconnect", () => setConnected(false));
+    socket.on("connect_error", (err) => {
+      console.error("WS connect error:", err.message);
+    });
 
     const events = [
       "lesson_started", "tutor_message", "transcript",
@@ -28,7 +33,7 @@ export function useWebSocket({ url, onEvent }: UseWebSocketOptions) {
 
     socketRef.current = socket;
     return () => { socket.disconnect(); };
-  }, [url]);
+  }, [url, token]);
 
   const emit = useCallback((event: string, data: any) => {
     socketRef.current?.emit(event, data);

@@ -1,9 +1,13 @@
-name: CI
+name: CI/CD
 on:
   push:
     branches: [main, develop]
   pull_request:
     branches: [main]
+
+env:
+  API_IMAGE: registry.digitalocean.com/go-code-challenge/jake-api
+  WEB_IMAGE: registry.digitalocean.com/go-code-challenge/jake-web
 
 jobs:
   lint:
@@ -41,3 +45,71 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @jake/shared build
       - run: pnpm turbo build
+
+  build-and-push:
+    needs: [lint, type-check, build]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      - run: doctl registry login --expiry-seconds 600
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          tags: ${{ env.API_IMAGE }}:${{ github.sha }},${{ env.API_IMAGE }}:latest
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/web/Dockerfile
+          push: true
+          tags: ${{ env.WEB_IMAGE }}:${{ github.sha }},${{ env.WEB_IMAGE }}:latest
+
+  deploy:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      - run: doctl kubernetes cluster kubeconfig save ${{ secrets.K8S_CLUSTER_ID }}
+      - name: Generate secrets.yaml
+        env:
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DEEPGRAM_API_KEY: ${{ secrets.DEEPGRAM_API_KEY }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+        run: |
+          cat > infra/k8s/overlays/prod/secrets.yaml <<EOF
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: jake-secrets
+          type: Opaque
+          stringData:
+            JWT_SECRET: "${JWT_SECRET}"
+            GOOGLE_CLIENT_ID: "${GOOGLE_CLIENT_ID}"
+            GOOGLE_CLIENT_SECRET: "${GOOGLE_CLIENT_SECRET}"
+            ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY}"
+            DEEPGRAM_API_KEY: "${DEEPGRAM_API_KEY}"
+            ELEVENLABS_API_KEY: "${ELEVENLABS_API_KEY}"
+            POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
+          EOF
+      - run: |
+          cd infra/k8s/overlays/prod
+          kustomize edit set image \
+            registry.digitalocean.com/go-code-challenge/jake-api=${{ env.API_IMAGE }}:${{ github.sha }} \
+            registry.digitalocean.com/go-code-challenge/jake-web=${{ env.WEB_IMAGE }}:${{ github.sha }}
+          kubectl apply -k .
+      - run: |
+          kubectl rollout status deployment/api -n jake --timeout=300s
+          kubectl rollout status deployment/web -n jake --timeout=300s
+          kubectl rollout status deployment/worker -n jake --timeout=300s

@@ -10,7 +10,11 @@ import { useRouter } from "next/navigation";
 
 type InputMode = "voice" | "text";
 
-export function LessonScreen() {
+interface LessonScreenProps {
+  token?: string | null;
+}
+
+export function LessonScreen({ token }: LessonScreenProps) {
   const router = useRouter();
   const {
     lessonId,
@@ -26,7 +30,7 @@ export function LessonScreen() {
     sendText,
     submitExerciseAnswer,
     endLesson,
-  } = useLessonState();
+  } = useLessonState(token);
 
   const [userEndedLesson, setUserEndedLesson] = useState(false);
   const [inputMode, setInputMode] = useState<InputMode>("voice");

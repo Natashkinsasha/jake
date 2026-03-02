@@ -2,8 +2,8 @@
 
 import { LessonScreen } from "@/components/lesson/LessonScreen";
 import { useSession } from "next-auth/react";
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 export default function LessonPage() {
   const { data: session, status } = useSession();
@@ -13,15 +13,11 @@ export default function LessonPage() {
     if (status === "unauthenticated") {
       router.push("/login");
     }
+  }, [status, router]);
 
-    // Store token for WebSocket auth
-    const token = (session as any)?.backendToken;
-    if (token) {
-      localStorage.setItem("session_token", token);
-    }
-  }, [session, status, router]);
+  const backendToken = (session as any)?.backendToken as string | undefined;
 
-  if (status === "loading") {
+  if (status === "loading" || !backendToken) {
     return (
       <div className="min-h-screen lesson-gradient flex items-center justify-center">
         <div className="text-center text-white">
@@ -35,5 +31,5 @@ export default function LessonPage() {
     );
   }
 
-  return <LessonScreen />;
+  return <LessonScreen token={backendToken} />;
 }
