@@ -59,8 +59,11 @@ services:
     restart: unless-stopped
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./infra/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - certbot-webroot:/var/www/certbot:ro
+      - letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - api
       - web
@@ -68,3 +71,5 @@ services:
 volumes:
   pgdata:
   redisdata:
+  certbot-webroot:
+  letsencrypt:
