@@ -30,7 +30,7 @@ interface LessonState {
   hasPending: boolean;
 }
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "http://localhost:4000/ws/lesson";
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || (typeof window !== "undefined" ? `${window.location.origin}/ws/lesson` : "http://localhost:4000/ws/lesson");
 
 export function useLessonState(token?: string | null) {
   const [state, setState] = useState<LessonState>({
