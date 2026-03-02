@@ -25,8 +25,11 @@ export class AuthMaintainer {
         name: googleUser.name,
         avatarUrl: googleUser.avatarUrl,
       });
+    }
 
-      // Auto-assign first active tutor
+    // Ensure user has an active tutor
+    const activeTutor = await this.userTutorDao.findActiveByUser(user.id);
+    if (!activeTutor) {
       const activeTutors = await this.tutorDao.findActive();
       if (activeTutors.length > 0) {
         await this.userTutorDao.selectTutor(user.id, activeTutors[0].id);
