@@ -34,6 +34,18 @@ jobs:
       - run: pnpm --filter @jake/shared build
       - run: pnpm turbo type-check
 
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2
+        with: { version: 9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @jake/shared build
+      - run: pnpm turbo test
+
   build:
     runs-on: ubuntu-latest
     steps:
@@ -50,7 +62,7 @@ jobs:
           push: false
 
   push:
-    needs: [lint, type-check, build]
+    needs: [lint, type-check, test, build]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:

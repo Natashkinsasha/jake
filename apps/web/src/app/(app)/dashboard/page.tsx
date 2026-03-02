@@ -105,7 +105,7 @@ export default function DashboardPage() {
           type: "lesson" as const,
           title: lesson.topic || "Conversation with Jake",
           subtitle: `${lesson.duration ? Math.round(lesson.duration / 60) + " min" : "Lesson"}${lesson.level ? " - " + lesson.level : ""}`,
-          date: new Date(lesson.createdAt).toLocaleDateString(),
+          date: lesson.createdAt ? new Date(lesson.createdAt).toLocaleDateString() : "",
         }))}
       />
     </div>
