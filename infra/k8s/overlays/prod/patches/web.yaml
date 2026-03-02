@@ -7,7 +7,7 @@ spec:
     spec:
       containers:
         - name: web
-          image: registry.digitalocean.com/jake/web:latest
+          image: registry.digitalocean.com/go-code-challenge/jake-web:latest
           imagePullPolicy: Always
           resources:
             requests:

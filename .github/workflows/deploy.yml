@@ -4,9 +4,9 @@ on:
     branches: [main]
 
 env:
-  REGISTRY: registry.digitalocean.com/jake
-  API_IMAGE: registry.digitalocean.com/jake/api
-  WEB_IMAGE: registry.digitalocean.com/jake/web
+  REGISTRY: registry.digitalocean.com/go-code-challenge
+  API_IMAGE: registry.digitalocean.com/go-code-challenge/jake-api
+  WEB_IMAGE: registry.digitalocean.com/go-code-challenge/jake-web
 
 jobs:
   build-and-push:
@@ -42,8 +42,8 @@ jobs:
       - run: |
           cd infra/k8s/overlays/prod
           kustomize edit set image \
-            registry.digitalocean.com/jake/api=${{ env.API_IMAGE }}:${{ github.sha }} \
-            registry.digitalocean.com/jake/web=${{ env.WEB_IMAGE }}:${{ github.sha }}
+            registry.digitalocean.com/go-code-challenge/jake-api=${{ env.API_IMAGE }}:${{ github.sha }} \
+            registry.digitalocean.com/go-code-challenge/jake-web=${{ env.WEB_IMAGE }}:${{ github.sha }}
           kubectl apply -k .
       - run: |
           kubectl rollout status deployment/api -n jake --timeout=300s

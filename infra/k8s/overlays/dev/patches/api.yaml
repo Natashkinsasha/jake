@@ -7,7 +7,7 @@ spec:
     spec:
       containers:
         - name: api
-          image: registry.digitalocean.com/jake/api:latest
+          image: registry.digitalocean.com/go-code-challenge/jake-api:latest
           imagePullPolicy: Always
           resources:
             requests:
