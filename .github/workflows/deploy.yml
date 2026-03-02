@@ -51,6 +51,8 @@ jobs:
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
+    permissions:
+      packages: read
 
     steps:
       - name: Deploy to Droplet
@@ -59,8 +61,12 @@ jobs:
           host: ${{ secrets.DROPLET_HOST }}
           username: root
           key: ${{ secrets.DROPLET_SSH_KEY }}
+          envs: GITHUB_TOKEN
           script: |
+            echo "$GITHUB_TOKEN" | docker login ghcr.io -u github --password-stdin
             cd /root/jake
             docker compose -f docker-compose.prod.yml pull api web
             docker compose -f docker-compose.prod.yml up -d
             docker image prune -f
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
