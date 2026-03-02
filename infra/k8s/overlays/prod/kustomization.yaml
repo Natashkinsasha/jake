@@ -1,0 +1,16 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: jake
+
+resources:
+  - ../../base
+  - configmap.yaml
+  - secrets.yaml
+  - ingress.yaml
+  - pdb.yaml
+
+patches:
+  - path: patches/api.yaml
+  - path: patches/worker.yaml
+  - path: patches/web.yaml

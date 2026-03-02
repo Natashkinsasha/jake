@@ -1,0 +1,26 @@
+{
+  "name": "jake",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "type-check": "turbo type-check",
+    "db:migrate": "pnpm --filter @jake/api db:migrate",
+    "db:seed": "pnpm --filter @jake/api db:seed"
+  },
+  "devDependencies": {
+    "turbo": "^2.3.0",
+    "typescript": "^5.5.3"
+  },
+  "packageManager": "pnpm@9.15.0",
+  "pnpm": {
+    "overrides": {
+      "esbuild": "0.19.12"
+    }
+  },
+  "volta": {
+    "node": "22.22.0"
+  }
+}

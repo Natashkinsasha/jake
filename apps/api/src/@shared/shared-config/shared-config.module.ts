@@ -1,0 +1,17 @@
+import { Global, Module } from "@nestjs/common";
+import { ConfigModule, ConfigService } from "@nestjs/config";
+import { EnvSchema } from "./env.schema";
+import { EnvService } from "./env.service";
+
+@Global()
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      validate: (config) => EnvSchema.parse(config),
+    }),
+  ],
+  providers: [EnvService],
+  exports: [EnvService],
+})
+export class SharedConfigModule {}

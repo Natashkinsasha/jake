@@ -1,0 +1,110 @@
+import { Processor, WorkerHost } from "@nestjs/bullmq";
+import { Job } from "bullmq";
+import { LlmService } from "../../../../@lib/llm/src/llm.service";
+import { EmbeddingService } from "../../../../@lib/embedding/src/embedding.service";
+import { LessonDao } from "../dao/lesson.dao";
+import { UserDao } from "../../../auth/infrastructure/dao/user.dao";
+import { VocabularyDao } from "../../../vocabulary/infrastructure/dao/vocabulary.dao";
+import { GrammarProgressDao } from "../../../progress/infrastructure/dao/grammar-progress.dao";
+import { MemoryEmbeddingDao } from "../../../memory/infrastructure/dao/memory-embedding.dao";
+import { HomeworkGeneratorService } from "../../../homework/application/service/homework-generator.service";
+import { KafkaProducerService } from "../../../../@lib/kafka/src/kafka-producer.service";
+
+const SUMMARY_PROMPT = `Analyze the full lesson conversation and generate a structured summary.
+Return ONLY valid JSON:
+{
+  "summary": "2-3 sentence summary",
+  "topics": ["grammar_topics"],
+  "newWords": ["vocabulary"],
+  "errorsFound": [{"text": "error", "correction": "correct", "topic": "topic"}],
+  "emotionalSummary": "student mood description",
+  "levelAssessment": "A1|A2|B1|B2|C1|C2 or null",
+  "suggestedNextTopics": ["topics"]
+}`;
+
+@Processor("post-lesson")
+export class PostLessonBullHandler extends WorkerHost {
+  constructor(
+    private llm: LlmService,
+    private embeddingService: EmbeddingService,
+    private lessonDao: LessonDao,
+    private userDao: UserDao,
+    private vocabDao: VocabularyDao,
+    private grammarDao: GrammarProgressDao,
+    private embeddingDao: MemoryEmbeddingDao,
+    private homeworkGenerator: HomeworkGeneratorService,
+    private kafkaProducer: KafkaProducerService,
+  ) {
+    super();
+  }
+
+  async process(job: Job) {
+    const { lessonId, conversationHistory } = job.data;
+
+    const lesson = await this.lessonDao.findById(lessonId);
+    if (!lesson) return;
+
+    const historyText = conversationHistory
+      .map((m: any) => `${m.role}: ${m.content}`)
+      .join("\n");
+
+    const summary = await this.llm.generateJson<any>(
+      SUMMARY_PROMPT,
+      [{ role: "user", content: historyText }],
+    );
+
+    await this.lessonDao.complete(lessonId, {
+      summary: summary.summary,
+      topics: summary.topics,
+      newWords: summary.newWords,
+      errorsFound: summary.errorsFound,
+      levelAssessment: summary.levelAssessment,
+      durationMinutes: Math.round(
+        (Date.now() - lesson.startedAt.getTime()) / 60000,
+      ),
+    });
+
+    if (summary.levelAssessment) {
+      await this.userDao.updateLevel(lesson.userId, summary.levelAssessment);
+    }
+
+    if (summary.emotionalSummary) {
+      const embedding = await this.embeddingService.embed(summary.emotionalSummary);
+      await this.embeddingDao.create({
+        userId: lesson.userId,
+        lessonId,
+        content: summary.emotionalSummary,
+        embedding,
+        emotionalTone: "neutral",
+      });
+    }
+
+    for (const word of summary.newWords || []) {
+      await this.vocabDao.upsert({
+        userId: lesson.userId,
+        word,
+        lessonId,
+        strength: 10,
+        nextReview: new Date(Date.now() + 24 * 60 * 60 * 1000),
+      });
+    }
+
+    for (const error of summary.errorsFound || []) {
+      await this.grammarDao.upsertError(lesson.userId, error.topic);
+    }
+
+    const user = await this.userDao.findByIdWithPreferences(lesson.userId);
+    await this.homeworkGenerator.generateAndSave(
+      lessonId,
+      lesson.userId,
+      summary,
+      user?.user_preferences || {},
+    );
+
+    await this.kafkaProducer.send("lesson.completed", {
+      lessonId,
+      userId: lesson.userId,
+      level: summary.levelAssessment,
+    });
+  }
+}

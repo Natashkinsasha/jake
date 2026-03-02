@@ -1,0 +1,18 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: jake
+
+resources:
+  - ../../base
+  - configmap.yaml
+  - ingress.yaml
+  # Create secrets.yaml from secrets.yaml.example, then:
+  # kubeseal < secrets.yaml > secrets-sealed.yaml
+  # and add secrets-sealed.yaml here
+
+patches:
+  - path: patches/api.yaml
+  - path: patches/worker.yaml
+  - path: patches/web.yaml
+  - path: patches/hpa.yaml
