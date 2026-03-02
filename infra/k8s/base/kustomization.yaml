@@ -5,7 +5,6 @@ resources:
   - namespace.yaml
   - service-account.yaml
   - network-policy.yaml
-  - service-monitor.yaml
   # API
   - api/deployment.yaml
   - api/service.yaml
