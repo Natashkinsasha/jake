@@ -25,6 +25,26 @@ export class LessonMaintainer {
     @InjectQueue("fact-extraction") private factQueue: Queue,
   ) {}
 
+  async getLesson(lessonId: string) {
+    const lesson = await this.lessonDao.findById(lessonId);
+    if (!lesson) return null;
+    const messages = await this.messageDao.findByLesson(lessonId);
+    return {
+      id: lesson.id,
+      status: lesson.status,
+      topic: (lesson.topics as string[] | null)?.length ? (lesson.topics as string[]).join(", ") : null,
+      createdAt: lesson.startedAt,
+      duration: lesson.durationMinutes,
+      summary: lesson.summary,
+      lessonNumber: lesson.lessonNumber,
+      messages: messages.map((m) => ({
+        role: m.role,
+        content: m.content,
+        timestamp: m.timestamp,
+      })),
+    };
+  }
+
   async listLessons(userId: string) {
     const lessons = await this.lessonDao.findRecentByUser(userId);
     return lessons.map((l) => ({

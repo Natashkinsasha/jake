@@ -7,8 +7,9 @@ import { LessonConnecting } from "./LessonConnecting";
 import { useLessonState } from "@/hooks/useLessonState";
 import { useStudentStt } from "@/hooks/useStudentStt";
 import { useRouter } from "next/navigation";
+import { useTabFocus } from "@/hooks/useTabFocus";
 
-const SEND_DELAY = 2000; // wait 2s of silence before sending
+const SILENCE_MS = 1000; // send after 1s of silence
 
 interface LessonScreenProps {
   token?: string | null;
@@ -30,14 +31,24 @@ export function LessonScreen({ token }: LessonScreenProps) {
     interruptTutor,
     stopAudio,
     playPending,
+    setUserSpeaking,
   } = useLessonState(token);
 
   const [isMuted, setIsMuted] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [liveTranscript, setLiveTranscript] = useState("");
   const [elapsed, setElapsed] = useState(0);
   const micReadyRef = useRef(false);
+  const isPlayingRef = useRef(false);
+  const audioStoppedAtRef = useRef(0);
+  if (isPlaying) {
+    isPlayingRef.current = true;
+  } else if (isPlayingRef.current) {
+    // Just stopped playing → record timestamp for echo cooldown
+    isPlayingRef.current = false;
+    audioStoppedAtRef.current = Date.now();
+  }
 
-  // Accumulation buffer for STT segments
   const bufferRef = useRef<string[]>([]);
   const sendTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -58,38 +69,52 @@ export function LessonScreen({ token }: LessonScreenProps) {
     return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
-  // Flush buffer — send accumulated text to backend
-  const flushBuffer = useCallback(() => {
+  // Send all accumulated text as one message
+  const flush = useCallback(() => {
     const text = bufferRef.current.join(" ").trim();
     bufferRef.current = [];
-    if (sendTimerRef.current) {
-      clearTimeout(sendTimerRef.current);
-      sendTimerRef.current = null;
-    }
+    sendTimerRef.current = null;
     if (text) {
+      console.log("[Lesson] flush →", text);
       setLiveTranscript("");
       sendText(text);
     }
-  }, [sendText]);
+    // User finished speaking — allow tutor messages again
+    setUserSpeaking(false);
+  }, [sendText, setUserSpeaking]);
 
   const stt = useStudentStt({
-    onSpeechStart: () => {
-      // User starts speaking — interrupt tutor, cancel pending send timer
-      interruptTutor();
-      if (sendTimerRef.current) {
-        clearTimeout(sendTimerRef.current);
-        sendTimerRef.current = null;
+    onSegment: (text: string) => {
+      // Confirmed real speech — block tutor messages
+      setUserSpeaking(true);
+
+      // If tutor is playing or just finished (<1s ago) → interrupt
+      if (isPlayingRef.current) {
+        interruptTutor();
+        bufferRef.current = [];
+        setLiveTranscript("");
+        if (sendTimerRef.current) {
+          clearTimeout(sendTimerRef.current);
+          sendTimerRef.current = null;
+        }
       }
+
+      // Add to buffer, reset silence timer
+      bufferRef.current.push(text);
+      setLiveTranscript(bufferRef.current.join(" "));
+
+      if (sendTimerRef.current) clearTimeout(sendTimerRef.current);
+      sendTimerRef.current = setTimeout(flush, SILENCE_MS);
     },
   });
 
-  // Enable STT as soon as connected
+  // Enable STT only after tutor's first message arrived
   useEffect(() => {
-    if (connected && !isMuted && !stt.isEnabled && !micReadyRef.current) {
+    if (hasReceivedFirstMessage && !isMuted && !isPaused && !stt.isEnabled && !micReadyRef.current) {
       stt.enable();
       micReadyRef.current = true;
     }
-  }, [connected, isMuted, stt]);
+  }, [hasReceivedFirstMessage, isMuted, isPaused, stt]);
 
   // Play pending first message after mic is ready
   useEffect(() => {
@@ -99,7 +124,12 @@ export function LessonScreen({ token }: LessonScreenProps) {
     }
   }, [stt.isEnabled, playPending]);
 
-  // Show live transcript (interim results)
+  // Pause audio when tab loses focus
+  useTabFocus({
+    onBlur: () => stopAudio(),
+  });
+
+  // Show interim transcript in real-time
   useEffect(() => {
     if (stt.finalText) {
       const combined = [...bufferRef.current, stt.finalText].join(" ");
@@ -107,55 +137,58 @@ export function LessonScreen({ token }: LessonScreenProps) {
     }
   }, [stt.finalText]);
 
-  // On speech_final — add to buffer, start debounce timer
-  const lastAddedRef = useRef("");
-  useEffect(() => {
-    if (stt.finalText && !stt.isProcessing && stt.finalText !== lastAddedRef.current) {
-      lastAddedRef.current = stt.finalText;
-      bufferRef.current.push(stt.finalText);
-
-      // Show accumulated text
-      setLiveTranscript(bufferRef.current.join(" "));
-
-      // Reset debounce timer
-      if (sendTimerRef.current) clearTimeout(sendTimerRef.current);
-      sendTimerRef.current = setTimeout(flushBuffer, SEND_DELAY);
-    }
-  }, [stt.finalText, stt.isProcessing, flushBuffer]);
-
-  // Cleanup timer on unmount
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (sendTimerRef.current) clearTimeout(sendTimerRef.current);
     };
   }, []);
 
+  const handleTogglePause = useCallback(() => {
+    if (isPaused) {
+      // Resume
+      setIsPaused(false);
+      if (!isMuted) stt.enable();
+    } else {
+      // Pause everything — stop audio, stop recording
+      setIsPaused(true);
+      stopAudio();
+      stt.disable();
+      bufferRef.current = [];
+      setLiveTranscript("");
+      if (sendTimerRef.current) {
+        clearTimeout(sendTimerRef.current);
+        sendTimerRef.current = null;
+      }
+    }
+  }, [isPaused, isMuted, stt, stopAudio]);
+
   const handleToggleMute = useCallback(() => {
     if (isMuted) {
       setIsMuted(false);
-      stt.enable();
+      if (!isPaused) stt.enable();
     } else {
       setIsMuted(true);
       stt.disable();
-      // Flush any buffered text before muting
-      flushBuffer();
     }
-  }, [isMuted, stt, flushBuffer]);
+  }, [isMuted, isPaused, stt]);
 
   const handleEndLesson = useCallback(() => {
     stt.disable();
-    flushBuffer();
+    stopAudio();
+    flush();
     endLesson();
     router.push("/dashboard");
-  }, [endLesson, stt, flushBuffer, router]);
+  }, [endLesson, stt, flush, router, stopAudio]);
 
   // Server ended the lesson — redirect
   useEffect(() => {
     if (serverLessonEnded) {
       stt.disable();
+      stopAudio();
       router.push("/dashboard");
     }
-  }, [serverLessonEnded, stt, router]);
+  }, [serverLessonEnded, stt, router, stopAudio]);
 
   if (!connected) return <LessonConnecting />;
 
@@ -175,9 +208,9 @@ export function LessonScreen({ token }: LessonScreenProps) {
   }
 
   return (
-    <div className="min-h-screen lesson-gradient flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 pt-safe">
+    <div className="h-screen lesson-gradient flex flex-col overflow-hidden">
+      {/* Header — always visible */}
+      <div className="flex-shrink-0 flex items-center justify-between p-4 pt-safe">
         <span className="text-white/80 text-lg font-mono w-20">{formatTime(elapsed)}</span>
         <h1 className="text-white font-semibold">Lesson with Jake</h1>
         <button
@@ -189,7 +222,7 @@ export function LessonScreen({ token }: LessonScreenProps) {
       </div>
 
       {/* Avatar area */}
-      <div className="flex flex-col items-center py-4">
+      <div className="flex-shrink-0 flex flex-col items-center py-4">
         <TutorAvatar isSpeaking={status === "speaking"} />
         <p className="text-white/80 text-sm mt-2 font-medium">Jake</p>
       </div>
@@ -198,6 +231,7 @@ export function LessonScreen({ token }: LessonScreenProps) {
       <ChatHistory
         messages={messages}
         isThinking={status === "thinking"}
+        isSpeaking={isPlaying || status === "speaking"}
         currentExercise={currentExercise}
         onSubmitExercise={submitExerciseAnswer}
       />
@@ -209,32 +243,43 @@ export function LessonScreen({ token }: LessonScreenProps) {
         </div>
       )}
 
-      {/* Bottom bar */}
-      <div className="bg-white/10 backdrop-blur-md border-t border-white/20 p-4">
+      {/* Bottom bar — always visible */}
+      <div className="flex-shrink-0 bg-white/10 backdrop-blur-md border-t border-white/20 p-4">
         <div className="flex items-center justify-center gap-6">
-          {/* Pause tutor */}
-          {(isPlaying || status === "speaking") && (
-            <button
-              onClick={stopAudio}
-              className="w-12 h-12 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all"
-              aria-label="Pause tutor"
-            >
+          {/* Pause/Resume — stops everything */}
+          <button
+            onClick={handleTogglePause}
+            className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
+              isPaused
+                ? "bg-green-500 hover:bg-green-400"
+                : "bg-white/20 hover:bg-white/30"
+            }`}
+            aria-label={isPaused ? "Resume" : "Pause"}
+          >
+            {isPaused ? (
+              <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            ) : (
               <svg className="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
               </svg>
-            </button>
-          )}
+            )}
+          </button>
 
           {/* Mic toggle */}
           <button
             onClick={handleToggleMute}
+            disabled={isPaused}
             className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${
-              isMuted
-                ? "bg-yellow-500 shadow-lg shadow-yellow-500/30 hover:bg-yellow-400"
-                : "bg-green-500 shadow-lg shadow-green-500/30 scale-105 hover:bg-green-400"
+              isPaused
+                ? "bg-gray-500 opacity-50"
+                : isMuted
+                  ? "bg-yellow-500 shadow-lg shadow-yellow-500/30 hover:bg-yellow-400"
+                  : "bg-green-500 shadow-lg shadow-green-500/30 scale-105 hover:bg-green-400"
             }`}
           >
-            {isMuted ? (
+            {isMuted || isPaused ? (
               <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.55-.9l4.17 4.18L21 19.73 4.27 3z"/>
               </svg>
@@ -247,7 +292,7 @@ export function LessonScreen({ token }: LessonScreenProps) {
           </button>
         </div>
         <p className="text-white/50 text-xs text-center mt-2">
-          {isMuted ? "Microphone off" : "Listening..."}
+          {isPaused ? "Paused" : isMuted ? "Microphone off" : "Listening..."}
         </p>
       </div>
     </div>

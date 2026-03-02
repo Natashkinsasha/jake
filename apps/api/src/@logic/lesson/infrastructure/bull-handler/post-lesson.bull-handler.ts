@@ -67,9 +67,9 @@ export class PostLessonBullHandler extends WorkerHost {
       newWords: summary.newWords,
       errorsFound: summary.errorsFound,
       levelAssessment: summary.levelAssessment,
-      durationMinutes: Math.round(
+      durationMinutes: Math.max(1, Math.round(
         (Date.now() - lesson.startedAt.getTime()) / 60000,
-      ),
+      )),
     });
 
     if (summary.levelAssessment) {

@@ -1,7 +1,7 @@
 import { Controller, Get, Param, Post, Body, UseGuards } from "@nestjs/common";
 import { HomeworkMaintainer } from "../../application/maintainer/homework.maintainer";
 import { JwtAuthGuard } from "../../../../@shared/shared-auth/jwt-auth.guard";
-import { CurrentUser } from "../../../../@shared/shared-auth/current-user.decorator";
+import { CurrentUserId } from "../../../../@shared/shared-auth/current-user.decorator";
 import { SubmitHomeworkBody } from "../dto/body/submit-homework.body";
 
 @Controller("homework")
@@ -10,7 +10,7 @@ export class HomeworkController {
   constructor(private homeworkMaintainer: HomeworkMaintainer) {}
 
   @Get()
-  async listHomework(@CurrentUser() userId: string) {
+  async listHomework(@CurrentUserId() userId: string) {
     return this.homeworkMaintainer.listHomework(userId);
   }
 

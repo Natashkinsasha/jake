@@ -39,6 +39,17 @@ export const api = {
   },
   lessons: {
     list: () => request<any[]>("/lessons"),
+    get: (id: string) =>
+      request<{
+        id: string;
+        status: string;
+        topic: string | null;
+        createdAt: string;
+        duration: number | null;
+        summary: string | null;
+        lessonNumber: number;
+        messages: { role: string; content: string; timestamp: string }[];
+      }>(`/lessons/${id}`),
     end: (id: string, history: { role: string; content: string }[]) =>
       request<{ success: boolean }>(`/lessons/end/${id}`, {
         method: "POST",

@@ -43,6 +43,8 @@ export function useLessonState(token?: string | null) {
   });
 
   const pendingRef = useRef<PendingTutorMessage | null>(null);
+  const userSpeakingRef = useRef(false);
+  const pendingTurnsRef = useRef(0);
 
   const showPendingMessage = useCallback((pending: PendingTutorMessage) => {
     setState((prev) => ({
@@ -79,11 +81,19 @@ export function useLessonState(token?: string | null) {
   });
 
   const handleEvent = useCallback((event: string, data: any) => {
+    console.log("[Lesson] event:", event, data?.text ? `"${data.text.slice(0, 50)}..."` : "", data?.audio ? `audio:${data.audio.length}chars` : "");
     switch (event) {
       case "lesson_started":
         setState((prev) => ({ ...prev, lessonId: data.lessonId, status: "idle" }));
         break;
-      case "tutor_message":
+      case "tutor_message": {
+        const shouldDiscard = userSpeakingRef.current || pendingTurnsRef.current > 1;
+        if (shouldDiscard) {
+          pendingTurnsRef.current = Math.max(0, pendingTurnsRef.current - 1);
+          console.log("[Lesson] discarding tutor_message —", userSpeakingRef.current ? "user is speaking" : "newer message pending", `(pendingTurns=${pendingTurnsRef.current})`);
+          break;
+        }
+        pendingTurnsRef.current = Math.max(0, pendingTurnsRef.current - 1);
         if (data.audio) {
           pendingRef.current = {
             text: data.text,
@@ -91,7 +101,6 @@ export function useLessonState(token?: string | null) {
             exercise: data.exercise || null,
           };
           setState((prev) => ({ ...prev, hasPending: true }));
-          // Try to play immediately — may fail if no user gesture yet
           audioPlayer.play(data.audio);
         } else {
           setState((prev) => ({
@@ -110,6 +119,7 @@ export function useLessonState(token?: string | null) {
           }));
         }
         break;
+      }
       case "transcript":
         setState((prev) => ({
           ...prev,
@@ -119,7 +129,14 @@ export function useLessonState(token?: string | null) {
           ],
         }));
         break;
-      case "exercise_feedback":
+      case "exercise_feedback": {
+        const shouldDiscardFb = userSpeakingRef.current || pendingTurnsRef.current > 1;
+        if (shouldDiscardFb) {
+          pendingTurnsRef.current = Math.max(0, pendingTurnsRef.current - 1);
+          console.log("[Lesson] discarding exercise_feedback —", userSpeakingRef.current ? "user is speaking" : "newer message pending");
+          break;
+        }
+        pendingTurnsRef.current = Math.max(0, pendingTurnsRef.current - 1);
         if (data.audio) {
           pendingRef.current = { text: data.text, exercise: null };
           setState((prev) => ({ ...prev, hasPending: true }));
@@ -136,6 +153,7 @@ export function useLessonState(token?: string | null) {
           }));
         }
         break;
+      }
       case "status":
         setState((prev) => ({
           ...prev,
@@ -161,6 +179,8 @@ export function useLessonState(token?: string | null) {
   const sendText = useCallback(
     (text: string) => {
       if (!text.trim()) return;
+      pendingTurnsRef.current++;
+      console.log("[Lesson] sendText:", text.trim(), `(pendingTurns=${pendingTurnsRef.current})`);
       setState((prev) => ({
         ...prev,
         messages: [
@@ -195,6 +215,10 @@ export function useLessonState(token?: string | null) {
     }));
   }, [audioPlayer]);
 
+  const setUserSpeaking = useCallback((speaking: boolean) => {
+    userSpeakingRef.current = speaking;
+  }, []);
+
   // Retry playing the pending first message (called after mic permission grants user gesture)
   const playPending = useCallback(() => {
     const pending = pendingRef.current;
@@ -213,5 +237,6 @@ export function useLessonState(token?: string | null) {
     interruptTutor,
     stopAudio: audioPlayer.stop,
     playPending: state.hasPending ? playPending : null,
+    setUserSpeaking,
   };
 }

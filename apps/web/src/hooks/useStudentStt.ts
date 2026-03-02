@@ -16,6 +16,8 @@ interface UseStudentSttReturn {
 
 interface UseStudentSttOptions {
   onSpeechStart?: () => void;
+  onSpeechEnd?: () => void;
+  onSegment?: (text: string) => void;
 }
 
 const log = (...args: unknown[]) => console.log("[STT]", ...args);
@@ -26,7 +28,7 @@ const DG_PARAMS = new URLSearchParams({
   language: "en",
   smart_format: "true",
   interim_results: "true",
-  endpointing: "800",
+  endpointing: "300",
   vad_events: "true",
 }).toString();
 
@@ -47,6 +49,10 @@ export function useStudentStt(
   const speechDetectedRef = useRef(false);
   const onSpeechStartRef = useRef(options?.onSpeechStart);
   onSpeechStartRef.current = options?.onSpeechStart;
+  const onSpeechEndRef = useRef(options?.onSpeechEnd);
+  onSpeechEndRef.current = options?.onSpeechEnd;
+  const onSegmentRef = useRef(options?.onSegment);
+  onSegmentRef.current = options?.onSegment;
 
   useEffect(() => {
     const supported = !!navigator.mediaDevices?.getUserMedia;
@@ -97,11 +103,41 @@ export function useStudentStt(
       ws.onopen = () => {
         log("WebSocket connected to Deepgram");
 
-        const recorder = new MediaRecorder(stream, {
-          mimeType: MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
-            ? "audio/webm;codecs=opus"
-            : "audio/webm",
-        });
+        if (!stream.active || stream.getTracks().every((t) => t.readyState === "ended")) {
+          log("stream is no longer active");
+          setError("Microphone stream lost");
+          cleanup();
+          return;
+        }
+
+        const candidates = [
+          "audio/webm;codecs=opus",
+          "audio/webm",
+          "audio/mp4",
+          "audio/ogg;codecs=opus",
+          undefined, // let the browser pick
+        ];
+
+        let recorder: MediaRecorder | null = null;
+        for (const mime of candidates) {
+          try {
+            const opts = mime ? { mimeType: mime } : undefined;
+            const r = new MediaRecorder(stream, opts);
+            r.start(250);
+            recorder = r;
+            log("using mimeType:", r.mimeType || "(browser default)");
+            break;
+          } catch {
+            log("mimeType failed:", mime ?? "(default)");
+          }
+        }
+
+        if (!recorder) {
+          log("all mimeTypes failed");
+          setError("Your browser does not support audio recording");
+          cleanup();
+          return;
+        }
 
         recorder.ondataavailable = (e) => {
           if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
@@ -110,7 +146,6 @@ export function useStudentStt(
         };
 
         mediaRecorderRef.current = recorder;
-        recorder.start(250);
         setIsListening(true);
         log("streaming started");
       };
@@ -138,12 +173,17 @@ export function useStudentStt(
             setFinalText(transcript);
           }
 
+          // is_final with text = confirmed segment → send to parent
+          if (isFinal && transcript) {
+            log("is_final segment:", transcript);
+            onSegmentRef.current?.(transcript);
+          }
+
           if (speechFinal) {
-            log("speech_final:", transcript);
+            log("speech_final:", transcript || "(empty)");
             speechDetectedRef.current = false;
             setIsProcessing(false);
-          } else if (isFinal && transcript) {
-            log("is_final segment:", transcript);
+            onSpeechEndRef.current?.();
           }
         }
       };

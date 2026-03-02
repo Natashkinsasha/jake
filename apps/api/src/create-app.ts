@@ -14,7 +14,14 @@ export async function createApp(): Promise<NestFastifyApplication> {
     credentials: true,
   });
 
-  app.useWebSocketAdapter(new IoAdapter(app));
+  const ioAdapter = new IoAdapter(app);
+  (ioAdapter as any).createIOServer = function (port: number, options?: any) {
+    return IoAdapter.prototype.createIOServer.call(this, port, {
+      ...options,
+      maxHttpBufferSize: 10 * 1024 * 1024, // 10MB for base64 audio
+    });
+  };
+  app.useWebSocketAdapter(ioAdapter);
 
   return app;
 }

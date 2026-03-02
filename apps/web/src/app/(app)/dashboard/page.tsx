@@ -54,12 +54,18 @@ export default function DashboardPage() {
             {recentLessons.slice(0, 10).map((lesson: any) => (
               <div
                 key={lesson.id}
-                className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0"
+                onClick={() => router.push(`/lessons/${lesson.id}`)}
+                className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-gray-50 -mx-2 px-2 rounded-lg transition-colors"
               >
-                <div>
+                <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-gray-900">
                     {lesson.topic || "Conversation with Jake"}
                   </p>
+                  {lesson.summary && (
+                    <p className="text-xs text-gray-500 truncate">
+                      {lesson.summary}
+                    </p>
+                  )}
                   <p className="text-xs text-gray-400">
                     {lesson.createdAt
                       ? new Date(lesson.createdAt).toLocaleString([], {
