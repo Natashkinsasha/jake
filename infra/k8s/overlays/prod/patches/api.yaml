@@ -11,15 +11,15 @@ spec:
           imagePullPolicy: Always
           resources:
             requests:
-              cpu: 250m
+              cpu: 100m
               memory: 256Mi
             limits:
-              cpu: 1000m
+              cpu: 500m
               memory: 512Mi
       topologySpreadConstraints:
         - maxSkew: 1
           topologyKey: kubernetes.io/hostname
-          whenUnsatisfiable: DoNotSchedule
+          whenUnsatisfiable: ScheduleAnyway
           labelSelector:
             matchLabels:
               app: api
