@@ -16,11 +16,12 @@ COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
 COPY . .
 RUN pnpm --filter @jake/shared build
 RUN pnpm --filter @jake/api build
+RUN pnpm --filter @jake/api deploy /app/deploy --prod
 
 FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
-COPY --from=builder /app/apps/api/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/deploy/node_modules ./node_modules
+COPY --from=builder /app/deploy/dist ./dist
 EXPOSE 4000
 CMD ["node", "dist/main.js"]
