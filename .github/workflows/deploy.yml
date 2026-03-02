@@ -67,6 +67,7 @@ jobs:
             cd /root/jake
             docker compose -f docker-compose.prod.yml pull api web
             docker compose -f docker-compose.prod.yml up -d
+            docker compose -f docker-compose.prod.yml restart nginx
             docker image prune -f
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
