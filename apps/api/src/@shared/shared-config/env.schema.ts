@@ -25,10 +25,6 @@ export const EnvSchema = z.object({
   // Voice
   DEEPGRAM_API_KEY: z.string(),
   ELEVENLABS_API_KEY: z.string(),
-
-  // Kafka
-  KAFKA_BROKERS: z.string().default("localhost:9092"),
-  KAFKA_GROUP_ID: z.string().default("jake-api"),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

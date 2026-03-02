@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { ProgressBar } from "@/components/ui/ProgressBar";
+import { RecentActivity } from "@/components/dashboard/RecentActivity";
 
 interface ProgressData {
   currentLevel: string | null;
@@ -17,12 +18,14 @@ export default function DashboardPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const [progress, setProgress] = useState<ProgressData | null>(null);
+  const [recentLessons, setRecentLessons] = useState<any[]>([]);
 
   useEffect(() => {
     const user = (session as any)?.backendUser;
     if (user?.id) {
       api.progress.get(user.id).then(setProgress).catch(console.error);
     }
+    api.lessons.list().then(setRecentLessons).catch(console.error);
   }, [session]);
 
   const user = (session as any)?.backendUser;
@@ -95,6 +98,16 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+
+      {/* Recent Activity */}
+      <RecentActivity
+        items={recentLessons.slice(0, 5).map((lesson: any) => ({
+          type: "lesson" as const,
+          title: lesson.topic || "Conversation with Jake",
+          subtitle: `${lesson.duration ? Math.round(lesson.duration / 60) + " min" : "Lesson"}${lesson.level ? " - " + lesson.level : ""}`,
+          date: new Date(lesson.createdAt).toLocaleDateString(),
+        }))}
+      />
     </div>
   );
 }

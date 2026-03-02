@@ -15,6 +15,7 @@ jest.mock("@anthropic-ai/sdk", () => {
 
 // Access the mock create function
 function getMockCreate() {
+  // eslint-disable-next-line @typescript-eslint/no-var-requires
   return require("@anthropic-ai/sdk")._mockCreate;
 }
 

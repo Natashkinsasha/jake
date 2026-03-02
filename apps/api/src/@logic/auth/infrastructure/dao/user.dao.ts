@@ -50,4 +50,15 @@ export class UserDao {
       .set({ currentLevel: level, updatedAt: new Date() })
       .where(eq(userTable.id, id));
   }
+
+  async updatePreferences(userId: string, data: Partial<{
+    correctionStyle: string;
+    explainGrammar: boolean;
+    speakingSpeed: string;
+    useNativeLanguage: boolean;
+    preferredExerciseTypes: string[];
+    interests: string[];
+  }>): Promise<void> {
+    await this.db.update(userPreferenceTable).set(data).where(eq(userPreferenceTable.userId, userId));
+  }
 }

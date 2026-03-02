@@ -11,7 +11,6 @@ import { LessonDao } from "./infrastructure/dao/lesson.dao";
 import { LessonMessageDao } from "./infrastructure/dao/lesson-message.dao";
 import { LessonRepository } from "./infrastructure/repository/lesson.repository";
 import { PostLessonBullHandler } from "./infrastructure/bull-handler/post-lesson.bull-handler";
-import { LessonCompletedConsumer } from "./infrastructure/consumer/lesson-completed.consumer";
 import { LlmModule } from "../../@lib/llm/src/llm.module";
 import { VoiceModule } from "../../@lib/voice/src/voice.module";
 import { EmbeddingModule } from "../../@lib/embedding/src/embedding.module";
@@ -47,7 +46,6 @@ import { HomeworkModule } from "../homework/homework.module";
     LessonMessageDao,
     LessonRepository,
     PostLessonBullHandler,
-    LessonCompletedConsumer,
   ],
   exports: [LessonDao],
 })

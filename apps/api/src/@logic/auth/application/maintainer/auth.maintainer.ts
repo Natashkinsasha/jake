@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { UserDao } from "../../infrastructure/dao/user.dao";
 import { Transaction } from "../../../../@shared/shared-cls/transaction";
@@ -34,5 +34,15 @@ export class AuthMaintainer {
     });
 
     return { token, user };
+  }
+
+  async getProfile(userId: string) {
+    const user = await this.userDao.findByIdWithPreferences(userId);
+    if (!user) throw new NotFoundException("User not found");
+    return user;
+  }
+
+  async updatePreferences(userId: string, data: any) {
+    await this.userDao.updatePreferences(userId, data);
   }
 }

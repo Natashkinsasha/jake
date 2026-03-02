@@ -25,6 +25,10 @@ export class LessonMaintainer {
     @InjectQueue("fact-extraction") private factQueue: Queue,
   ) {}
 
+  async listLessons(userId: string) {
+    return this.lessonDao.findRecentByUser(userId);
+  }
+
   async startLesson(userId: string) {
     const context = await this.contextService.build(userId);
 
@@ -90,6 +94,47 @@ export class LessonMaintainer {
     });
 
     return result;
+  }
+
+  async processTextMessage(
+    lessonId: string,
+    userId: string,
+    text: string,
+    systemPrompt: string,
+    history: LlmMessage[],
+    voiceId: string,
+  ) {
+    const updatedHistory: LlmMessage[] = [
+      ...history,
+      { role: "user", content: text },
+    ];
+
+    const response = await this.responseService.generate(
+      systemPrompt,
+      updatedHistory,
+    );
+
+    const tutorAudio = await this.tts.synthesize(response.text, voiceId);
+
+    await this.messageDao.create({ lessonId, role: "user", content: text });
+    await this.messageDao.create({
+      lessonId,
+      role: "tutor",
+      content: response.text,
+    });
+
+    await this.factQueue.add("extract", {
+      userId,
+      lessonId,
+      userMessage: text,
+      history: updatedHistory,
+    });
+
+    return {
+      tutorText: response.text,
+      tutorAudio: tutorAudio,
+      exercise: response.exercise,
+    };
   }
 
   async endLesson(lessonId: string, history: LlmMessage[]) {

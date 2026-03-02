@@ -23,6 +23,3 @@ resources:
   # Redis
   - redis/deployment.yaml
   - redis/service.yaml
-  # Kafka
-  - kafka/statefulset.yaml
-  - kafka/service.yaml

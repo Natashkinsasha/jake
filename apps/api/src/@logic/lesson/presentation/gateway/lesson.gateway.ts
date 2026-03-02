@@ -109,6 +109,41 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
+  @SubscribeMessage("text")
+  async handleText(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { text: string },
+  ) {
+    const session = this.sessions.get(client.id);
+    if (!session) return;
+
+    try {
+      client.emit("status", { state: "thinking" });
+
+      const result = await this.lessonMaintainer.processTextMessage(
+        session.lessonId,
+        client.data.userId,
+        data.text,
+        session.systemPrompt,
+        session.history,
+        session.voiceId,
+      );
+
+      session.history.push(
+        { role: "user", content: data.text },
+        { role: "assistant", content: result.tutorText },
+      );
+
+      client.emit("tutor_message", {
+        text: result.tutorText,
+        audio: result.tutorAudio,
+        exercise: result.exercise,
+      });
+    } catch (error) {
+      client.emit("error", { message: "Something went wrong, mate!" });
+    }
+  }
+
   @SubscribeMessage("exercise_answer")
   async handleExerciseAnswer(
     @ConnectedSocket() client: Socket,

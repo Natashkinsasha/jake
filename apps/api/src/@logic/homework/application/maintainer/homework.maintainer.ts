@@ -9,6 +9,10 @@ export class HomeworkMaintainer {
     private checker: HomeworkCheckerService,
   ) {}
 
+  async listHomework(userId: string) {
+    return this.homeworkDao.findByUser(userId);
+  }
+
   async getById(id: string) {
     return this.homeworkDao.findById(id);
   }

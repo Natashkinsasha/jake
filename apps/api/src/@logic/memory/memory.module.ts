@@ -7,9 +7,10 @@ import { MemoryFactDao } from "./infrastructure/dao/memory-fact.dao";
 import { MemoryEmbeddingDao } from "./infrastructure/dao/memory-embedding.dao";
 import { FactExtractionBullHandler } from "./infrastructure/bull-handler/fact-extraction.bull-handler";
 import { LlmModule } from "../../@lib/llm/src/llm.module";
+import { EmbeddingModule } from "../../@lib/embedding/src/embedding.module";
 
 @Module({
-  imports: [LlmModule],
+  imports: [LlmModule, EmbeddingModule],
   providers: [
     MemoryMaintainer,
     FactExtractionService,
@@ -19,6 +20,6 @@ import { LlmModule } from "../../@lib/llm/src/llm.module";
     MemoryEmbeddingDao,
     FactExtractionBullHandler,
   ],
-  exports: [MemoryFactDao, MemoryEmbeddingDao, FactExtractionService],
+  exports: [MemoryFactDao, MemoryEmbeddingDao, FactExtractionService, MemoryRetrievalService],
 })
 export class MemoryModule {}

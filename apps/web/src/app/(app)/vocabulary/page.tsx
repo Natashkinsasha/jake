@@ -2,6 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { api } from "@/lib/api";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -36,7 +37,17 @@ export default function VocabularyPage() {
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Vocabulary</h1>
-        <span className="text-sm text-gray-500">{words.length} words</span>
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-gray-500">{words.length} words</span>
+          {words.length > 0 && (
+            <Link
+              href="/vocabulary/review"
+              className="btn-primary text-sm px-4 py-2"
+            >
+              Start Review
+            </Link>
+          )}
+        </div>
       </div>
 
       {words.length === 0 ? (

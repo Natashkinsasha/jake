@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { eq, desc, lte, and, sql } from "drizzle-orm";
+import { eq, desc, lte, and } from "drizzle-orm";
 import { DRIZZLE } from "../../../../@shared/shared-drizzle-pg/drizzle.provider";
 import { vocabularyTable } from "../table/vocabulary.table";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";

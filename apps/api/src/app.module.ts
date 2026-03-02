@@ -7,7 +7,6 @@ import { SharedDrizzlePgModule } from "./@shared/shared-drizzle-pg/shared-drizzl
 import { SharedClsModule } from "./@shared/shared-cls/shared-cls.module";
 import { SharedRedisModule } from "./@shared/shared-redis/shared-redis.module";
 import { SharedJobModule } from "./@shared/shared-job/shared-job.module";
-import { SharedKafkaModule } from "./@shared/shared-kafka/shared-kafka.module";
 import { SharedZodHttpModule } from "./@shared/shared-zod-http/shared-zod-http.module";
 import { SharedWsModule } from "./@shared/shared-ws/shared-ws.module";
 import { SharedAuthModule } from "./@shared/shared-auth/shared-auth.module";
@@ -30,8 +29,7 @@ import { ProgressModule } from "./@logic/progress/progress.module";
     SharedClsModule,
     SharedRedisModule,
     SharedJobModule,
-    SharedKafkaModule,
-    SharedZodHttpModule,
+SharedZodHttpModule,
     SharedWsModule,
     SharedAuthModule,
     JwtModule.register({ global: true, secret: process.env.JWT_SECRET }),

@@ -162,7 +162,6 @@ describe("buildFullSystemPrompt", () => {
   it("should not include tutor system prompt when empty", () => {
     const baseResult = buildFullSystemPrompt(createMockContext({ tutorSystemPrompt: "" }));
     // The empty string is falsy, so it should not appear as a separate section
-    const lines = baseResult.split("\n");
     // Ensure no blank section between Jake base prompt and student profile
     expect(baseResult).toContain("=== STUDENT PROFILE ===");
   });

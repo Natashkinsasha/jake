@@ -9,6 +9,7 @@ const config = {
   testRegex: ".*\\.spec\\.tsx?$",
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
+    "^canvas$": "<rootDir>/src/__mocks__/empty.js",
   },
 };
 

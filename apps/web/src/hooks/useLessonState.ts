@@ -3,15 +3,17 @@ import { useWebSocket } from "./useWebSocket";
 import { useVoiceRecorder } from "./useVoiceRecorder";
 import { useAudioPlayer } from "./useAudioPlayer";
 
-interface Message {
-  role: "user" | "assistant";
-  text: string;
-}
-
 interface Exercise {
   type: string;
   id: string;
   [key: string]: any;
+}
+
+interface Message {
+  role: "user" | "assistant";
+  text: string;
+  timestamp: number;
+  exercise?: Exercise | null;
 }
 
 interface LessonState {
@@ -19,6 +21,7 @@ interface LessonState {
   messages: Message[];
   currentExercise: Exercise | null;
   status: "idle" | "connecting" | "listening" | "thinking" | "speaking";
+  lessonEnded: boolean;
 }
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "http://localhost:4000/ws/lesson";
@@ -29,6 +32,7 @@ export function useLessonState() {
     messages: [],
     currentExercise: null,
     status: "connecting",
+    lessonEnded: false,
   });
 
   const onEventRef = useRef((event: string, data: any) => {});
@@ -43,7 +47,15 @@ export function useLessonState() {
       case "tutor_message":
         setState((prev) => ({
           ...prev,
-          messages: [...prev.messages, { role: "assistant", text: data.text }],
+          messages: [
+            ...prev.messages,
+            {
+              role: "assistant",
+              text: data.text,
+              timestamp: Date.now(),
+              exercise: data.exercise || null,
+            },
+          ],
           currentExercise: data.exercise || null,
           status: "speaking",
         }));
@@ -54,13 +66,19 @@ export function useLessonState() {
       case "transcript":
         setState((prev) => ({
           ...prev,
-          messages: [...prev.messages, { role: "user", text: data.text }],
+          messages: [
+            ...prev.messages,
+            { role: "user", text: data.text, timestamp: Date.now() },
+          ],
         }));
         break;
       case "exercise_feedback":
         setState((prev) => ({
           ...prev,
-          messages: [...prev.messages, { role: "assistant", text: data.text }],
+          messages: [
+            ...prev.messages,
+            { role: "assistant", text: data.text, timestamp: Date.now() },
+          ],
           currentExercise: null,
           status: "speaking",
         }));
@@ -75,7 +93,7 @@ export function useLessonState() {
         }));
         break;
       case "lesson_ended":
-        setState((prev) => ({ ...prev, status: "idle" }));
+        setState((prev) => ({ ...prev, status: "idle", lessonEnded: true }));
         break;
       case "error":
         console.error("Lesson error:", data.message);
@@ -105,6 +123,22 @@ export function useLessonState() {
     onRecordingComplete: handleRecordingComplete,
   });
 
+  const sendText = useCallback(
+    (text: string) => {
+      if (!text.trim()) return;
+      setState((prev) => ({
+        ...prev,
+        messages: [
+          ...prev.messages,
+          { role: "user", text: text.trim(), timestamp: Date.now() },
+        ],
+        status: "thinking",
+      }));
+      emit("text", { text: text.trim() });
+    },
+    [emit],
+  );
+
   const submitExerciseAnswer = useCallback(
     (exerciseId: string, answer: string) => {
       emit("exercise_answer", { exerciseId, answer });
@@ -123,6 +157,7 @@ export function useLessonState() {
     isPlaying: audioPlayer.isPlaying,
     startRecording,
     stopRecording,
+    sendText,
     submitExerciseAnswer,
     endLesson,
     stopAudio: audioPlayer.stop,

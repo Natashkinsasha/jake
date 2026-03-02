@@ -26,12 +26,19 @@ export const api = {
         method: "POST",
         body: JSON.stringify(data),
       }),
+    me: () => request<any>("/auth/me"),
+    updatePreferences: (data: any) =>
+      request<{ success: boolean }>("/auth/me/preferences", {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
   },
   tutors: {
     list: () =>
       request<{ id: string; name: string; personality: string; accent: string; avatarUrl: string | null; traits: string[] }[]>("/tutors"),
   },
   lessons: {
+    list: () => request<any[]>("/lessons"),
     end: (id: string, history: { role: string; content: string }[]) =>
       request<{ success: boolean }>(`/lessons/end/${id}`, {
         method: "POST",
@@ -39,6 +46,7 @@ export const api = {
       }),
   },
   homework: {
+    list: () => request<any[]>("/homework"),
     get: (id: string) =>
       request<{ id: string; lessonId: string; exercises: any[]; createdAt: string; dueAt: string | null; completedAt: string | null; score: number | null }>(`/homework/${id}`),
     submit: (id: string, answers: Record<string, string>) =>

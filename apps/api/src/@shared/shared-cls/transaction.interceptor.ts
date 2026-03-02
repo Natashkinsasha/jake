@@ -6,7 +6,7 @@ import {
   NestInterceptor,
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
-import { Observable, from, switchMap } from "rxjs";
+import { Observable, from } from "rxjs";
 import { TRANSACTION_KEY } from "./transaction";
 import { TransactionHost } from "./app-drizzle-transaction-host";
 import { DRIZZLE } from "../shared-drizzle-pg/drizzle.provider";

@@ -46,7 +46,7 @@ spec:
       ports:
         - port: 3000
 ---
-# API + Worker: outbound to Postgres, Redis, Kafka, DNS, external APIs
+# API + Worker: outbound to Postgres, Redis, DNS, external APIs
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -74,13 +74,6 @@ spec:
               app: redis
       ports:
         - port: 6379
-    # Kafka
-    - to:
-        - podSelector:
-            matchLabels:
-              app: kafka
-      ports:
-        - port: 9092
     # DNS
     - to:
         - namespaceSelector: {}
@@ -141,24 +134,3 @@ spec:
                 values: [api, worker]
       ports:
         - port: 6379
----
-# Kafka: inbound from API + Worker
-apiVersion: networking.k8s.io/v1
-kind: NetworkPolicy
-metadata:
-  name: allow-kafka-ingress
-spec:
-  podSelector:
-    matchLabels:
-      app: kafka
-  policyTypes:
-    - Ingress
-  ingress:
-    - from:
-        - podSelector:
-            matchExpressions:
-              - key: app
-                operator: In
-                values: [api, worker]
-      ports:
-        - port: 9092

@@ -7,6 +7,11 @@ import { JwtAuthGuard } from "../../../../@shared/shared-auth/jwt-auth.guard";
 export class HomeworkController {
   constructor(private homeworkMaintainer: HomeworkMaintainer) {}
 
+  @Get()
+  async listHomework(@Req() req: any) {
+    return this.homeworkMaintainer.listHomework(req.user.sub);
+  }
+
   @Get(":id")
   async getById(@Param("id") id: string) {
     return this.homeworkMaintainer.getById(id);

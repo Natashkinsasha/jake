@@ -1,16 +1,48 @@
-import { Injectable } from "@nestjs/common";
-import { PgHealthIndicatorService } from "../health-indicator/pg-health-indicator.service";
+import { Inject, Injectable } from "@nestjs/common";
+import { sql } from "drizzle-orm";
+import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
+import type Redis from "ioredis";
+import { DRIZZLE } from "../../../@shared/shared-drizzle-pg/drizzle.provider";
+import { REDIS } from "../../../@shared/shared-redis/redis.provider";
 
 @Injectable()
 export class HealthMaintainer {
-  constructor(private pgHealth: PgHealthIndicatorService) {}
+  constructor(
+    @Inject(DRIZZLE) private db: PostgresJsDatabase,
+    @Inject(REDIS) private redis: Redis,
+  ) {}
 
   async check() {
-    const db = await this.pgHealth.isHealthy();
+    const [dbOk, redisOk] = await Promise.all([
+      this.checkDb(),
+      this.checkRedis(),
+    ]);
+
+    const allUp = dbOk && redisOk;
+
     return {
-      status: db ? "ok" : "error",
-      checks: { database: db ? "up" : "down" },
-      timestamp: new Date().toISOString(),
+      status: allUp ? ("ok" as const) : ("degraded" as const),
+      db: dbOk ? ("up" as const) : ("down" as const),
+      redis: redisOk ? ("up" as const) : ("down" as const),
+      uptime: process.uptime(),
     };
+  }
+
+  private async checkDb(): Promise<boolean> {
+    try {
+      await this.db.execute(sql`SELECT 1`);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  private async checkRedis(): Promise<boolean> {
+    try {
+      const pong = await this.redis.ping();
+      return pong === "PONG";
+    } catch {
+      return false;
+    }
   }
 }

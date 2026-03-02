@@ -8,7 +8,6 @@ import { VocabularyDao } from "../../../vocabulary/infrastructure/dao/vocabulary
 import { GrammarProgressDao } from "../../../progress/infrastructure/dao/grammar-progress.dao";
 import { MemoryEmbeddingDao } from "../../../memory/infrastructure/dao/memory-embedding.dao";
 import { HomeworkGeneratorService } from "../../../homework/application/service/homework-generator.service";
-import { KafkaProducerService } from "../../../../@lib/kafka/src/kafka-producer.service";
 
 const SUMMARY_PROMPT = `Analyze the full lesson conversation and generate a structured summary.
 Return ONLY valid JSON:
@@ -33,7 +32,6 @@ export class PostLessonBullHandler extends WorkerHost {
     private grammarDao: GrammarProgressDao,
     private embeddingDao: MemoryEmbeddingDao,
     private homeworkGenerator: HomeworkGeneratorService,
-    private kafkaProducer: KafkaProducerService,
   ) {
     super();
   }
@@ -100,11 +98,5 @@ export class PostLessonBullHandler extends WorkerHost {
       summary,
       user?.user_preferences || {},
     );
-
-    await this.kafkaProducer.send("lesson.completed", {
-      lessonId,
-      userId: lesson.userId,
-      level: summary.levelAssessment,
-    });
   }
 }
