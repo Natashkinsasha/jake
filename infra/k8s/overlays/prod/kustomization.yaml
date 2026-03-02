@@ -8,7 +8,6 @@ resources:
   - configmap.yaml
   - secrets.yaml
   - ingress.yaml
-  - pdb.yaml
 
 patches:
   - path: patches/api.yaml

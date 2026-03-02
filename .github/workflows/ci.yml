@@ -118,6 +118,9 @@ jobs:
             ELEVENLABS_API_KEY: "${ELEVENLABS_API_KEY}"
             POSTGRES_PASSWORD: "${POSTGRES_PASSWORD}"
           EOF
+      - name: Remove stale PDBs
+        run: |
+          kubectl delete pdb api-pdb web-pdb -n jake --ignore-not-found
       - run: |
           cd infra/k8s/overlays/prod
           kustomize edit set image \
