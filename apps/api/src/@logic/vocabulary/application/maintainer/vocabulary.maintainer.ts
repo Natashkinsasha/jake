@@ -1,15 +1,15 @@
 import { Injectable } from "@nestjs/common";
-import { VocabularyDao } from "../../infrastructure/dao/vocabulary.dao";
+import { VocabularyRepository } from "../../infrastructure/repository/vocabulary.repository";
 
 @Injectable()
 export class VocabularyMaintainer {
-  constructor(private vocabularyDao: VocabularyDao) {}
+  constructor(private vocabularyRepository: VocabularyRepository) {}
 
   async listByUser(userId: string) {
-    return this.vocabularyDao.findByUser(userId);
+    return this.vocabularyRepository.findByUser(userId);
   }
 
   async getForReview(userId: string) {
-    return this.vocabularyDao.findDueForReview(userId);
+    return this.vocabularyRepository.findDueForReview(userId);
   }
 }

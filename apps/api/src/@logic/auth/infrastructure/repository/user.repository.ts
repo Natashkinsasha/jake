@@ -3,47 +3,49 @@ import { AppDrizzleTransactionHost } from "@shared/shared-cls/app-drizzle-transa
 import { eq } from "drizzle-orm";
 import { userTable } from "../table/user.table";
 import { userPreferenceTable } from "../table/user-preference.table";
+import { UserEntity, UserWithPreferences } from "../../domain/entity/user.entity";
+import { UserFactory } from "../factory/user.factory";
 import { InsertUser } from "../model/insert-user";
 
 @Injectable()
-export class UserDao {
+export class UserRepository {
   constructor(private readonly txHost: AppDrizzleTransactionHost<{ user: typeof userTable; userPreference: typeof userPreferenceTable }>) {}
 
-  async findByGoogleId(googleId: string) {
-    const [user] = await this.txHost.tx
+  async findByGoogleId(googleId: string): Promise<UserEntity | null> {
+    const [row] = await this.txHost.tx
       .select()
       .from(userTable)
       .where(eq(userTable.googleId, googleId))
       .limit(1);
-    return user ?? null;
+    return row ? UserFactory.create(row) : null;
   }
 
-  async findById(id: string) {
-    const [user] = await this.txHost.tx
+  async findById(id: string): Promise<UserEntity | null> {
+    const [row] = await this.txHost.tx
       .select()
       .from(userTable)
       .where(eq(userTable.id, id))
       .limit(1);
-    return user ?? null;
+    return row ? UserFactory.create(row) : null;
   }
 
-  async findByIdWithPreferences(id: string) {
-    const [result] = await this.txHost.tx
+  async findByIdWithPreferences(id: string): Promise<UserWithPreferences | null> {
+    const [row] = await this.txHost.tx
       .select()
       .from(userTable)
       .leftJoin(userPreferenceTable, eq(userTable.id, userPreferenceTable.userId))
       .where(eq(userTable.id, id))
       .limit(1);
-    return result ?? null;
+    return row ? UserFactory.createWithPreferences(row) : null;
   }
 
-  async create(data: InsertUser) {
+  async create(data: InsertUser): Promise<UserEntity> {
     const [user] = await this.txHost.tx.insert(userTable).values(data).returning();
     await this.txHost.tx.insert(userPreferenceTable).values({ userId: user.id });
-    return user;
+    return UserFactory.create(user);
   }
 
-  async updateLevel(id: string, level: string) {
+  async updateLevel(id: string, level: string): Promise<void> {
     await this.txHost.tx
       .update(userTable)
       .set({ currentLevel: level, updatedAt: new Date() })

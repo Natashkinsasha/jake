@@ -4,12 +4,12 @@ import { Job } from "bullmq";
 import { Transaction } from "../../../../@shared/shared-cls/transaction";
 import { LlmService } from "../../../../@lib/llm/src/llm.service";
 import { EmbeddingService } from "../../../../@lib/embedding/src/embedding.service";
-import { LessonDao } from "../dao/lesson.dao";
-import { UserDao } from "../../../auth/infrastructure/dao/user.dao";
-import { VocabularyDao } from "../../../vocabulary/infrastructure/dao/vocabulary.dao";
-import { GrammarProgressDao } from "../../../progress/infrastructure/dao/grammar-progress.dao";
-import { MemoryEmbeddingDao } from "../../../memory/infrastructure/dao/memory-embedding.dao";
-import { HomeworkGeneratorService } from "../../../homework/application/service/homework-generator.service";
+import { LessonRepository } from "../repository/lesson.repository";
+import { AuthContract } from "../../../auth/contract/auth.contract";
+import { VocabularyContract } from "../../../vocabulary/contract/vocabulary.contract";
+import { ProgressContract } from "../../../progress/contract/progress.contract";
+import { MemoryContract } from "../../../memory/contract/memory.contract";
+import { HomeworkContract } from "../../../homework/contract/homework.contract";
 import { PostLessonLlmResponseSchema, PostLessonLlmResponse } from "@jake/shared";
 import { QUEUE_NAMES } from "../../../../@shared/shared-job/queue-names";
 
@@ -32,12 +32,12 @@ export class PostLessonBullHandler extends WorkerHost {
   constructor(
     private llm: LlmService,
     private embeddingService: EmbeddingService,
-    private lessonDao: LessonDao,
-    private userDao: UserDao,
-    private vocabDao: VocabularyDao,
-    private grammarDao: GrammarProgressDao,
-    private embeddingDao: MemoryEmbeddingDao,
-    private homeworkGenerator: HomeworkGeneratorService,
+    private lessonRepository: LessonRepository,
+    private authContract: AuthContract,
+    private vocabularyContract: VocabularyContract,
+    private progressContract: ProgressContract,
+    private memoryContract: MemoryContract,
+    private homeworkContract: HomeworkContract,
   ) {
     super();
   }
@@ -47,7 +47,7 @@ export class PostLessonBullHandler extends WorkerHost {
     this.logger.log(`Processing post-lesson job for lesson ${lessonId}`);
 
     try {
-      const lesson = await this.lessonDao.findById(lessonId);
+      const lesson = await this.lessonRepository.findById(lessonId);
       if (!lesson) {
         this.logger.warn(`Lesson ${lessonId} not found, skipping`);
         return;
@@ -58,8 +58,8 @@ export class PostLessonBullHandler extends WorkerHost {
       await this.savePostLessonData(lessonId, lesson, summary);
 
       // Homework generation outside transaction — can fail independently
-      const user = await this.userDao.findByIdWithPreferences(lesson.userId);
-      await this.homeworkGenerator.generateAndSave(
+      const user = await this.authContract.findByIdWithPreferences(lesson.userId);
+      await this.homeworkContract.generateAndSave(
         lessonId,
         lesson.userId,
         summary,
@@ -82,7 +82,7 @@ export class PostLessonBullHandler extends WorkerHost {
     lesson: { startedAt: Date; userId: string },
     summary: PostLessonLlmResponse,
   ) {
-    await this.lessonDao.complete(lessonId, {
+    await this.lessonRepository.complete(lessonId, {
       summary: summary.summary,
       topics: summary.topics,
       newWords: summary.newWords,
@@ -94,12 +94,12 @@ export class PostLessonBullHandler extends WorkerHost {
     });
 
     if (summary.levelAssessment) {
-      await this.userDao.updateLevel(lesson.userId, summary.levelAssessment);
+      await this.authContract.updateLevel(lesson.userId, summary.levelAssessment);
     }
 
     if (summary.emotionalSummary) {
       const embedding = await this.embeddingService.embed(summary.emotionalSummary);
-      await this.embeddingDao.create({
+      await this.memoryContract.createEmbedding({
         userId: lesson.userId,
         lessonId,
         content: summary.emotionalSummary,
@@ -109,7 +109,7 @@ export class PostLessonBullHandler extends WorkerHost {
     }
 
     for (const word of summary.newWords || []) {
-      await this.vocabDao.upsert({
+      await this.vocabularyContract.upsert({
         userId: lesson.userId,
         word,
         lessonId,
@@ -119,7 +119,7 @@ export class PostLessonBullHandler extends WorkerHost {
     }
 
     for (const error of summary.errorsFound || []) {
-      await this.grammarDao.upsertError(lesson.userId, error.topic);
+      await this.progressContract.upsertError(lesson.userId, error.topic);
     }
   }
 

@@ -1,25 +1,23 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
-import { UserDao } from "../../infrastructure/dao/user.dao";
-import { TutorRepository } from "../../../tutor/infrastructure/repository/tutor.repository";
-import { UserTutorRepository } from "../../../tutor/infrastructure/repository/user-tutor.repository";
+import { UserRepository } from "../../infrastructure/repository/user.repository";
+import { TutorContract } from "../../../tutor/contract/tutor.contract";
 import { GoogleAuthBody } from "../../presentation/dto/body/google-auth.body";
 import { UpdatePreferencesBody } from "../../presentation/dto/body/update-preferences.body";
 
 @Injectable()
 export class AuthMaintainer {
   constructor(
-    private userDao: UserDao,
+    private userRepository: UserRepository,
     private jwtService: JwtService,
-    private tutorRepository: TutorRepository,
-    private userTutorRepository: UserTutorRepository,
+    private tutorContract: TutorContract,
   ) {}
 
   async googleAuth(googleUser: GoogleAuthBody) {
-    let user = await this.userDao.findByGoogleId(googleUser.googleId);
+    let user = await this.userRepository.findByGoogleId(googleUser.googleId);
 
     if (!user) {
-      user = await this.userDao.create({
+      user = await this.userRepository.create({
         googleId: googleUser.googleId,
         email: googleUser.email,
         name: googleUser.name,
@@ -28,11 +26,11 @@ export class AuthMaintainer {
     }
 
     // Ensure user has an active tutor
-    const activeTutor = await this.userTutorRepository.findActiveByUser(user.id);
+    const activeTutor = await this.tutorContract.findActiveUserTutor(user.id);
     if (!activeTutor) {
-      const activeTutors = await this.tutorRepository.findActive();
+      const activeTutors = await this.tutorContract.findActiveTutors();
       if (activeTutors.length > 0) {
-        await this.userTutorRepository.selectTutor(user.id, activeTutors[0].id);
+        await this.tutorContract.selectTutor(user.id, activeTutors[0].id);
       }
     }
 
@@ -45,12 +43,12 @@ export class AuthMaintainer {
   }
 
   async getProfile(userId: string) {
-    const user = await this.userDao.findByIdWithPreferences(userId);
+    const user = await this.userRepository.findByIdWithPreferences(userId);
     if (!user) throw new NotFoundException("User not found");
     return user;
   }
 
   async updatePreferences(userId: string, data: UpdatePreferencesBody) {
-    await this.userDao.updatePreferences(userId, data);
+    await this.userRepository.updatePreferences(userId, data);
   }
 }

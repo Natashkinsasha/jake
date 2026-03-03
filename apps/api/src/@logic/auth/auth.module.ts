@@ -5,12 +5,13 @@ import { TutorModule } from "../tutor/tutor.module";
 import { AuthController } from "./presentation/controller/auth.controller";
 import { AuthMaintainer } from "./application/maintainer/auth.maintainer";
 import { JwtTokenService } from "./application/service/jwt-token.service";
-import { UserDao } from "./infrastructure/dao/user.dao";
+import { UserRepository } from "./infrastructure/repository/user.repository";
+import { AuthContract } from "./contract/auth.contract";
 
 @Module({
   imports: [SharedDrizzlePgModule, SharedAuthModule, TutorModule],
   controllers: [AuthController],
-  providers: [AuthMaintainer, JwtTokenService, UserDao],
-  exports: [UserDao],
+  providers: [AuthMaintainer, JwtTokenService, UserRepository, AuthContract],
+  exports: [AuthContract],
 })
 export class AuthModule {}

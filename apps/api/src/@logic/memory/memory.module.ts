@@ -3,9 +3,10 @@ import { MemoryMaintainer } from "./application/maintainer/memory.maintainer";
 import { FactExtractionService } from "./application/service/fact-extraction.service";
 import { MemoryRetrievalService } from "./application/service/memory-retrieval.service";
 import { EmotionalContextService } from "./application/service/emotional-context.service";
-import { MemoryFactDao } from "./infrastructure/dao/memory-fact.dao";
-import { MemoryEmbeddingDao } from "./infrastructure/dao/memory-embedding.dao";
+import { MemoryFactRepository } from "./infrastructure/repository/memory-fact.repository";
+import { MemoryEmbeddingRepository } from "./infrastructure/repository/memory-embedding.repository";
 import { FactExtractionBullHandler } from "./infrastructure/bull-handler/fact-extraction.bull-handler";
+import { MemoryContract } from "./contract/memory.contract";
 import { LlmModule } from "../../@lib/llm/src/llm.module";
 import { EmbeddingModule } from "../../@lib/embedding/src/embedding.module";
 import { SharedDrizzlePgModule } from "../../@shared/shared-drizzle-pg/shared-drizzle-pg.module";
@@ -19,10 +20,11 @@ import { QUEUE_NAMES } from "../../@shared/shared-job/queue-names";
     FactExtractionService,
     MemoryRetrievalService,
     EmotionalContextService,
-    MemoryFactDao,
-    MemoryEmbeddingDao,
+    MemoryFactRepository,
+    MemoryEmbeddingRepository,
     FactExtractionBullHandler,
+    MemoryContract,
   ],
-  exports: [MemoryFactDao, MemoryEmbeddingDao, FactExtractionService, MemoryRetrievalService],
+  exports: [MemoryContract],
 })
 export class MemoryModule {}

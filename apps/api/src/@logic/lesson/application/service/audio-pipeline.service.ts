@@ -38,13 +38,8 @@ export class AudioPipelineService {
     // 3. LLM
     const response = await this.lessonResponse.generate(systemPrompt, updatedHistory);
 
-    // 4. TTS (graceful degradation — send text without audio if TTS fails)
-    let audio = "";
-    try {
-      audio = await this.tts.synthesize(response.text, voiceId);
-    } catch (error) {
-      this.logger.warn(`TTS failed, sending text without audio: ${error instanceof Error ? error.message : error}`);
-    }
+    // 4. TTS
+    const audio = await this.tts.synthesize(response.text, voiceId);
 
     return {
       transcript,

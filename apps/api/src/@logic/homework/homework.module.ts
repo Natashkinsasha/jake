@@ -4,8 +4,9 @@ import { HomeworkMaintainer } from "./application/maintainer/homework.maintainer
 import { HomeworkGeneratorService } from "./application/service/homework-generator.service";
 import { HomeworkCheckerService } from "./application/service/homework-checker.service";
 import { HomeworkMapper } from "./application/mapper/homework.mapper";
-import { HomeworkDao } from "./infrastructure/dao/homework.dao";
+import { HomeworkRepository } from "./infrastructure/repository/homework.repository";
 import { HomeworkGenerationBullHandler } from "./infrastructure/bull-handler/homework-generation.bull-handler";
+import { HomeworkContract } from "./contract/homework.contract";
 import { LlmModule } from "../../@lib/llm/src/llm.module";
 import { SharedDrizzlePgModule } from "../../@shared/shared-drizzle-pg/shared-drizzle-pg.module";
 import { SharedAuthModule } from "../../@shared/shared-auth/shared-auth.module";
@@ -20,9 +21,10 @@ import { QUEUE_NAMES } from "../../@shared/shared-job/queue-names";
     HomeworkGeneratorService,
     HomeworkCheckerService,
     HomeworkMapper,
-    HomeworkDao,
+    HomeworkRepository,
     HomeworkGenerationBullHandler,
+    HomeworkContract,
   ],
-  exports: [HomeworkDao, HomeworkGeneratorService],
+  exports: [HomeworkContract],
 })
 export class HomeworkModule {}

@@ -1,7 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { LessonDao } from "../../infrastructure/dao/lesson.dao";
-import { LessonMessageDao } from "../../infrastructure/dao/lesson-message.dao";
 import { LessonRepository } from "../../infrastructure/repository/lesson.repository";
+import { LessonMessageRepository } from "../../infrastructure/repository/lesson-message.repository";
 import { LessonContextService } from "../service/lesson-context.service";
 import { LessonResponseService } from "../service/lesson-response.service";
 import { AudioPipelineService } from "../service/audio-pipeline.service";
@@ -29,9 +28,8 @@ export class LessonMaintainer {
   private readonly logger = new Logger(LessonMaintainer.name);
 
   constructor(
-    private lessonDao: LessonDao,
-    private messageDao: LessonMessageDao,
-    private lessonRepo: LessonRepository,
+    private lessonRepository: LessonRepository,
+    private messageRepository: LessonMessageRepository,
     private contextService: LessonContextService,
     private responseService: LessonResponseService,
     private audioPipeline: AudioPipelineService,
@@ -41,9 +39,9 @@ export class LessonMaintainer {
   ) {}
 
   async getLesson(lessonId: string) {
-    const lesson = await this.lessonDao.findById(lessonId);
+    const lesson = await this.lessonRepository.findById(lessonId);
     if (!lesson) return null;
-    const messages = await this.messageDao.findByLesson(lessonId);
+    const messages = await this.messageRepository.findByLesson(lessonId);
     return {
       id: lesson.id,
       status: lesson.status,
@@ -61,7 +59,7 @@ export class LessonMaintainer {
   }
 
   async listLessons(userId: string) {
-    const lessons = await this.lessonDao.findRecentByUser(userId);
+    const lessons = await this.lessonRepository.findRecentByUser(userId);
     return lessons.map((l) => ({
       id: l.id,
       status: l.status,
@@ -82,7 +80,7 @@ export class LessonMaintainer {
       { role: "user", content: pickGreetingPrompt() },
     ]);
 
-    const lesson = await this.lessonRepo.createWithGreeting(
+    const lesson = await this.lessonRepository.createWithGreeting(
       {
         userId,
         tutorId: context.tutorId,
@@ -124,12 +122,12 @@ export class LessonMaintainer {
       voiceId,
     );
 
-    await this.messageDao.create({
+    await this.messageRepository.create({
       lessonId,
       role: "user",
       content: result.transcript,
     });
-    await this.messageDao.create({
+    await this.messageRepository.create({
       lessonId,
       role: "tutor",
       content: result.tutorText,
@@ -170,8 +168,8 @@ export class LessonMaintainer {
       this.logger.warn(`TTS failed, sending text only: ${error instanceof Error ? error.message : error}`);
     }
 
-    await this.messageDao.create({ lessonId, role: "user", content: text });
-    await this.messageDao.create({
+    await this.messageRepository.create({ lessonId, role: "user", content: text });
+    await this.messageRepository.create({
       lessonId,
       role: "tutor",
       content: response.text,
@@ -192,7 +190,7 @@ export class LessonMaintainer {
   }
 
   async endLesson(lessonId: string, history: LlmMessage[]) {
-    await this.lessonDao.complete(lessonId, {});
+    await this.lessonRepository.complete(lessonId, {});
 
     await this.postLessonQueue.add("process", {
       lessonId,

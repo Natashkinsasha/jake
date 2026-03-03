@@ -2,19 +2,22 @@ import { Injectable } from "@nestjs/common";
 import { AppDrizzleTransactionHost } from "@shared/shared-cls/app-drizzle-transaction-host";
 import { eq, and, sql } from "drizzle-orm";
 import { grammarProgressTable } from "../table/grammar-progress.table";
+import { GrammarProgressEntity } from "../../domain/entity/grammar-progress.entity";
+import { GrammarProgressFactory } from "../factory/grammar-progress.factory";
 
 @Injectable()
-export class GrammarProgressDao {
+export class GrammarProgressRepository {
   constructor(private readonly txHost: AppDrizzleTransactionHost<{ grammarProgress: typeof grammarProgressTable }>) {}
 
-  async findByUser(userId: string) {
-    return this.txHost.tx
+  async findByUser(userId: string): Promise<GrammarProgressEntity[]> {
+    const rows = await this.txHost.tx
       .select()
       .from(grammarProgressTable)
       .where(eq(grammarProgressTable.userId, userId));
+    return GrammarProgressFactory.createMany(rows);
   }
 
-  async upsertError(userId: string, topic: string) {
+  async upsertError(userId: string, topic: string): Promise<void> {
     const existing = await this.txHost.tx
       .select()
       .from(grammarProgressTable)
@@ -45,7 +48,7 @@ export class GrammarProgressDao {
     }
   }
 
-  async upsertSuccess(userId: string, topic: string) {
+  async upsertSuccess(userId: string, topic: string): Promise<void> {
     const existing = await this.txHost.tx
       .select()
       .from(grammarProgressTable)

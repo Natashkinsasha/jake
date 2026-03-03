@@ -8,9 +8,8 @@ import { ExerciseParserService } from "./application/service/exercise-parser.ser
 import { AudioPipelineService } from "./application/service/audio-pipeline.service";
 import { LessonSessionService } from "./application/service/lesson-session.service";
 import { LessonMapper } from "./application/mapper/lesson.mapper";
-import { LessonDao } from "./infrastructure/dao/lesson.dao";
-import { LessonMessageDao } from "./infrastructure/dao/lesson-message.dao";
 import { LessonRepository } from "./infrastructure/repository/lesson.repository";
+import { LessonMessageRepository } from "./infrastructure/repository/lesson-message.repository";
 import { PostLessonBullHandler } from "./infrastructure/bull-handler/post-lesson.bull-handler";
 import { LlmModule } from "../../@lib/llm/src/llm.module";
 import { VoiceModule } from "../../@lib/voice/src/voice.module";
@@ -56,11 +55,9 @@ import { HomeworkModule } from "../homework/homework.module";
     AudioPipelineService,
     LessonSessionService,
     LessonMapper,
-    LessonDao,
-    LessonMessageDao,
     LessonRepository,
+    LessonMessageRepository,
     PostLessonBullHandler,
   ],
-  exports: [LessonDao],
 })
 export class LessonModule {}

@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { z } from "zod";
 import { LlmService } from "../../../../@lib/llm/src/llm.service";
-import { HomeworkDao } from "../../infrastructure/dao/homework.dao";
+import { HomeworkRepository } from "../../infrastructure/repository/homework.repository";
 import { ExerciseSchema } from "@jake/shared";
 
 const HomeworkExercisesSchema = z.array(ExerciseSchema);
@@ -22,7 +22,7 @@ interface UserPreferences {
 export class HomeworkGeneratorService {
   constructor(
     private llm: LlmService,
-    private homeworkDao: HomeworkDao,
+    private homeworkRepository: HomeworkRepository,
   ) {}
 
   async generateAndSave(
@@ -60,7 +60,7 @@ Make exercises fun and use the student's interests for context.`;
       HomeworkExercisesSchema,
     );
 
-    await this.homeworkDao.create({
+    await this.homeworkRepository.create({
       userId,
       lessonId,
       exercises,

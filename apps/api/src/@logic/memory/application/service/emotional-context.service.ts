@@ -1,11 +1,11 @@
 import { Injectable } from "@nestjs/common";
-import { MemoryEmbeddingDao } from "../../infrastructure/dao/memory-embedding.dao";
+import { MemoryEmbeddingRepository } from "../../infrastructure/repository/memory-embedding.repository";
 
 @Injectable()
 export class EmotionalContextService {
-  constructor(private embeddingDao: MemoryEmbeddingDao) {}
+  constructor(private embeddingRepository: MemoryEmbeddingRepository) {}
 
   async getRecentEmotions(userId: string, limit = 5) {
-    return this.embeddingDao.findRecentByUser(userId, limit);
+    return this.embeddingRepository.findRecentByUser(userId, limit);
   }
 }

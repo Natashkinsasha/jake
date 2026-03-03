@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { LlmService, LlmMessage } from "../../../../@lib/llm/src/llm.service";
-import { MemoryFactDao } from "../../infrastructure/dao/memory-fact.dao";
+import { MemoryFactRepository } from "../../infrastructure/repository/memory-fact.repository";
 import { FactExtractionResultSchema } from "@jake/shared";
 
 const FACT_EXTRACTION_PROMPT = `
@@ -20,7 +20,7 @@ Return ONLY valid JSON:
 export class FactExtractionService {
   constructor(
     private llm: LlmService,
-    private factDao: MemoryFactDao,
+    private factRepository: MemoryFactRepository,
   ) {}
 
   async extractAndSave(
@@ -38,7 +38,7 @@ export class FactExtractionService {
     if (!parsed.success) return null;
 
     for (const fact of parsed.data.facts) {
-      await this.factDao.create({
+      await this.factRepository.create({
         userId,
         category: fact.category,
         fact: fact.fact,

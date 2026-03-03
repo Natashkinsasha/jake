@@ -1,21 +1,21 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { UserDao } from "../../../auth/infrastructure/dao/user.dao";
-import { LessonDao } from "../../infrastructure/dao/lesson.dao";
-import { MemoryRetrievalService } from "../../../memory/application/service/memory-retrieval.service";
-import { GrammarProgressDao } from "../../../progress/infrastructure/dao/grammar-progress.dao";
-import { VocabularyDao } from "../../../vocabulary/infrastructure/dao/vocabulary.dao";
-import { UserTutorRepository } from "../../../tutor/infrastructure/repository/user-tutor.repository";
+import { AuthContract } from "../../../auth/contract/auth.contract";
+import { LessonRepository } from "../../infrastructure/repository/lesson.repository";
+import { MemoryContract } from "../../../memory/contract/memory.contract";
+import { ProgressContract } from "../../../progress/contract/progress.contract";
+import { VocabularyContract } from "../../../vocabulary/contract/vocabulary.contract";
+import { TutorContract } from "../../../tutor/contract/tutor.contract";
 import { LessonContext } from "../dto/lesson-context";
 
 @Injectable()
 export class LessonContextService {
   constructor(
-    private userDao: UserDao,
-    private lessonDao: LessonDao,
-    private memoryRetrievalService: MemoryRetrievalService,
-    private grammarProgressDao: GrammarProgressDao,
-    private vocabularyDao: VocabularyDao,
-    private userTutorRepository: UserTutorRepository,
+    private authContract: AuthContract,
+    private lessonRepository: LessonRepository,
+    private memoryContract: MemoryContract,
+    private progressContract: ProgressContract,
+    private vocabularyContract: VocabularyContract,
+    private tutorContract: TutorContract,
   ) {}
 
   async build(userId: string): Promise<LessonContext> {
@@ -26,18 +26,18 @@ export class LessonContextService {
       activeTutor,
       lessonCount,
     ] = await Promise.all([
-      this.userDao.findByIdWithPreferences(userId),
-      this.grammarProgressDao.findByUser(userId),
-      this.vocabularyDao.findRecentByUser(userId, 20),
-      this.userTutorRepository.findActiveByUser(userId),
-      this.lessonDao.countByUser(userId),
+      this.authContract.findByIdWithPreferences(userId),
+      this.progressContract.findByUser(userId),
+      this.vocabularyContract.findRecentByUser(userId, 20),
+      this.tutorContract.findActiveUserTutor(userId),
+      this.lessonRepository.countByUser(userId),
     ]);
 
     if (!user || !activeTutor) throw new NotFoundException("User or tutor not found");
 
     const suggestedTopic = grammarProgress.find((g) => g.level < 30)?.topic || null;
 
-    const { facts, relevantMemories } = await this.memoryRetrievalService.retrieve(
+    const { facts, relevantMemories } = await this.memoryContract.retrieve(
       userId,
       suggestedTopic || "general English lesson",
     );

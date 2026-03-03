@@ -2,23 +2,26 @@ import { Injectable } from "@nestjs/common";
 import { AppDrizzleTransactionHost } from "@shared/shared-cls/app-drizzle-transaction-host";
 import { eq, desc, sql } from "drizzle-orm";
 import { memoryEmbeddingTable } from "../table/memory-embedding.table";
+import { MemoryEmbeddingEntity } from "../../domain/entity/memory-embedding.entity";
+import { MemoryEmbeddingFactory } from "../factory/memory-embedding.factory";
 
 @Injectable()
-export class MemoryEmbeddingDao {
+export class MemoryEmbeddingRepository {
   constructor(private readonly txHost: AppDrizzleTransactionHost<{ memoryEmbedding: typeof memoryEmbeddingTable }>) {}
 
-  async create(data: typeof memoryEmbeddingTable.$inferInsert) {
-    const [embedding] = await this.txHost.tx.insert(memoryEmbeddingTable).values(data).returning();
-    return embedding;
+  async create(data: typeof memoryEmbeddingTable.$inferInsert): Promise<MemoryEmbeddingEntity> {
+    const [row] = await this.txHost.tx.insert(memoryEmbeddingTable).values(data).returning();
+    return MemoryEmbeddingFactory.create(row);
   }
 
-  async findRecentByUser(userId: string, limit = 5) {
-    return this.txHost.tx
+  async findRecentByUser(userId: string, limit = 5): Promise<MemoryEmbeddingEntity[]> {
+    const rows = await this.txHost.tx
       .select()
       .from(memoryEmbeddingTable)
       .where(eq(memoryEmbeddingTable.userId, userId))
       .orderBy(desc(memoryEmbeddingTable.createdAt))
       .limit(limit);
+    return MemoryEmbeddingFactory.createMany(rows);
   }
 
   async findSimilar(userId: string, queryEmbedding: number[], limit = 5, threshold = 0.8) {
