@@ -135,7 +135,7 @@ jobs:
             NEXTAUTH_URL=${NEXTAUTH_URL}
             EOF
             docker compose -f docker-compose.prod.yml pull api web
-            docker compose -f docker-compose.prod.yml run --rm api node dist/migrate.js
+            docker compose -f docker-compose.prod.yml run --rm api node dist/migrate.js || { echo "Migration failed! Aborting deploy."; exit 1; }
 
             # Save current image digests for rollback
             API_OLD=$(docker inspect --format='{{.Image}}' jake-api-1 2>/dev/null || echo "")
