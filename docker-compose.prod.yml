@@ -41,17 +41,6 @@ services:
       retries: 3
       start_period: 30s
 
-  worker:
-    image: ghcr.io/natashkinsasha/jake-api:latest
-    restart: unless-stopped
-    command: ["node", "dist/worker.js"]
-    env_file: .env
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
   web:
     image: ghcr.io/natashkinsasha/jake-web:latest
     restart: unless-stopped

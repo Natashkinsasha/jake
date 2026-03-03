@@ -60,4 +60,11 @@ export const api = {
         body: JSON.stringify({ history }),
       }),
   },
+  stt: {
+    metrics: (data: { durationMs: number; transcriptLength: number; segments: number }) =>
+      request<{ success: boolean }>("/lessons/stt/metrics", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+  },
 };

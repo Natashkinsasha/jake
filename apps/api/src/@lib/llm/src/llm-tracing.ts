@@ -24,7 +24,7 @@ export function initTracing(): void {
   openaiInstrumentation.manuallyInstrument(OpenAI);
 
   sdk = new NodeSDK({
-    spanProcessors: [new LangfuseSpanProcessor()],
+    spanProcessors: [new LangfuseSpanProcessor({ environment: process.env["NODE_ENV"] })],
     instrumentations: [anthropicInstrumentation, openaiInstrumentation],
     serviceName: "jake-api",
   });

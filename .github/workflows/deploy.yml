@@ -120,7 +120,7 @@ jobs:
           host: ${{ secrets.DROPLET_HOST }}
           username: root
           key: ${{ secrets.DROPLET_SSH_KEY }}
-          envs: GITHUB_TOKEN,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,JWT_SECRET,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,ANTHROPIC_API_KEY,DEEPGRAM_API_KEY,ELEVENLABS_API_KEY,NEXTAUTH_SECRET,FRONTEND_URL,NEXTAUTH_URL,OPENAI_API_KEY
+          envs: GITHUB_TOKEN,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,JWT_SECRET,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,ANTHROPIC_API_KEY,DEEPGRAM_API_KEY,ELEVENLABS_API_KEY,NEXTAUTH_SECRET,FRONTEND_URL,NEXTAUTH_URL,OPENAI_API_KEY,LANGFUSE_PUBLIC_KEY,LANGFUSE_SECRET_KEY,LANGFUSE_BASE_URL
           script: |
             echo "$GITHUB_TOKEN" | docker login ghcr.io -u github --password-stdin
             cd /root/jake
@@ -142,6 +142,9 @@ jobs:
             POSTGRES_DB=${POSTGRES_DB}
             NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
             NEXTAUTH_URL=${NEXTAUTH_URL}
+            LANGFUSE_PUBLIC_KEY=${LANGFUSE_PUBLIC_KEY}
+            LANGFUSE_SECRET_KEY=${LANGFUSE_SECRET_KEY}
+            LANGFUSE_BASE_URL=${LANGFUSE_BASE_URL}
             EOF
             docker compose -f docker-compose.prod.yml pull api web
             docker compose -f docker-compose.prod.yml run --rm api node dist/migrate.js || { echo "Migration failed! Aborting deploy."; exit 1; }
@@ -195,3 +198,6 @@ jobs:
           FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
           NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          LANGFUSE_PUBLIC_KEY: ${{ secrets.LANGFUSE_PUBLIC_KEY }}
+          LANGFUSE_SECRET_KEY: ${{ secrets.LANGFUSE_SECRET_KEY }}
+          LANGFUSE_BASE_URL: ${{ secrets.LANGFUSE_BASE_URL }}

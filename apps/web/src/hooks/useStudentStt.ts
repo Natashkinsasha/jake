@@ -4,6 +4,7 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import { unlockAudio } from "./useAudioPlayer";
 import { useCallbackRef } from "./useCallbackRef";
 import { STT_CONFIG } from "@/lib/config";
+import { api } from "@/lib/api";
 
 interface UseStudentSttReturn {
   enable: () => void;
@@ -57,6 +58,9 @@ export function useStudentStt(
   const wsRef = useRef<WebSocket | null>(null);
   const enabledRef = useRef(false);
   const speechDetectedRef = useRef(false);
+  const speechStartTimeRef = useRef(0);
+  const segmentCountRef = useRef(0);
+  const transcriptLengthRef = useRef(0);
   const onSpeechStartRef = useCallbackRef(options?.onSpeechStart);
   const onSpeechEndRef = useCallbackRef(options?.onSpeechEnd);
   const onSegmentRef = useCallbackRef(options?.onSegment);
@@ -163,6 +167,9 @@ export function useStudentStt(
         if (msg.type === "SpeechStarted") {
           if (!speechDetectedRef.current) {
             speechDetectedRef.current = true;
+            speechStartTimeRef.current = Date.now();
+            segmentCountRef.current = 0;
+            transcriptLengthRef.current = 0;
             log("speech started (Deepgram VAD)");
             onSpeechStartRef.current?.();
           }
@@ -183,12 +190,20 @@ export function useStudentStt(
           // is_final with text = confirmed segment → send to parent
           if (isFinal && transcript) {
             log("is_final segment:", transcript);
+            segmentCountRef.current++;
+            transcriptLengthRef.current += transcript.length;
             onSegmentRef.current?.(transcript);
             setFinalText("");
           }
 
           if (speechFinal) {
             log("speech_final:", transcript || "(empty)");
+            const durationMs = Date.now() - speechStartTimeRef.current;
+            api.stt.metrics({
+              durationMs,
+              transcriptLength: transcriptLengthRef.current,
+              segments: segmentCountRef.current,
+            }).catch(() => {});
             speechDetectedRef.current = false;
             setIsProcessing(false);
             onSpeechEndRef.current?.();
