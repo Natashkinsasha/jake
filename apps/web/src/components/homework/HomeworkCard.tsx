@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { formatLessonDate } from "@/lib/utils";
 
 interface HomeworkCardProps {
   id: string;
@@ -17,7 +18,7 @@ export function HomeworkCard({ id, lessonDate, exerciseCount, score, completedAt
         <div className="flex items-center justify-between">
           <div>
             <p className="font-medium text-gray-900">
-              Homework from {new Date(lessonDate).toLocaleDateString()}
+              Homework from {formatLessonDate(lessonDate)}
             </p>
             <p className="text-sm text-gray-400 mt-0.5">
               {exerciseCount} exercise{exerciseCount !== 1 ? "s" : ""}

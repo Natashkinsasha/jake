@@ -3,25 +3,14 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { ExerciseCard } from "./ExerciseCard";
-
-interface Exercise {
-  type: string;
-  id: string;
-  [key: string]: any;
-}
-
-interface Message {
-  role: "user" | "assistant";
-  text: string;
-  timestamp: number;
-  exercise?: Exercise | null;
-}
+import { CHAT_CONFIG } from "@/lib/config";
+import type { ChatMessage, LessonExercise } from "@/types";
 
 interface ChatHistoryProps {
-  messages: Message[];
+  messages: ChatMessage[];
   isThinking: boolean;
   isSpeaking: boolean;
-  currentExercise: Exercise | null;
+  currentExercise: LessonExercise | null;
   onSubmitExercise: (exerciseId: string, answer: string) => void;
 }
 
@@ -30,12 +19,11 @@ function formatTime(timestamp: number): string {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-const WORDS_PER_TICK = 1;
-const TICK_MS = 150;
+const { WORDS_PER_TICK, TICK_MS } = CHAT_CONFIG;
 
 function StreamingText({ text, isActive }: { text: string; isActive: boolean }) {
   const words = text.split(" ");
-  const [count, setCount] = useState(WORDS_PER_TICK);
+  const [count, setCount] = useState<number>(WORDS_PER_TICK);
   const wasActiveRef = useRef(false);
   const [frozen, setFrozen] = useState(false);
 

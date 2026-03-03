@@ -1,12 +1,12 @@
 "use client";
 
 import { LessonScreen } from "@/components/lesson/LessonScreen";
-import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { useBackendSession } from "@/hooks/useBackendSession";
 
 export default function LessonPage() {
-  const { data: session, status } = useSession();
+  const { token, status } = useBackendSession();
   const router = useRouter();
 
   useEffect(() => {
@@ -15,9 +15,7 @@ export default function LessonPage() {
     }
   }, [status, router]);
 
-  const backendToken = (session as any)?.backendToken as string | undefined;
-
-  if (status === "loading" || !backendToken) {
+  if (status === "loading" || !token) {
     return (
       <div className="min-h-screen lesson-gradient flex items-center justify-center">
         <p className="text-white/80 text-sm">Loading...</p>
@@ -25,5 +23,5 @@ export default function LessonPage() {
     );
   }
 
-  return <LessonScreen token={backendToken} />;
+  return <LessonScreen token={token} />;
 }

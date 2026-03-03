@@ -4,13 +4,10 @@ import { FillTheGap } from "./FillTheGap";
 import { MultipleChoice } from "./MultipleChoice";
 import { SentenceBuilder } from "./SentenceBuilder";
 import { ErrorCorrection } from "./ErrorCorrection";
+import type { LessonExercise } from "@/types";
 
 interface ExerciseCardProps {
-  exercise: {
-    type: string;
-    id: string;
-    [key: string]: any;
-  };
+  exercise: LessonExercise;
   onSubmit: (exerciseId: string, answer: string) => void;
 }
 
@@ -26,17 +23,17 @@ export function ExerciseCard({ exercise, onSubmit }: ExerciseCardProps) {
           Exercise
         </span>
       </div>
-      {exercise.type === "fill_the_gap" && (
-        <FillTheGap exercise={exercise as any} onSubmit={handleSubmit} />
+      {exercise.type === "fill_the_gap" && exercise.sentence && (
+        <FillTheGap exercise={{ sentence: exercise.sentence, hint: exercise.hint }} onSubmit={handleSubmit} />
       )}
-      {exercise.type === "multiple_choice" && (
-        <MultipleChoice exercise={exercise as any} onSubmit={handleSubmit} />
+      {exercise.type === "multiple_choice" && exercise.question && exercise.options && (
+        <MultipleChoice exercise={{ question: exercise.question, options: exercise.options }} onSubmit={handleSubmit} />
       )}
-      {exercise.type === "sentence_builder" && (
-        <SentenceBuilder exercise={exercise as any} onSubmit={handleSubmit} />
+      {exercise.type === "sentence_builder" && exercise.words && (
+        <SentenceBuilder exercise={{ words: exercise.words, hint: exercise.hint }} onSubmit={handleSubmit} />
       )}
-      {exercise.type === "error_correction" && (
-        <ErrorCorrection exercise={exercise as any} onSubmit={handleSubmit} />
+      {exercise.type === "error_correction" && exercise.sentence && (
+        <ErrorCorrection exercise={{ sentence: exercise.sentence, hint: exercise.hint }} onSubmit={handleSubmit} />
       )}
     </div>
   );

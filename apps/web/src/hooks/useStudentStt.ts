@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { unlockAudio } from "./useAudioPlayer";
+import { STT_CONFIG } from "@/lib/config";
 
 interface UseStudentSttReturn {
   enable: () => void;
@@ -22,14 +23,13 @@ interface UseStudentSttOptions {
 
 const log = (...args: unknown[]) => console.log("[STT]", ...args);
 
-const DG_WS_URL = "wss://api.deepgram.com/v1/listen";
 const DG_PARAMS = new URLSearchParams({
-  model: "nova-3",
-  language: "en",
-  smart_format: "true",
-  interim_results: "true",
-  endpointing: "300",
-  vad_events: "true",
+  model: STT_CONFIG.MODEL,
+  language: STT_CONFIG.LANGUAGE,
+  smart_format: String(STT_CONFIG.SMART_FORMAT),
+  interim_results: String(STT_CONFIG.INTERIM_RESULTS),
+  endpointing: String(STT_CONFIG.ENDPOINTING_MS),
+  vad_events: String(STT_CONFIG.VAD_EVENTS),
 }).toString();
 
 export function useStudentStt(
@@ -97,7 +97,7 @@ export function useStudentStt(
       unlockAudio();
       streamRef.current = stream;
 
-      const ws = new WebSocket(`${DG_WS_URL}?${DG_PARAMS}`, ["token", key]);
+      const ws = new WebSocket(`${STT_CONFIG.WS_URL}?${DG_PARAMS}`, ["token", key]);
       wsRef.current = ws;
 
       ws.onopen = () => {

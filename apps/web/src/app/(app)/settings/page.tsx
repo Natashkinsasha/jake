@@ -1,9 +1,14 @@
 "use client";
 
-import { useSession, signOut } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { signOut } from "next-auth/react";
+import { useState } from "react";
 import Image from "next/image";
 import { api } from "@/lib/api";
+import { useBackendSession } from "@/hooks/useBackendSession";
+import { useApiQuery } from "@/hooks/useApiQuery";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { ErrorMessage } from "@/components/ui/ErrorMessage";
+import type { UserPreferences } from "@/types";
 
 const correctionStyles = [
   { value: "immediate", label: "Immediate", desc: "Correct me right away" },
@@ -18,18 +23,20 @@ const speeds = [
 ];
 
 export default function SettingsPage() {
-  const { data: session } = useSession();
-  const [preferences, setPreferences] = useState<any>(null);
+  const { session, user } = useBackendSession();
+  const { data: meData, isLoading, error, refetch } = useApiQuery(
+    () => api.auth.me(),
+  );
+  const [preferences, setPreferences] = useState<UserPreferences | null>(null);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => {
-    api.auth.me().then((data: any) => {
-      setPreferences(data.user_preferences || {});
-    }).catch(console.error);
-  }, []);
+  // Sync preferences from API data when it arrives
+  if (meData && !preferences && !isLoading) {
+    setPreferences(meData.user_preferences || {});
+  }
 
-  const updatePref = async (key: string, value: any) => {
+  const updatePref = async (key: string, value: string | boolean) => {
     const updated = { ...preferences, [key]: value };
     setPreferences(updated);
     setSaving(true);
@@ -45,7 +52,8 @@ export default function SettingsPage() {
     }
   };
 
-  const user = (session as any)?.backendUser;
+  if (isLoading) return <LoadingSpinner className="h-64" />;
+  if (error) return <ErrorMessage message={error} onRetry={refetch} />;
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">

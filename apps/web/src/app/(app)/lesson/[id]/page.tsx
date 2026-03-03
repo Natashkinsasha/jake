@@ -1,24 +1,19 @@
 "use client";
 
 import { LessonScreen } from "@/components/lesson/LessonScreen";
-import { useSession } from "next-auth/react";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useBackendSession } from "@/hooks/useBackendSession";
 
 export default function LessonByIdPage() {
-  const { data: session, status } = useSession();
+  const { status } = useBackendSession();
   const router = useRouter();
 
   useEffect(() => {
     if (status === "unauthenticated") {
       router.push("/login");
     }
-
-    const token = (session as any)?.backendToken;
-    if (token) {
-      localStorage.setItem("session_token", token);
-    }
-  }, [session, status, router]);
+  }, [status, router]);
 
   if (status === "loading") {
     return (

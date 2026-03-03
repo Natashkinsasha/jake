@@ -1,37 +1,26 @@
 "use client";
 
-import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useCallback } from "react";
 import { api } from "@/lib/api";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-
-interface ProgressData {
-  currentLevel: string | null;
-  grammarTopics: { topic: string; level: number; errorCount: number }[];
-  totalLessons: number;
-  totalWords: number;
-}
+import { ErrorMessage } from "@/components/ui/ErrorMessage";
+import { useBackendSession } from "@/hooks/useBackendSession";
+import { useApiQuery } from "@/hooks/useApiQuery";
 
 const levelOrder = ["A1", "A2", "B1", "B2", "C1", "C2"];
 
 export default function ProgressPage() {
-  const { data: session } = useSession();
-  const [progress, setProgress] = useState<ProgressData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { user } = useBackendSession();
+  const { data: progress, isLoading, error, refetch } = useApiQuery(
+    useCallback(
+      () => user?.id ? api.progress.get(user.id) : Promise.reject(new Error("No user")),
+      [user?.id],
+    ),
+  );
 
-  useEffect(() => {
-    const user = (session as any)?.backendUser;
-    if (user?.id) {
-      api.progress
-        .get(user.id)
-        .then(setProgress)
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    }
-  }, [session]);
-
-  if (loading) return <LoadingSpinner className="h-64" />;
+  if (isLoading) return <LoadingSpinner className="h-64" />;
+  if (error) return <ErrorMessage message={error} onRetry={refetch} />;
 
   const levelIndex = progress?.currentLevel
     ? levelOrder.indexOf(progress.currentLevel)

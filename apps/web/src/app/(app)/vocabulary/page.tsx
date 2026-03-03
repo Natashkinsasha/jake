@@ -1,37 +1,27 @@
 "use client";
 
-import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useCallback } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-
-interface Word {
-  id: string;
-  word: string;
-  strength: number;
-  nextReview: string | null;
-}
+import { ErrorMessage } from "@/components/ui/ErrorMessage";
+import { useBackendSession } from "@/hooks/useBackendSession";
+import { useApiQuery } from "@/hooks/useApiQuery";
 
 export default function VocabularyPage() {
-  const { data: session } = useSession();
-  const [words, setWords] = useState<Word[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { user } = useBackendSession();
+  const { data, isLoading, error, refetch } = useApiQuery(
+    useCallback(
+      () => user?.id ? api.vocabulary.list(user.id) : Promise.resolve({ words: [] }),
+      [user?.id],
+    ),
+  );
+  const words = data?.words ?? [];
 
-  useEffect(() => {
-    const user = (session as any)?.backendUser;
-    if (user?.id) {
-      api.vocabulary
-        .list(user.id)
-        .then((data) => setWords(data.words ?? []))
-        .catch(console.error)
-        .finally(() => setLoading(false));
-    }
-  }, [session]);
-
-  if (loading) return <LoadingSpinner className="h-64" />;
+  if (isLoading) return <LoadingSpinner className="h-64" />;
+  if (error) return <ErrorMessage message={error} onRetry={refetch} />;
 
   return (
     <div className="max-w-4xl mx-auto">

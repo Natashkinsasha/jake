@@ -27,8 +27,8 @@ export const authOptions: NextAuthOptions = {
           if (!res.ok) return false;
 
           const data = await res.json();
-          (user as any).backendToken = data.token;
-          (user as any).backendUser = data.user;
+          user.backendToken = data.token;
+          user.backendUser = data.user;
           return true;
         } catch {
           return false;
@@ -38,14 +38,14 @@ export const authOptions: NextAuthOptions = {
     },
     async jwt({ token, user }) {
       if (user) {
-        token.backendToken = (user as any).backendToken;
-        token.backendUser = (user as any).backendUser;
+        token.backendToken = user.backendToken;
+        token.backendUser = user.backendUser;
       }
       return token;
     },
     async session({ session, token }) {
-      (session as any).backendToken = token.backendToken;
-      (session as any).backendUser = token.backendUser;
+      session.backendToken = token.backendToken;
+      session.backendUser = token.backendUser;
       return session;
     },
   },

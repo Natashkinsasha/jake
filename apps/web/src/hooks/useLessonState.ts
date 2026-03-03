@@ -1,36 +1,23 @@
 import { useState, useCallback, useRef } from "react";
 import { useWebSocket } from "./useWebSocket";
 import { useAudioPlayer } from "./useAudioPlayer";
-
-interface Exercise {
-  type: string;
-  id: string;
-  [key: string]: any;
-}
-
-interface Message {
-  role: "user" | "assistant";
-  text: string;
-  timestamp: number;
-  exercise?: Exercise | null;
-}
+import { WS_URL } from "@/lib/config";
+import type { ChatMessage, LessonExercise, LessonStatus } from "@/types";
 
 interface PendingTutorMessage {
   text: string;
   audio?: string;
-  exercise?: Exercise | null;
+  exercise?: LessonExercise | null;
 }
 
 interface LessonState {
   lessonId: string | null;
-  messages: Message[];
-  currentExercise: Exercise | null;
-  status: "idle" | "connecting" | "listening" | "thinking" | "speaking";
+  messages: ChatMessage[];
+  currentExercise: LessonExercise | null;
+  status: LessonStatus;
   lessonEnded: boolean;
   hasPending: boolean;
 }
-
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL || (typeof window !== "undefined" ? `${window.location.origin}/ws/lesson` : "http://localhost:4000/ws/lesson");
 
 export function useLessonState(token?: string | null) {
   const [state, setState] = useState<LessonState>({

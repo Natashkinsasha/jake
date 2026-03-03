@@ -1,7 +1,17 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || (typeof window !== "undefined" ? "/api" : "http://localhost:4000");
+import type {
+  BackendUser,
+  UserPreferences,
+  LessonListItem,
+  LessonDetail,
+  HomeworkListItem,
+  VocabularyWord,
+  ProgressData,
+} from "@/types";
+import { getBackendToken } from "@/lib/session";
+import { API_URL } from "@/lib/config";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
-  const token = typeof window !== "undefined" ? localStorage.getItem("session_token") : null;
+  const token = getBackendToken();
 
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
@@ -22,12 +32,12 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 export const api = {
   auth: {
     google: (data: { googleId: string; email: string; name: string; avatarUrl: string | null }) =>
-      request<{ token: string; user: { id: string; email: string; name: string; avatarUrl: string | null; currentLevel: string | null } }>("/auth/google", {
+      request<{ token: string; user: BackendUser }>("/auth/google", {
         method: "POST",
         body: JSON.stringify(data),
       }),
-    me: () => request<any>("/auth/me"),
-    updatePreferences: (data: any) =>
+    me: () => request<{ user_preferences?: UserPreferences } & BackendUser>("/auth/me"),
+    updatePreferences: (data: Partial<UserPreferences>) =>
       request<{ success: boolean }>("/auth/me/preferences", {
         method: "PUT",
         body: JSON.stringify(data),
@@ -38,18 +48,8 @@ export const api = {
       request<{ id: string; name: string; personality: string; accent: string; avatarUrl: string | null; traits: string[] }[]>("/tutors"),
   },
   lessons: {
-    list: () => request<any[]>("/lessons"),
-    get: (id: string) =>
-      request<{
-        id: string;
-        status: string;
-        topic: string | null;
-        createdAt: string;
-        duration: number | null;
-        summary: string | null;
-        lessonNumber: number;
-        messages: { role: string; content: string; timestamp: string }[];
-      }>(`/lessons/${id}`),
+    list: () => request<LessonListItem[]>("/lessons"),
+    get: (id: string) => request<LessonDetail>(`/lessons/${id}`),
     end: (id: string, history: { role: string; content: string }[]) =>
       request<{ success: boolean }>(`/lessons/end/${id}`, {
         method: "POST",
@@ -57,23 +57,21 @@ export const api = {
       }),
   },
   homework: {
-    list: () => request<any[]>("/homework"),
-    get: (id: string) =>
-      request<{ id: string; lessonId: string; exercises: any[]; createdAt: string; dueAt: string | null; completedAt: string | null; score: number | null }>(`/homework/${id}`),
+    list: () => request<HomeworkListItem[]>("/homework"),
+    get: (id: string) => request<HomeworkListItem>(`/homework/${id}`),
     submit: (id: string, answers: Record<string, string>) =>
-      request<any>(`/homework/${id}/submit`, {
+      request<{ score: number }>(`/homework/${id}/submit`, {
         method: "POST",
         body: JSON.stringify({ answers }),
       }),
   },
   vocabulary: {
     list: (userId: string) =>
-      request<{ words: { id: string; word: string; strength: number; nextReview: string | null }[] }>(`/vocabulary?userId=${userId}`),
+      request<{ words: VocabularyWord[] }>(`/vocabulary?userId=${userId}`),
     review: (userId: string) =>
-      request<{ words: { id: string; word: string; strength: number; nextReview: string | null }[] }>(`/vocabulary/review?userId=${userId}`),
+      request<{ words: VocabularyWord[] }>(`/vocabulary/review?userId=${userId}`),
   },
   progress: {
-    get: (userId: string) =>
-      request<{ currentLevel: string | null; grammarTopics: { topic: string; level: number; errorCount: number }[]; totalLessons: number; totalWords: number }>(`/progress?userId=${userId}`),
+    get: (userId: string) => request<ProgressData>(`/progress?userId=${userId}`),
   },
 };

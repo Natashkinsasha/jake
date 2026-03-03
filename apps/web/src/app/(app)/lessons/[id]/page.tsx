@@ -1,33 +1,29 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
-
-type Lesson = Awaited<ReturnType<typeof api.lessons.get>>;
+import { formatLessonDate } from "@/lib/utils";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { ErrorMessage } from "@/components/ui/ErrorMessage";
+import { useApiQuery } from "@/hooks/useApiQuery";
 
 export default function LessonHistoryPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const [lesson, setLesson] = useState<Lesson | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: lesson, isLoading, error, refetch } = useApiQuery(
+    useCallback(() => api.lessons.get(id), [id]),
+  );
 
-  useEffect(() => {
-    api.lessons
-      .get(id)
-      .then(setLesson)
-      .catch(() => router.push("/dashboard"))
-      .finally(() => setLoading(false));
-  }, [id, router]);
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="max-w-2xl mx-auto py-8 text-center text-gray-400">
-        Loading...
+        <LoadingSpinner className="h-32" />
       </div>
     );
   }
 
+  if (error) return <ErrorMessage message={error} onRetry={refetch} />;
   if (!lesson) return null;
 
   return (
@@ -46,15 +42,7 @@ export default function LessonHistoryPage() {
         </h1>
         <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
           {lesson.createdAt && (
-            <span>
-              {new Date(lesson.createdAt).toLocaleString([], {
-                day: "numeric",
-                month: "short",
-                year: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </span>
+            <span>{formatLessonDate(lesson.createdAt)}</span>
           )}
           {lesson.duration && <span>{lesson.duration} min</span>}
           <span

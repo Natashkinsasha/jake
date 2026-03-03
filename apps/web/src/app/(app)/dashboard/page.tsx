@@ -1,25 +1,19 @@
 "use client";
 
-import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
+import { formatLessonDate } from "@/lib/utils";
+import { useBackendSession } from "@/hooks/useBackendSession";
+import { useApiQuery } from "@/hooks/useApiQuery";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { ErrorMessage } from "@/components/ui/ErrorMessage";
 
 export default function DashboardPage() {
-  const { data: session } = useSession();
+  const { user } = useBackendSession();
   const router = useRouter();
-  const [recentLessons, setRecentLessons] = useState<any[]>([]);
-
-  useEffect(() => {
-    const backendToken = (session as any)?.backendToken;
-    if (backendToken) {
-      localStorage.setItem("session_token", backendToken);
-    }
-
-    api.lessons.list().then(setRecentLessons).catch(console.error);
-  }, [session]);
-
-  const user = (session as any)?.backendUser;
+  const { data: recentLessons, isLoading, error, refetch } = useApiQuery(
+    () => api.lessons.list(),
+  );
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -47,11 +41,13 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent Lessons */}
-      {recentLessons.length > 0 && (
+      {isLoading && <LoadingSpinner className="h-32" />}
+      {error && <ErrorMessage message={error} onRetry={refetch} />}
+      {recentLessons && recentLessons.length > 0 && (
         <div className="card">
           <h3 className="font-semibold text-gray-900 mb-4">Recent lessons</h3>
           <div className="space-y-3">
-            {recentLessons.slice(0, 10).map((lesson: any) => (
+            {recentLessons.slice(0, 10).map((lesson) => (
               <div
                 key={lesson.id}
                 onClick={() => router.push(`/lessons/${lesson.id}`)}
@@ -67,14 +63,7 @@ export default function DashboardPage() {
                     </p>
                   )}
                   <p className="text-xs text-gray-400">
-                    {lesson.createdAt
-                      ? new Date(lesson.createdAt).toLocaleString([], {
-                          day: "numeric",
-                          month: "short",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })
-                      : ""}
+                    {lesson.createdAt ? formatLessonDate(lesson.createdAt) : ""}
                   </p>
                 </div>
                 {lesson.duration && (

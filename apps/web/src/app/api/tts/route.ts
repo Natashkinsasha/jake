@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-
-const MAX_TEXT_LENGTH = 2000;
+import { TTS_CONFIG } from "@/lib/config";
 
 interface ElevenLabsAlignment {
   characters: string[];
@@ -65,7 +64,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { text, voiceId = "onwK4e9ZLuTAKqWW03F9" } = body;
+  const { text, voiceId = TTS_CONFIG.DEFAULT_VOICE_ID } = body;
 
   if (!text || typeof text !== "string") {
     return NextResponse.json(
@@ -74,9 +73,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (text.length > MAX_TEXT_LENGTH) {
+  if (text.length > TTS_CONFIG.MAX_TEXT_LENGTH) {
     return NextResponse.json(
-      { error: `text exceeds maximum length of ${MAX_TEXT_LENGTH} characters` },
+      { error: `text exceeds maximum length of ${TTS_CONFIG.MAX_TEXT_LENGTH} characters` },
       { status: 400 }
     );
   }
@@ -91,10 +90,10 @@ export async function POST(request: NextRequest) {
     },
     body: JSON.stringify({
       text,
-      model_id: "eleven_turbo_v2_5",
+      model_id: TTS_CONFIG.MODEL_ID,
       voice_settings: {
-        stability: 0.5,
-        similarity_boost: 0.75,
+        stability: TTS_CONFIG.STABILITY,
+        similarity_boost: TTS_CONFIG.SIMILARITY_BOOST,
       },
     }),
   });

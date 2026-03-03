@@ -1,14 +1,14 @@
 "use client";
 
-import { useSession, signOut } from "next-auth/react";
+import { signOut } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useBackendSession } from "@/hooks/useBackendSession";
 
 export function AppHeader() {
-  const { data: session } = useSession();
+  const { session, user } = useBackendSession();
   const pathname = usePathname();
-  const user = (session as any)?.backendUser;
 
   if (pathname === "/lesson") return null;
 

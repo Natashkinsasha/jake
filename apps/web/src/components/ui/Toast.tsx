@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useCallback, ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import { TOAST_CONFIG } from "@/lib/config";
 
 interface Toast {
   id: number;
@@ -27,7 +28,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setToasts((prev) => [...prev, { id, message, type }]);
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 4000);
+    }, TOAST_CONFIG.DURATION_MS);
   }, []);
 
   return (

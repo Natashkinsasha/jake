@@ -1,31 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-
-interface HomeworkData {
-  id: string;
-  lessonId: string;
-  exercises: any[];
-  createdAt: string;
-  dueAt: string | null;
-  completedAt: string | null;
-  score: number | null;
-}
+import { ErrorMessage } from "@/components/ui/ErrorMessage";
+import { useApiQuery } from "@/hooks/useApiQuery";
 
 export default function HomeworkDetailPage() {
   const params = useParams();
-  const [homework, setHomework] = useState<HomeworkData | null>(null);
+  const id = params.id as string;
+  const { data: homework, isLoading, error, refetch } = useApiQuery(
+    useCallback(() => api.homework.get(id), [id]),
+  );
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
-
-  useEffect(() => {
-    if (params.id) {
-      api.homework.get(params.id as string).then(setHomework).catch(console.error);
-    }
-  }, [params.id]);
 
   const handleSubmit = async () => {
     if (!homework) return;
@@ -33,9 +22,9 @@ export default function HomeworkDetailPage() {
     setSubmitted(true);
   };
 
-  if (!homework) {
-    return <LoadingSpinner className="h-64" />;
-  }
+  if (isLoading) return <LoadingSpinner className="h-64" />;
+  if (error) return <ErrorMessage message={error} onRetry={refetch} />;
+  if (!homework) return null;
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -54,7 +43,7 @@ export default function HomeworkDetailPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {homework.exercises.map((exercise: any, i: number) => (
+          {homework.exercises.map((exercise, i) => (
             <div key={i} className="card">
               <p className="text-sm font-medium text-primary-600 mb-2">
                 Question {i + 1}
