@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { LessonDao } from "../../infrastructure/dao/lesson.dao";
 import { LessonMessageDao } from "../../infrastructure/dao/lesson-message.dao";
 import { LessonRepository } from "../../infrastructure/repository/lesson.repository";
@@ -11,8 +11,22 @@ import { Queue } from "bullmq";
 import { InjectQueue } from "@nestjs/bullmq";
 import { buildFullSystemPrompt } from "../service/prompt-builder";
 
+const GREETING_PROMPTS = [
+  "Greet the student casually, like a mate you haven't seen in a bit. Keep it to one short sentence.",
+  "Say hi with a quick question about their day. One sentence max.",
+  "Start with a fun, light comment and ask what they want to chat about today. Keep it super short.",
+  "Give a chill Aussie greeting and ask how they're going. One sentence.",
+  "Welcome them back with energy. Maybe reference something fun. Keep it brief — one sentence.",
+];
+
+function pickGreetingPrompt(): string {
+  return GREETING_PROMPTS[Math.floor(Math.random() * GREETING_PROMPTS.length)];
+}
+
 @Injectable()
 export class LessonMaintainer {
+  private readonly logger = new Logger(LessonMaintainer.name);
+
   constructor(
     private lessonDao: LessonDao,
     private messageDao: LessonMessageDao,
@@ -64,7 +78,7 @@ export class LessonMaintainer {
     const systemPrompt = buildFullSystemPrompt(context);
 
     const greeting = await this.responseService.generate(systemPrompt, [
-      { role: "user", content: "Start the lesson with a warm greeting." },
+      { role: "user", content: pickGreetingPrompt() },
     ]);
 
     const lesson = await this.lessonRepo.createWithGreeting(
@@ -76,10 +90,15 @@ export class LessonMaintainer {
       greeting.text,
     );
 
-    const greetingAudio = await this.tts.synthesize(
-      greeting.text,
-      context.tutorVoiceId,
-    );
+    let greetingAudio = "";
+    try {
+      greetingAudio = await this.tts.synthesize(
+        greeting.text,
+        context.tutorVoiceId,
+      );
+    } catch (error) {
+      this.logger.warn(`TTS failed for greeting, sending text only: ${error instanceof Error ? error.message : error}`);
+    }
 
     return {
       lessonId: lesson.id,
@@ -143,7 +162,12 @@ export class LessonMaintainer {
       updatedHistory,
     );
 
-    const tutorAudio = await this.tts.synthesize(response.text, voiceId);
+    let tutorAudio = "";
+    try {
+      tutorAudio = await this.tts.synthesize(response.text, voiceId);
+    } catch (error) {
+      this.logger.warn(`TTS failed, sending text only: ${error instanceof Error ? error.message : error}`);
+    }
 
     await this.messageDao.create({ lessonId, role: "user", content: text });
     await this.messageDao.create({

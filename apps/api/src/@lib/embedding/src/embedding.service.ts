@@ -1,9 +1,10 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import OpenAI from "openai";
 import { EnvService } from "../../../@shared/shared-config/env.service";
 
 @Injectable()
 export class EmbeddingService {
+  private readonly logger = new Logger(EmbeddingService.name);
   private client: OpenAI;
 
   constructor(private env: EnvService) {
@@ -11,10 +12,15 @@ export class EmbeddingService {
   }
 
   async embed(text: string): Promise<number[]> {
-    const response = await this.client.embeddings.create({
-      model: "text-embedding-3-small",
-      input: text,
-    });
-    return response.data[0].embedding;
+    try {
+      const response = await this.client.embeddings.create({
+        model: "text-embedding-3-small",
+        input: text,
+      });
+      return response.data[0].embedding;
+    } catch (error) {
+      this.logger.error(`OpenAI embedding failed: ${error instanceof Error ? error.message : error}`);
+      throw error;
+    }
   }
 }

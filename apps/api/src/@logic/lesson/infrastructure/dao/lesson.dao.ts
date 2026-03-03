@@ -39,8 +39,8 @@ export class LessonDao {
       .limit(limit);
   }
 
-  async complete(id: string, data: Partial<typeof lessonTable.$inferInsert>) {
-    await this.db
+  async complete(id: string, data: Partial<typeof lessonTable.$inferInsert>, tx?: PostgresJsDatabase) {
+    await (tx ?? this.db)
       .update(lessonTable)
       .set({ ...data, status: "completed", endedAt: new Date() })
       .where(eq(lessonTable.id, id));

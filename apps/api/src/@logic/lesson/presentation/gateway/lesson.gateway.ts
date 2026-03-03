@@ -7,13 +7,13 @@ import {
   ConnectedSocket,
   MessageBody,
 } from "@nestjs/websockets";
-import { UseGuards } from "@nestjs/common";
+import { Logger, UseGuards } from "@nestjs/common";
 import { Server, Socket } from "socket.io";
 import { JwtService } from "@nestjs/jwt";
 import { z } from "zod";
 import { WsAuthGuard } from "../../../../@shared/shared-ws/ws-auth.guard";
 import { LessonMaintainer } from "../../application/maintainer/lesson.maintainer";
-import { LlmMessage } from "../../../../@lib/llm/src/llm.service";
+import { LessonSessionService } from "../../application/service/lesson-session.service";
 import { wsAudioMessageSchema } from "../dto/ws/ws-audio-message";
 import { wsExerciseAnswerSchema } from "../dto/ws/ws-exercise-answer";
 
@@ -21,23 +21,17 @@ const wsTextMessageSchema = z.object({
   text: z.string().min(1),
 });
 
-interface LessonSession {
-  lessonId: string;
-  systemPrompt: string;
-  voiceId: string;
-  history: LlmMessage[];
-}
-
 @WebSocketGateway({ namespace: "/ws/lesson", cors: true })
 @UseGuards(WsAuthGuard)
 export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  private readonly logger = new Logger(LessonGateway.name);
+
   @WebSocketServer()
   server!: Server;
 
-  private sessions = new Map<string, LessonSession>();
-
   constructor(
     private lessonMaintainer: LessonMaintainer,
+    private sessionService: LessonSessionService,
     private jwtService: JwtService,
   ) {}
 
@@ -67,13 +61,12 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
     try {
       const result = await this.lessonMaintainer.startLesson(userId);
 
-      const session: LessonSession = {
+      await this.sessionService.save(client.id, {
         lessonId: result.lessonId,
         systemPrompt: result.systemPrompt,
         voiceId: result.voiceId,
         history: [{ role: "assistant", content: result.greeting.text }],
-      };
-      this.sessions.set(client.id, session);
+      });
 
       client.emit("lesson_started", {
         lessonId: result.lessonId,
@@ -85,17 +78,17 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
         exercise: result.greeting.exercise,
       });
     } catch (error) {
-      console.error("Failed to start lesson:", error);
+      this.logger.error("Failed to start lesson:", error);
       client.emit("error", { message: "Failed to start lesson" });
       client.disconnect();
     }
   }
 
   async handleDisconnect(client: Socket) {
-    const session = this.sessions.get(client.id);
+    const session = await this.sessionService.get(client.id);
     if (session) {
       await this.lessonMaintainer.endLesson(session.lessonId, session.history);
-      this.sessions.delete(client.id);
+      await this.sessionService.delete(client.id);
     }
   }
 
@@ -110,7 +103,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    const session = this.sessions.get(client.id);
+    const session = await this.sessionService.get(client.id);
     if (!session) return;
 
     const userId = client.data.userId;
@@ -127,7 +120,8 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
         session.voiceId,
       );
 
-      session.history.push(
+      await this.sessionService.appendHistory(
+        client.id,
         { role: "user", content: result.transcript },
         { role: "assistant", content: result.tutorText },
       );
@@ -154,7 +148,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    const session = this.sessions.get(client.id);
+    const session = await this.sessionService.get(client.id);
     if (!session) return;
 
     try {
@@ -169,7 +163,8 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
         session.voiceId,
       );
 
-      session.history.push(
+      await this.sessionService.appendHistory(
+        client.id,
         { role: "user", content: parsed.data.text },
         { role: "assistant", content: result.tutorText },
       );
@@ -195,24 +190,31 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    const session = this.sessions.get(client.id);
+    const session = await this.sessionService.get(client.id);
     if (!session) return;
 
-    session.history.push({
+    await this.sessionService.appendHistory(client.id, {
       role: "user",
       content: `[Exercise answer: ${parsed.data.answer}]`,
     });
 
+    // Re-read session to get updated history
+    const updatedSession = await this.sessionService.get(client.id);
+    if (!updatedSession) return;
+
     const result = await this.lessonMaintainer.processUserAudio(
-      session.lessonId,
+      updatedSession.lessonId,
       client.data.userId,
       "",
-      session.systemPrompt,
-      session.history,
-      session.voiceId,
+      updatedSession.systemPrompt,
+      updatedSession.history,
+      updatedSession.voiceId,
     );
 
-    session.history.push({ role: "assistant", content: result.tutorText });
+    await this.sessionService.appendHistory(client.id, {
+      role: "assistant",
+      content: result.tutorText,
+    });
 
     client.emit("exercise_feedback", {
       text: result.tutorText,
@@ -222,11 +224,11 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage("end_lesson")
   async handleEndLesson(@ConnectedSocket() client: Socket) {
-    const session = this.sessions.get(client.id);
+    const session = await this.sessionService.get(client.id);
     if (!session) return;
 
     await this.lessonMaintainer.endLesson(session.lessonId, session.history);
-    this.sessions.delete(client.id);
+    await this.sessionService.delete(client.id);
 
     client.emit("lesson_ended", { lessonId: session.lessonId });
     client.disconnect();

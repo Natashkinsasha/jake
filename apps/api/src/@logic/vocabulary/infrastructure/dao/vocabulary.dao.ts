@@ -8,8 +8,9 @@ import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 export class VocabularyDao {
   constructor(@Inject(DRIZZLE) private db: PostgresJsDatabase) {}
 
-  async upsert(data: { userId: string; word: string; lessonId: string; strength: number; nextReview: Date }) {
-    const existing = await this.db
+  async upsert(data: { userId: string; word: string; lessonId: string; strength: number; nextReview: Date }, tx?: PostgresJsDatabase) {
+    const db = tx ?? this.db;
+    const existing = await db
       .select()
       .from(vocabularyTable)
       .where(
@@ -21,14 +22,14 @@ export class VocabularyDao {
       .limit(1);
 
     if (existing.length > 0) {
-      await this.db
+      await db
         .update(vocabularyTable)
         .set({ strength: data.strength, nextReview: data.nextReview, updatedAt: new Date() })
         .where(eq(vocabularyTable.id, existing[0].id));
       return existing[0];
     }
 
-    const [vocab] = await this.db.insert(vocabularyTable).values(data).returning();
+    const [vocab] = await db.insert(vocabularyTable).values(data).returning();
     return vocab;
   }
 

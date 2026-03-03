@@ -15,8 +15,9 @@ export class GrammarProgressDao {
       .where(eq(grammarProgressTable.userId, userId));
   }
 
-  async upsertError(userId: string, topic: string) {
-    const existing = await this.db
+  async upsertError(userId: string, topic: string, tx?: PostgresJsDatabase) {
+    const db = tx ?? this.db;
+    const existing = await db
       .select()
       .from(grammarProgressTable)
       .where(
@@ -28,7 +29,7 @@ export class GrammarProgressDao {
       .limit(1);
 
     if (existing.length > 0) {
-      await this.db
+      await db
         .update(grammarProgressTable)
         .set({
           errorCount: sql`${grammarProgressTable.errorCount} + 1`,
@@ -37,7 +38,7 @@ export class GrammarProgressDao {
         })
         .where(eq(grammarProgressTable.id, existing[0].id));
     } else {
-      await this.db.insert(grammarProgressTable).values({
+      await db.insert(grammarProgressTable).values({
         userId,
         topic,
         level: 45,

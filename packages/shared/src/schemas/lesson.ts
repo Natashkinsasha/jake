@@ -25,3 +25,15 @@ export const LessonSummarySchema = z.object({
 });
 
 export type Lesson = z.infer<typeof LessonSummarySchema>;
+
+export const PostLessonLlmResponseSchema = z.object({
+  summary: z.string(),
+  topics: z.array(z.string()),
+  newWords: z.array(z.string()),
+  errorsFound: z.array(ErrorFoundSchema),
+  emotionalSummary: z.string().nullable(),
+  levelAssessment: z.string().nullable(),
+  suggestedNextTopics: z.array(z.string()),
+});
+
+export type PostLessonLlmResponse = z.infer<typeof PostLessonLlmResponseSchema>;

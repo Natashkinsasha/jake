@@ -16,6 +16,10 @@ export class TtsService {
 
     this.logger.log(`Synthesizing ${text.length} chars for voice ${voiceId}`);
 
+    return this.synthesizeWithRetry(text, voiceId, apiKey, 1);
+  }
+
+  private async synthesizeWithRetry(text: string, voiceId: string, apiKey: string, retries: number): Promise<string> {
     const response = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream?output_format=mp3_22050_32`,
       {
@@ -34,8 +38,13 @@ export class TtsService {
 
     if (!response.ok) {
       const body = await response.text();
+      if (retries > 0 && response.status >= 500) {
+        this.logger.warn(`ElevenLabs error ${response.status}, retrying (${retries} left)`);
+        await new Promise((r) => setTimeout(r, 1000));
+        return this.synthesizeWithRetry(text, voiceId, apiKey, retries - 1);
+      }
       this.logger.error(`ElevenLabs error ${response.status}: ${body}`);
-      return "";
+      throw new Error(`ElevenLabs TTS failed with status ${response.status}: ${body}`);
     }
 
     const arrayBuffer = await response.arrayBuffer();

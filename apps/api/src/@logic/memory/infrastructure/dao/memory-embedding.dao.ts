@@ -8,8 +8,8 @@ import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 export class MemoryEmbeddingDao {
   constructor(@Inject(DRIZZLE) private db: PostgresJsDatabase) {}
 
-  async create(data: typeof memoryEmbeddingTable.$inferInsert) {
-    const [embedding] = await this.db.insert(memoryEmbeddingTable).values(data).returning();
+  async create(data: typeof memoryEmbeddingTable.$inferInsert, tx?: PostgresJsDatabase) {
+    const [embedding] = await (tx ?? this.db).insert(memoryEmbeddingTable).values(data).returning();
     return embedding;
   }
 

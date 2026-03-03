@@ -9,7 +9,7 @@ export const drizzleProvider: Provider = {
   provide: DRIZZLE,
   inject: [EnvService],
   useFactory: (envService: EnvService) => {
-    const client = postgres(envService.get("DATABASE_URL"));
+    const client = postgres(envService.get("DATABASE_URL"), { max: 10 });
     return drizzle(client);
   },
 };

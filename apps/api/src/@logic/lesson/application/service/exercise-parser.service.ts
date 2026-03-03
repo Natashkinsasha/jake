@@ -1,12 +1,21 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
+import { ExerciseSchema, Exercise } from "@jake/shared";
 
 @Injectable()
 export class ExerciseParserService {
-  extract(text: string) {
+  private readonly logger = new Logger(ExerciseParserService.name);
+
+  extract(text: string): Exercise | null {
     const match = text.match(/<exercise>([\s\S]*?)<\/exercise>/);
     if (!match) return null;
     try {
-      return JSON.parse(match[1]);
+      const parsed = JSON.parse(match[1]);
+      const result = ExerciseSchema.safeParse(parsed);
+      if (!result.success) {
+        this.logger.warn(`Invalid exercise JSON from LLM: ${JSON.stringify(result.error.issues)}`);
+        return null;
+      }
+      return result.data;
     } catch {
       return null;
     }

@@ -44,8 +44,8 @@ export class UserDao {
     return user;
   }
 
-  async updateLevel(id: string, level: string) {
-    await this.db
+  async updateLevel(id: string, level: string, tx?: PostgresJsDatabase) {
+    await (tx ?? this.db)
       .update(userTable)
       .set({ currentLevel: level, updatedAt: new Date() })
       .where(eq(userTable.id, id));

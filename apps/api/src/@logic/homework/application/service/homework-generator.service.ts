@@ -1,6 +1,10 @@
 import { Injectable } from "@nestjs/common";
+import { z } from "zod";
 import { LlmService } from "../../../../@lib/llm/src/llm.service";
 import { HomeworkDao } from "../../infrastructure/dao/homework.dao";
+import { ExerciseSchema } from "@jake/shared";
+
+const HomeworkExercisesSchema = z.array(ExerciseSchema);
 
 interface LessonSummary {
   levelAssessment: string | null;
@@ -49,10 +53,11 @@ Generate 5-7 exercises. Return ONLY valid JSON array:
 
 Make exercises fun and use the student's interests for context.`;
 
-    const exercises = await this.llm.generateJson<any[]>(
+    const exercises = await this.llm.generateJson(
       "You are an exercise generator. Return only JSON.",
       [{ role: "user", content: prompt }],
       4096,
+      HomeworkExercisesSchema,
     );
 
     await this.homeworkDao.create({

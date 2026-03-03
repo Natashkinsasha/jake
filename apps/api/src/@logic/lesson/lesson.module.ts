@@ -6,6 +6,7 @@ import { LessonContextService } from "./application/service/lesson-context.servi
 import { LessonResponseService } from "./application/service/lesson-response.service";
 import { ExerciseParserService } from "./application/service/exercise-parser.service";
 import { AudioPipelineService } from "./application/service/audio-pipeline.service";
+import { LessonSessionService } from "./application/service/lesson-session.service";
 import { LessonMapper } from "./application/mapper/lesson.mapper";
 import { LessonDao } from "./infrastructure/dao/lesson.dao";
 import { LessonMessageDao } from "./infrastructure/dao/lesson-message.dao";
@@ -18,6 +19,7 @@ import { SharedAuthModule } from "../../@shared/shared-auth/shared-auth.module";
 import { SharedDrizzlePgModule } from "../../@shared/shared-drizzle-pg/shared-drizzle-pg.module";
 import { SharedWsModule } from "../../@shared/shared-ws/shared-ws.module";
 import { SharedJobModule } from "../../@shared/shared-job/shared-job.module";
+import { SharedRedisModule } from "../../@shared/shared-redis/shared-redis.module";
 import { AuthModule } from "../auth/auth.module";
 import { TutorModule } from "../tutor/tutor.module";
 import { MemoryModule } from "../memory/memory.module";
@@ -34,6 +36,7 @@ import { HomeworkModule } from "../homework/homework.module";
     SharedDrizzlePgModule,
     SharedWsModule,
     SharedJobModule,
+    SharedRedisModule,
     AuthModule,
     TutorModule,
     MemoryModule,
@@ -49,6 +52,7 @@ import { HomeworkModule } from "../homework/homework.module";
     LessonResponseService,
     ExerciseParserService,
     AudioPipelineService,
+    LessonSessionService,
     LessonMapper,
     LessonDao,
     LessonMessageDao,
