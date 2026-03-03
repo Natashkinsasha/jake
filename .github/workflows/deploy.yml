@@ -61,13 +61,43 @@ jobs:
           host: ${{ secrets.DROPLET_HOST }}
           username: root
           key: ${{ secrets.DROPLET_SSH_KEY }}
-          envs: GITHUB_TOKEN
+          envs: GITHUB_TOKEN,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,JWT_SECRET,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,ANTHROPIC_API_KEY,DEEPGRAM_API_KEY,ELEVENLABS_API_KEY,NEXTAUTH_SECRET,FRONTEND_URL,NEXTAUTH_URL
           script: |
             echo "$GITHUB_TOKEN" | docker login ghcr.io -u github --password-stdin
             cd /root/jake
+            cat > .env <<EOF
+            PORT=4000
+            NODE_ENV=production
+            DATABASE_URL=postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+            REDIS_URL=redis://redis:6379
+            JWT_SECRET=${JWT_SECRET}
+            GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+            GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+            FRONTEND_URL=${FRONTEND_URL}
+            ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+            DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY}
+            ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
+            POSTGRES_USER=${POSTGRES_USER}
+            POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+            POSTGRES_DB=${POSTGRES_DB}
+            NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
+            NEXTAUTH_URL=${NEXTAUTH_URL}
+            EOF
             docker compose -f docker-compose.prod.yml pull api web
             docker compose -f docker-compose.prod.yml up -d
             docker compose -f docker-compose.prod.yml restart nginx
             docker image prune -f
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+          POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DEEPGRAM_API_KEY: ${{ secrets.DEEPGRAM_API_KEY }}
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
