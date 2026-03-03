@@ -13,7 +13,8 @@ RUN --mount=type=cache,id=pnpm-web,target=/root/.local/share/pnpm/store \
 
 COPY . .
 RUN pnpm --filter @jake/shared build
-RUN pnpm --filter @jake/web build
+RUN --mount=type=cache,id=nextjs-cache,target=/app/apps/web/.next/cache \
+    pnpm --filter @jake/web build
 
 FROM base AS runner
 WORKDIR /app
