@@ -15,6 +15,8 @@ beforeEach(() => {
     onended: null,
     onpause: null,
   })) as any;
+  global.URL.createObjectURL = jest.fn().mockReturnValue("blob:mock-url");
+  global.URL.revokeObjectURL = jest.fn();
 });
 
 describe("useAudioPlayer", () => {
@@ -28,7 +30,8 @@ describe("useAudioPlayer", () => {
     act(() => {
       result.current.play("dGVzdA==");
     });
-    expect(global.Audio).toHaveBeenCalledWith("data:audio/mp3;base64,dGVzdA==");
+    expect(global.URL.createObjectURL).toHaveBeenCalledWith(expect.any(Blob));
+    expect(global.Audio).toHaveBeenCalledWith("blob:mock-url");
     expect(mockPlay).toHaveBeenCalled();
   });
 
