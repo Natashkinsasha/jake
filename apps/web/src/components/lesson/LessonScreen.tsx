@@ -47,7 +47,7 @@ export function LessonScreen({ token }: LessonScreenProps) {
       setLiveTranscript("");
       sendText(text);
     }, [sendText]),
-    onSpeechDone: useCallback(() => setUserSpeaking(false), [setUserSpeaking]),
+    onSpeechDone: useCallback(() => { setUserSpeaking(false); }, [setUserSpeaking]),
   });
 
   const stt = useStudentStt({
@@ -76,9 +76,10 @@ export function LessonScreen({ token }: LessonScreenProps) {
   // Play pending first message after mic is ready
   useEffect(() => {
     if (stt.isEnabled && playPending) {
-      const timer = setTimeout(() => playPending(), 500);
-      return () => clearTimeout(timer);
+      const timer = setTimeout(() => { playPending(); }, 500);
+      return () => { clearTimeout(timer); };
     }
+    return undefined;
   }, [stt.isEnabled, playPending]);
 
   // Pause audio when tab loses focus

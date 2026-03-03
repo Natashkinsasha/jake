@@ -20,7 +20,7 @@ export function MultipleChoice({ exercise, onSubmit }: MultipleChoiceProps) {
         {exercise.options.map((option, i) => (
           <button
             key={i}
-            onClick={() => setSelected(option)}
+            onClick={() => { setSelected(option); }}
             className={cn(
               "w-full text-left px-4 py-3 rounded-xl border-2 transition-all",
               selected === option
@@ -35,7 +35,7 @@ export function MultipleChoice({ exercise, onSubmit }: MultipleChoiceProps) {
       </div>
       <ExerciseSubmitButton
         disabled={!selected}
-        onClick={() => selected && onSubmit(selected)}
+        onClick={() => { if (selected) onSubmit(selected); }}
       />
     </div>
   );

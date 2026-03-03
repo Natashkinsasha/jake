@@ -10,7 +10,7 @@ import { StudentCard } from "./_components/StudentCard";
 
 function getRandomPhrase(exclude?: string): string {
   const available = exclude ? phrases.filter((p) => p !== exclude) : phrases;
-  return available[Math.floor(Math.random() * available.length)];
+  return available[Math.floor(Math.random() * available.length)] ?? "";
 }
 
 export default function PrototypePage() {
@@ -44,7 +44,7 @@ export default function PrototypePage() {
 
   const handleStart = useCallback(() => {
     setHasStarted(true);
-    teacherRef.current.speak(currentPhrase);
+    void teacherRef.current.speak(currentPhrase);
     // Enable mic right away so student can speak after teacher finishes
     if (!studentRef.current.isEnabled) {
       studentRef.current.enable();
@@ -55,7 +55,7 @@ export default function PrototypePage() {
     setHasStarted(true);
     setCurrentPhrase((prev) => {
       const phrase = getRandomPhrase(prev);
-      teacherRef.current.speak(phrase);
+      void teacherRef.current.speak(phrase);
       return phrase;
     });
   }, []);

@@ -10,10 +10,8 @@ import { JobModule } from '../../@lib/job/src';
       inject: [RedisService],
       useFactory: (redisService: RedisService) => {
         return {
-          connection: redisService
-            .getOrThrow()
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- ioredis version mismatch between packages
-            .duplicate({ maxRetriesPerRequest: null }) as any,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-explicit-any -- ioredis version mismatch between packages
+          connection: redisService.getOrThrow().duplicate({ maxRetriesPerRequest: null }) as any,
           defaultJobOptions: {
             removeOnComplete: {
               count: 100,

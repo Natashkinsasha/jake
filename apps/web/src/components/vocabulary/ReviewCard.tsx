@@ -20,7 +20,7 @@ export function ReviewCard({ word, onResult }: ReviewCardProps) {
 
       {!revealed ? (
         <button
-          onClick={() => setRevealed(true)}
+          onClick={() => { setRevealed(true); }}
           className="btn-secondary w-full mt-4"
         >
           Show answer
@@ -30,13 +30,13 @@ export function ReviewCard({ word, onResult }: ReviewCardProps) {
           <p className="text-sm text-gray-500 mb-4">Did you remember it?</p>
           <div className="flex gap-3">
             <button
-              onClick={() => onResult(false)}
+              onClick={() => { onResult(false); }}
               className="flex-1 px-4 py-3 rounded-xl bg-red-50 text-red-600 font-semibold hover:bg-red-100 transition-colors"
             >
               Forgot
             </button>
             <button
-              onClick={() => onResult(true)}
+              onClick={() => { onResult(true); }}
               className="flex-1 px-4 py-3 rounded-xl bg-green-50 text-green-600 font-semibold hover:bg-green-100 transition-colors"
             >
               Remembered

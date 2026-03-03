@@ -23,7 +23,7 @@ export function FillTheGap({ exercise, onSubmit }: FillTheGapProps) {
         <input
           type="text"
           value={answer}
-          onChange={(e) => setAnswer(e.target.value)}
+          onChange={(e) => { setAnswer(e.target.value); }}
           className="inline-block mx-1 px-3 py-1 border-b-2 border-primary-400 bg-primary-50 rounded-t text-primary-700 font-semibold outline-none focus:border-primary-600 w-32 text-center"
           placeholder="..."
           autoFocus
@@ -33,7 +33,7 @@ export function FillTheGap({ exercise, onSubmit }: FillTheGapProps) {
       <ExerciseHint hint={exercise.hint} />
       <ExerciseSubmitButton
         disabled={!answer.trim()}
-        onClick={() => answer.trim() && onSubmit(answer.trim())}
+        onClick={() => { if (answer.trim()) onSubmit(answer.trim()); }}
       />
     </div>
   );

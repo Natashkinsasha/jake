@@ -45,10 +45,10 @@ export function useLessonState(token?: string | null) {
           role: "assistant",
           text: pending.text,
           timestamp: Date.now(),
-          exercise: pending.exercise || null,
+          exercise: pending.exercise ?? null,
         },
       ],
-      currentExercise: pending.exercise || null,
+      currentExercise: pending.exercise ?? null,
       status: "speaking",
     }));
   }, []);
@@ -71,7 +71,7 @@ export function useLessonState(token?: string | null) {
   });
 
   const handleEvent = useCallback((event: string, data: LessonEventData) => {
-    console.log("[Lesson] event:", event, data?.text ? `"${data.text.slice(0, 50)}..."` : "", data?.audio ? `audio:${data.audio.length}chars` : "");
+    console.log("[Lesson] event:", event, data.text ? `"${data.text.slice(0, 50)}..."` : "", data.audio ? `audio:${data.audio.length}chars` : "");
 
     const action = handleLessonEvent(event, data, {
       userSpeaking: userSpeakingRef.current,
@@ -88,7 +88,7 @@ export function useLessonState(token?: string | null) {
         setState((prev) => {
           const patch = action.patch;
           // For status event, only update if the patch has a defined status
-          if (event === "status" && patch.status === undefined) return prev;
+          if (event === "status" && patch["status"] === undefined) return prev;
           return { ...prev, ...patch } as LessonState;
         });
         if (event === "error") console.error("Lesson error:", data.message);
@@ -133,11 +133,12 @@ export function useLessonState(token?: string | null) {
         }
         break;
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- showPendingMessage is a stable useCallback
   }, [audioPlayer, showPendingMessage]);
 
   const { emit, connected } = useWebSocket({
     url: WS_URL,
-    token: token || null,
+    token: token ?? null,
     onEvent: handleEvent,
   });
 

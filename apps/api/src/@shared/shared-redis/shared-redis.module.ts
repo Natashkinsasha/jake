@@ -33,7 +33,7 @@ import { EnvService } from '../shared-config/env.service';
                     'RedisModule',
                   );
                   client.on('error', (error: Error) => {
-                    Logger.error(`Redis error: ${error}`, 'RedisModule');
+                    Logger.error(`Redis error: ${error.message}`, 'RedisModule');
                   });
                 },
               },

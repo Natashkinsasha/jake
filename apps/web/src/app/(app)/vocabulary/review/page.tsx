@@ -25,7 +25,7 @@ export default function VocabularyReviewPage() {
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Vocabulary Review</h1>
       <ReviewSession
         words={words}
-        onComplete={() => router.push("/vocabulary")}
+        onComplete={() => { router.push("/vocabulary"); }}
       />
     </div>
   );

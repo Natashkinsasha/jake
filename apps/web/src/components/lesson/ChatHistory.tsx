@@ -23,7 +23,7 @@ const DEFAULT_TICK_MS = 150;
 
 function StreamingText({ text, isActive, audioDuration }: { text: string; isActive: boolean; audioDuration: number | null }) {
   const words = text.split(" ");
-  const tickMs = audioDuration && words.length > 0
+  const tickMs = audioDuration != null && audioDuration > 0 && words.length > 0
     ? Math.max(50, Math.min(500, (audioDuration * 1000) / words.length))
     : DEFAULT_TICK_MS;
 
@@ -41,8 +41,8 @@ function StreamingText({ text, isActive, audioDuration }: { text: string; isActi
 
   useEffect(() => {
     if (frozen || !isActive || count >= words.length) return;
-    const timer = setTimeout(() => setCount((c) => Math.min(c + 1, words.length)), tickMs);
-    return () => clearTimeout(timer);
+    const timer = setTimeout(() => { setCount((c) => Math.min(c + 1, words.length)); }, tickMs);
+    return () => { clearTimeout(timer); };
   }, [count, words.length, frozen, isActive, tickMs]);
 
   if (!wasActiveRef.current) return <>{text}</>;

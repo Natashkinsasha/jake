@@ -1,5 +1,5 @@
-import { SelectUser } from "./select-user";
-import { z } from "zod";
+import { type SelectUser } from "./select-user";
+import { type z } from "zod";
 import { createSelectSchema } from "drizzle-zod";
 import { userPreferenceTable } from "../table/user-preference.table";
 

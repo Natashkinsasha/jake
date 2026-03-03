@@ -2,10 +2,11 @@ import { Injectable } from "@nestjs/common";
 import { sql } from "drizzle-orm";
 import { RedisService } from "@liaoliaots/nestjs-redis";
 import { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
+import type Redis from "ioredis";
 
 @Injectable()
 export class HealthMaintainer {
-  private readonly redis;
+  private readonly redis: Redis;
 
   constructor(
     private readonly txHost: AppDrizzleTransactionHost<Record<string, never>>,
@@ -23,9 +24,9 @@ export class HealthMaintainer {
     const allUp = dbOk && redisOk;
 
     return {
-      status: allUp ? ("ok" as const) : ("degraded" as const),
-      db: dbOk ? ("up" as const) : ("down" as const),
-      redis: redisOk ? ("up" as const) : ("down" as const),
+      status: allUp ? "ok" : "degraded",
+      db: dbOk ? "up" : "down",
+      redis: redisOk ? "up" : "down",
       uptime: process.uptime(),
     };
   }
@@ -41,8 +42,8 @@ export class HealthMaintainer {
 
   private async checkRedis(): Promise<boolean> {
     try {
-      const pong = await this.redis.ping();
-      return pong === "PONG";
+      await this.redis.ping();
+      return true;
     } catch {
       return false;
     }

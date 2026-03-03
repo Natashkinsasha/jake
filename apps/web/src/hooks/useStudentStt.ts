@@ -22,7 +22,16 @@ interface UseStudentSttOptions {
   onSegment?: (text: string) => void;
 }
 
-const log = (...args: unknown[]) => console.log("[STT]", ...args);
+interface DeepgramResult {
+  type: string;
+  channel?: {
+    alternatives?: { transcript?: string }[];
+  };
+  is_final?: boolean;
+  speech_final?: boolean;
+}
+
+const log = (...args: unknown[]) => { console.log("[STT]", ...args); };
 
 const DG_PARAMS = new URLSearchParams({
   model: STT_CONFIG.MODEL,
@@ -53,7 +62,7 @@ export function useStudentStt(
   const onSegmentRef = useCallbackRef(options?.onSegment);
 
   useEffect(() => {
-    const supported = !!navigator.mediaDevices?.getUserMedia;
+    const supported = typeof navigator.mediaDevices.getUserMedia === "function";
     log("isSupported:", supported);
     setIsSupported(supported);
   }, []);
@@ -74,12 +83,12 @@ export function useStudentStt(
       wsRef.current = null;
     }
 
-    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current?.getTracks().forEach((t) => { t.stop(); });
     streamRef.current = null;
     speechDetectedRef.current = false;
   }, []);
 
-  const enable = useCallback(async () => {
+  const startStreaming = useCallback(async () => {
     if (enabledRef.current) return;
     log("enable() called");
     setError(null);
@@ -88,7 +97,7 @@ export function useStudentStt(
     try {
       const tokenRes = await fetch("/api/stt/token");
       if (!tokenRes.ok) throw new Error("Failed to get STT token");
-      const { key } = await tokenRes.json();
+      const { key } = (await tokenRes.json()) as { key: string };
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       // Mic permission = user gesture — unlock audio playback
@@ -149,7 +158,7 @@ export function useStudentStt(
       };
 
       ws.onmessage = (event) => {
-        const msg = JSON.parse(event.data);
+        const msg = JSON.parse(event.data as string) as DeepgramResult;
 
         if (msg.type === "SpeechStarted") {
           if (!speechDetectedRef.current) {
@@ -162,10 +171,10 @@ export function useStudentStt(
         }
 
         if (msg.type === "Results") {
-          const transcript =
+          const transcript: string =
             msg.channel?.alternatives?.[0]?.transcript ?? "";
-          const isFinal = msg.is_final;
-          const speechFinal = msg.speech_final;
+          const isFinal: boolean = msg.is_final ?? false;
+          const speechFinal: boolean = msg.speech_final ?? false;
 
           if (transcript) {
             setFinalText(transcript);
@@ -214,7 +223,12 @@ export function useStudentStt(
       setError(message);
       cleanup();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- callback refs are stable
   }, [cleanup]);
+
+  const enable = useCallback(() => {
+    void startStreaming();
+  }, [startStreaming]);
 
   const disable = useCallback(() => {
     if (!enabledRef.current) return;

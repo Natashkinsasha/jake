@@ -15,13 +15,7 @@ const cspDirectives = [
 const nextConfig = {
   output: "standalone",
   transpilePackages: ["@jake/shared"],
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  images: {
+images: {
     remotePatterns: [
       { protocol: "https", hostname: "lh3.googleusercontent.com" },
     ],

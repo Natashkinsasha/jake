@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { RedisService } from "@liaoliaots/nestjs-redis";
+import type Redis from "ioredis";
 import { LlmMessage } from "../../../../@lib/llm/src/llm.service";
 
 export interface LessonSession {
@@ -16,7 +17,7 @@ const KEY_PREFIX = "lesson:session:";
 @Injectable()
 export class LessonSessionService {
   private readonly logger = new Logger(LessonSessionService.name);
-  private readonly redis;
+  private readonly redis: Redis;
 
   constructor(redisService: RedisService) {
     this.redis = redisService.getOrThrow();

@@ -32,7 +32,7 @@ export default function DashboardPage() {
             <p className="text-blue-100">Have a conversation with Jake, your AI mate</p>
           </div>
           <button
-            onClick={() => router.push("/lesson")}
+            onClick={() => { router.push("/lesson"); }}
             className="bg-white text-primary-600 font-semibold px-6 py-3 rounded-xl hover:bg-blue-50 transition-colors"
           >
             Let's go!
@@ -50,12 +50,12 @@ export default function DashboardPage() {
             {recentLessons.slice(0, 10).map((lesson) => (
               <div
                 key={lesson.id}
-                onClick={() => router.push(`/lessons/${lesson.id}`)}
+                onClick={() => { router.push(`/lessons/${lesson.id}`); }}
                 className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0 cursor-pointer hover:bg-gray-50 -mx-2 px-2 rounded-lg transition-colors"
               >
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-gray-900">
-                    {lesson.topic || "Conversation with Jake"}
+                    {lesson.topic ?? "Conversation with Jake"}
                   </p>
                   {lesson.summary && (
                     <p className="text-xs text-gray-500 truncate">

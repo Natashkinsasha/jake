@@ -1,4 +1,4 @@
-import { LessonContext } from "../dto/lesson-context";
+import { type LessonContext } from "../dto/lesson-context";
 
 const JAKE_BASE_PROMPT = `You are Jake, a friendly Australian English tutor in your late 20s.
 You're laid-back, funny, and genuinely interested in your students' lives.
@@ -40,11 +40,11 @@ export function buildFullSystemPrompt(context: LessonContext): string {
 
   parts.push(`\n=== STUDENT PROFILE ===
 Name: ${context.studentName}
-Level: ${context.level || "Unknown (assess during conversation)"}
+Level: ${context.level ?? "Unknown (assess during conversation)"}
 Lesson number: ${context.lessonNumber}`);
 
   parts.push(`\n=== PREFERENCES ===
-Correction: ${context.preferences.correctionStyle} — ${CORRECTION_RULES[context.preferences.correctionStyle] || ""}
+Correction: ${context.preferences.correctionStyle} — ${CORRECTION_RULES[context.preferences.correctionStyle] ?? ""}
 Grammar explanations: ${context.preferences.explainGrammar ? "yes" : "no"}
 Speed: ${context.preferences.speakingSpeed}
 Use native language: ${context.preferences.useNativeLanguage ? "yes" : "no"}
@@ -61,17 +61,16 @@ ${context.facts.map((f) => `- [${f.category}] ${f.fact}`).join("\n")}`);
 ${context.recentEmotionalContext.join("\n")}`);
   }
 
-  if (context.learningFocus) {
-    parts.push(`\n=== LEARNING FOCUS ===
+  parts.push(`\n=== LEARNING FOCUS ===
 Weak areas: ${context.learningFocus.weakAreas.join(", ") || "none identified"}
 Strong areas: ${context.learningFocus.strongAreas.join(", ") || "none identified"}
 Recent words: ${context.learningFocus.recentWords.join(", ") || "none"}`);
 
-    if (context.learningFocus.suggestedTopics.length > 0) {
-      const topicList = context.learningFocus.suggestedTopics
-        .map((t, i) => `${i + 1}. ${t}${i === 0 ? " (priority — focus here first)" : ""}`)
-        .join("\n");
-      parts.push(`\n=== LESSON TOPICS (prepared) ===
+  if (context.learningFocus.suggestedTopics.length > 0) {
+    const topicList = context.learningFocus.suggestedTopics
+      .map((t, i) => `${i + 1}. ${t}${i === 0 ? " (priority — focus here first)" : ""}`)
+      .join("\n");
+    parts.push(`\n=== LESSON TOPICS (prepared) ===
 ${topicList}
 
 TOPIC FLOW:
@@ -79,10 +78,9 @@ TOPIC FLOW:
 - If the student seems comfortable or bored, transition naturally to the next
 - Don't force transitions — follow the conversation
 - You don't have to cover all topics — quality over quantity`);
-    } else {
-      parts.push(`\n=== LESSON TOPICS (prepared) ===
+  } else {
+    parts.push(`\n=== LESSON TOPICS (prepared) ===
 Free conversation (no specific topics prepared)`);
-    }
   }
 
   if (context.lessonNumber === 1) {

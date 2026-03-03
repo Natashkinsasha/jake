@@ -1,6 +1,6 @@
-import { UserTutorEntity, UserTutorWithTutor } from "../../domain/entity/user-tutor.entity";
-import { userTutorTable } from "../table/user-tutor.table";
-import { tutorTable } from "../table/tutor.table";
+import { type UserTutorEntity, type UserTutorWithTutor } from "../../domain/entity/user-tutor.entity";
+import { type userTutorTable } from "../table/user-tutor.table";
+import { type tutorTable } from "../table/tutor.table";
 
 type UserTutorRow = typeof userTutorTable.$inferSelect;
 type UserTutorJoinRow = {

@@ -1,6 +1,6 @@
-import { UserEntity, UserWithPreferences } from "../../domain/entity/user.entity";
-import { userTable } from "../table/user.table";
-import { userPreferenceTable } from "../table/user-preference.table";
+import { type UserEntity, type UserWithPreferences } from "../../domain/entity/user.entity";
+import { type userTable } from "../table/user.table";
+import { type userPreferenceTable } from "../table/user-preference.table";
 
 type UserRow = typeof userTable.$inferSelect;
 type UserJoinRow = {

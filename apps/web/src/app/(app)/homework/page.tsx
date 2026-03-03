@@ -33,7 +33,7 @@ export default function HomeworkPage() {
               key={hw.id}
               id={hw.id}
               lessonDate={hw.createdAt}
-              exerciseCount={hw.exercises?.length || 0}
+              exerciseCount={hw.exercises.length || 0}
               score={hw.score}
               completedAt={hw.completedAt}
             />

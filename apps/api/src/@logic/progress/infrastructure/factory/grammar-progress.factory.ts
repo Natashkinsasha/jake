@@ -1,5 +1,5 @@
-import { GrammarProgressEntity } from "../../domain/entity/grammar-progress.entity";
-import { grammarProgressTable } from "../table/grammar-progress.table";
+import { type GrammarProgressEntity } from "../../domain/entity/grammar-progress.entity";
+import { type grammarProgressTable } from "../table/grammar-progress.table";
 
 type GrammarProgressRow = typeof grammarProgressTable.$inferSelect;
 
@@ -9,6 +9,6 @@ export class GrammarProgressFactory {
   }
 
   static createMany(rows: GrammarProgressRow[]): GrammarProgressEntity[] {
-    return rows.map(GrammarProgressFactory.create);
+    return rows.map((row) => GrammarProgressFactory.create(row));
   }
 }

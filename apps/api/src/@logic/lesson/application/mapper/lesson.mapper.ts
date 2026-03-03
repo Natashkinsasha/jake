@@ -12,8 +12,8 @@ export class LessonMapper {
       endedAt: lesson.endedAt?.toISOString() ?? null,
       durationMinutes: lesson.durationMinutes,
       summary: lesson.summary,
-      topics: (lesson.topics || []) as string[],
-      newWords: (lesson.newWords || []) as string[],
+      topics: (lesson.topics ?? []) as string[],
+      newWords: (lesson.newWords ?? []) as string[],
     };
   }
 }

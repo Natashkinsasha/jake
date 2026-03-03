@@ -13,7 +13,7 @@ export function LessonCTA() {
           <p className="text-blue-100">Have a conversation with Jake, your AI mate</p>
         </div>
         <button
-          onClick={() => router.push("/lesson")}
+          onClick={() => { router.push("/lesson"); }}
           className="bg-white text-primary-600 font-semibold px-6 py-3 rounded-xl hover:bg-blue-50 transition-colors shrink-0"
         >
           Let's go!

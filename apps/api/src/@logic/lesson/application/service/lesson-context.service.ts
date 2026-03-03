@@ -54,7 +54,7 @@ export class LessonContextService {
 
     const { facts, relevantMemories } = await this.memoryContract.retrieve(
       userId,
-      suggestedTopics[0] || "general English lesson",
+      suggestedTopics[0] ?? "general English lesson",
     );
 
     const prefs = user.user_preferences;
@@ -67,12 +67,12 @@ export class LessonContextService {
       tutorVoiceId: activeTutor.tutor.voiceId,
       tutorId: activeTutor.userTutor.tutorId,
       preferences: {
-        correctionStyle: prefs?.correctionStyle || "immediate",
-        speakingSpeed: prefs?.speakingSpeed || "natural",
-        useNativeLanguage: prefs?.useNativeLanguage || false,
+        correctionStyle: prefs?.correctionStyle ?? "immediate",
+        speakingSpeed: prefs?.speakingSpeed ?? "natural",
+        useNativeLanguage: prefs?.useNativeLanguage ?? false,
         explainGrammar: prefs?.explainGrammar ?? true,
-        preferredExercises: prefs?.preferredExerciseTypes || [],
-        interests: prefs?.interests || [],
+        preferredExercises: prefs?.preferredExerciseTypes ?? [],
+        interests: prefs?.interests ?? [],
       },
       facts: facts.map((f) => ({
         category: f.category,

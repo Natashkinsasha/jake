@@ -101,7 +101,10 @@ export function useTeacherTts(): UseTeacherTtsReturn {
           throw new Error(`TTS API error: ${response.status}`);
         }
 
-        const data = await response.json();
+        const data = (await response.json()) as {
+          audioBase64: string;
+          words: WordTiming[];
+        };
         if (gen !== generationRef.current) return;
 
         const { audioBase64, words } = data as {
@@ -160,8 +163,8 @@ export function useTeacherTts(): UseTeacherTtsReturn {
   }, []);
 
   const resume = useCallback(() => {
-    if (audioRef.current && audioRef.current.paused) {
-      audioRef.current.play();
+    if (audioRef.current?.paused) {
+      void audioRef.current.play();
       setIsPaused(false);
     }
   }, []);

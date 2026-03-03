@@ -17,7 +17,6 @@ export function useApiQuery<T>(
   const [error, setError] = useState<string | null>(null);
   const fetcherRef = useCallbackRef(fetcher);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   const execute = useCallback(() => {
     const fn = fetcherRef.current;
     if (!fn) {
@@ -37,7 +36,8 @@ export function useApiQuery<T>(
         const message = err instanceof Error ? err.message : "Something went wrong";
         setError(message);
       })
-      .finally(() => setIsLoading(false));
+      .finally(() => { setIsLoading(false); });
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetcherRef is a stable ref, deps is forwarded from caller
   }, deps ?? []);
 
   useEffect(() => {

@@ -9,7 +9,7 @@ import { useApiQuery } from "@/hooks/useApiQuery";
 
 export default function HomeworkDetailPage() {
   const params = useParams();
-  const id = params.id as string;
+  const id = params["id"] as string;
   const { data: homework, isLoading, error, refetch } = useApiQuery(
     () => api.homework.get(id),
     [id],
@@ -49,11 +49,11 @@ export default function HomeworkDetailPage() {
               <p className="text-sm font-medium text-primary-600 mb-2">
                 Question {i + 1}
               </p>
-              <p className="text-gray-900 mb-3">{exercise.question || exercise.sentence}</p>
+              <p className="text-gray-900 mb-3">{exercise.question ?? exercise.sentence}</p>
               <input
                 type="text"
-                value={answers[String(i)] || ""}
-                onChange={(e) => setAnswers({ ...answers, [String(i)]: e.target.value })}
+                value={answers[String(i)] ?? ""}
+                onChange={(e) => { setAnswers({ ...answers, [String(i)]: e.target.value }); }}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:border-primary-400 outline-none"
                 placeholder="Your answer..."
               />

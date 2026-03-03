@@ -8,7 +8,7 @@ interface LessonSummaryProps {
   onClose: () => void;
 }
 
-export function LessonSummary({ lessonId, messageCount, onClose }: LessonSummaryProps) {
+export function LessonSummary({ lessonId: _lessonId, messageCount, onClose: _onClose }: LessonSummaryProps) {
   const router = useRouter();
   const userMessages = Math.floor(messageCount / 2);
 
@@ -36,13 +36,13 @@ export function LessonSummary({ lessonId, messageCount, onClose }: LessonSummary
 
         <div className="space-y-3">
           <button
-            onClick={() => router.push("/dashboard")}
+            onClick={() => { router.push("/dashboard"); }}
             className="btn-primary w-full"
           >
             Back to Dashboard
           </button>
           <button
-            onClick={() => router.push("/homework")}
+            onClick={() => { router.push("/homework"); }}
             className="btn-secondary w-full"
           >
             Check Homework

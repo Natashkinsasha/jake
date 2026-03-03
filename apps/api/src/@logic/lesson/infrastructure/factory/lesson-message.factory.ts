@@ -1,5 +1,5 @@
-import { LessonMessageEntity } from "../../domain/entity/lesson-message.entity";
-import { lessonMessageTable } from "../table/lesson-message.table";
+import { type LessonMessageEntity } from "../../domain/entity/lesson-message.entity";
+import { type lessonMessageTable } from "../table/lesson-message.table";
 
 type LessonMessageRow = typeof lessonMessageTable.$inferSelect;
 
@@ -9,6 +9,6 @@ export class LessonMessageFactory {
   }
 
   static createMany(rows: LessonMessageRow[]): LessonMessageEntity[] {
-    return rows.map(LessonMessageFactory.create);
+    return rows.map((row) => LessonMessageFactory.create(row));
   }
 }

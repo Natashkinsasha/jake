@@ -24,7 +24,7 @@ export class AudioPipelineService {
     // 1. STT
     const transcript = audioBase64
       ? await this.stt.transcribe(audioBase64)
-      : history[history.length - 1]?.content || "";
+      : history[history.length - 1]?.content ?? "";
 
     if (!transcript) {
       throw new BadRequestException("Could not understand the audio");

@@ -51,7 +51,7 @@ export class LlmService {
         outputTokens: response.usage.output_tokens,
       };
     } catch (error) {
-      this.logger.error(`LLM request failed: ${error instanceof Error ? error.message : error}`);
+      this.logger.error(`LLM request failed: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     }
   }

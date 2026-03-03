@@ -32,7 +32,7 @@ export default function ProgressPage() {
         <h2 className="font-semibold text-gray-900 mb-4">English Level</h2>
         <div className="flex items-center gap-4 mb-3">
           <span className="text-4xl font-bold text-primary-600">
-            {progress?.currentLevel || "—"}
+            {progress?.currentLevel ?? "—"}
           </span>
           <div className="flex-1">
             <ProgressBar value={levelIndex + 1} max={6} />

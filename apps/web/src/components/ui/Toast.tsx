@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 import { TOAST_CONFIG } from "@/lib/config";
 

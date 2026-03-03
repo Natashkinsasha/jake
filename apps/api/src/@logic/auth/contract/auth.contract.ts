@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { UserRepository } from "../infrastructure/repository/user.repository";
-import { UserEntity, UserWithPreferences } from "../domain/entity/user.entity";
+import { type UserWithPreferences } from "../domain/entity/user.entity";
 
 @Injectable()
 export class AuthContract {

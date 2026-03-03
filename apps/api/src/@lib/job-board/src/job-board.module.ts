@@ -64,13 +64,14 @@ export class JobBoardModule implements NestModule {
           provide: JOB_BOARD_OPTIONS,
           // eslint-disable-next-line @typescript-eslint/no-explicit-any -- NestJS DI pattern
           useFactory: async (...args: any[]) => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- NestJS DI pattern passes any[] args
             const config = await userFactory(...args);
             return {
               enabled: true,
               ...config,
             };
           },
-          inject: options.inject || [],
+          inject: options.inject ?? [],
         },
       ];
     }
@@ -122,7 +123,7 @@ export class JobBoardModule implements NestModule {
       },
     );
 
-    if (!options?.enabled) {
+    if (!options.enabled) {
       return;
     }
 
@@ -143,7 +144,7 @@ export class JobBoardModule implements NestModule {
 
     const authenticate: FastifyBasicAuthOptions['authenticate'] = true;
 
-    const validate: FastifyBasicAuthOptions['validate'] = async (
+    const validate: FastifyBasicAuthOptions['validate'] = (
       user: string,
       pass: string,
     ) => {
@@ -152,29 +153,31 @@ export class JobBoardModule implements NestModule {
       }
     };
 
-    app.register(basicAuth, {
+    void app.register(basicAuth, {
       validate,
       authenticate,
     });
 
     const bullboardPlugin = serverAdapter.registerPlugin();
 
-    app.register(async (instance: FastifyInstance) => {
+    void app.register((instance: FastifyInstance, _opts: Record<string, unknown>, done: (err?: Error) => void) => {
       instance.addHook('onRequest', (req: FastifyRequest, reply: FastifyReply, next: (err?: Error) => void) => {
         (instance as FastifyInstance & { basicAuth: (req: FastifyRequest, reply: FastifyReply, cb: (err?: Error) => void) => void }).basicAuth(req, reply, function (error?: Error) {
           if (!error) {
-            return next();
+            next(); return;
           }
 
           const statusCode =
-            (error as Error & { statusCode?: number }).statusCode || HttpStatus.INTERNAL_SERVER_ERROR;
-          reply.code(statusCode).send({ error: error.name });
+            (error as Error & { statusCode?: number }).statusCode ?? HttpStatus.INTERNAL_SERVER_ERROR;
+          void reply.code(statusCode).send({ error: error.name });
         });
       });
 
-      instance.register(bullboardPlugin, {
+      void instance.register(bullboardPlugin, {
         prefix: route,
       });
+
+      done();
     });
   }
 }

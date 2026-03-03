@@ -36,7 +36,7 @@ export function SentenceBuilder({ exercise, onSubmit }: SentenceBuilderProps) {
         {selected.map((key) => (
           <button
             key={key}
-            onClick={() => removeWord(key)}
+            onClick={() => { removeWord(key); }}
             className="px-3 py-1.5 bg-primary-100 text-primary-700 rounded-lg text-sm font-medium hover:bg-primary-200 transition-colors"
           >
             {key.split("-").slice(1).join("-")}
@@ -51,7 +51,7 @@ export function SentenceBuilder({ exercise, onSubmit }: SentenceBuilderProps) {
           return (
             <button
               key={key}
-              onClick={() => !isUsed && addWord(word, i)}
+              onClick={() => { if (!isUsed) addWord(word, i); }}
               disabled={isUsed}
               className={cn(
                 "px-3 py-1.5 rounded-lg text-sm font-medium transition-all",
@@ -68,7 +68,7 @@ export function SentenceBuilder({ exercise, onSubmit }: SentenceBuilderProps) {
 
       <ExerciseSubmitButton
         disabled={selected.length === 0}
-        onClick={() => sentence.trim() && onSubmit(sentence.trim())}
+        onClick={() => { if (sentence.trim()) onSubmit(sentence.trim()); }}
       />
     </div>
   );

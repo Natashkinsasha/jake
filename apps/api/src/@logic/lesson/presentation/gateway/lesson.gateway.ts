@@ -17,6 +17,10 @@ import { LessonSessionService } from "../../application/service/lesson-session.s
 import { wsAudioMessageSchema } from "../dto/ws/ws-audio-message";
 import { wsExerciseAnswerSchema } from "../dto/ws/ws-exercise-answer";
 
+interface SocketData {
+  userId: string;
+}
+
 const wsTextMessageSchema = z.object({
   text: z.string().min(1),
 });
@@ -42,25 +46,25 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleConnection(client: Socket) {
     // Guards don't run for handleConnection, authenticate manually
     const token =
-      client.handshake?.auth?.token ||
-      client.handshake?.query?.token;
+      (client.handshake.auth as Record<string, unknown>)["token"] ??
+      client.handshake.query["token"];
 
-    if (!token) {
+    if (token == null) {
       client.emit("error", { message: "No auth token" });
       client.disconnect();
       return;
     }
 
     try {
-      const payload = await this.jwtService.verifyAsync(token as string);
-      client.data = { userId: payload.sub };
+      const payload = await this.jwtService.verifyAsync<{ sub: string }>(token as string);
+      (client.data as SocketData) = { userId: payload.sub };
     } catch {
       client.emit("error", { message: "Invalid token" });
       client.disconnect();
       return;
     }
 
-    const userId = client.data.userId;
+    const userId = (client.data as SocketData).userId;
 
     try {
       const result = await this.lessonMaintainer.startLesson(userId);
@@ -82,8 +86,8 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
         audio: result.greeting.audio,
         exercise: result.greeting.exercise,
       });
-    } catch (error) {
-      this.logger.error("Failed to start lesson:", error);
+    } catch (error: unknown) {
+      this.logger.error(`Failed to start lesson: ${error instanceof Error ? error.message : String(error)}`);
       client.emit("error", { message: "Failed to start lesson" });
       client.disconnect();
     }
@@ -111,7 +115,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const session = await this.sessionService.get(client.id);
     if (!session) return;
 
-    const userId = client.data.userId;
+    const userId = (client.data as SocketData).userId;
 
     try {
       client.emit("status", { state: "thinking" });
@@ -138,7 +142,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
         audio: result.tutorAudio,
         exercise: result.exercise,
       });
-    } catch (error) {
+    } catch {
       client.emit("error", { message: "Something went wrong, mate!" });
     }
   }
@@ -162,7 +166,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       const result = await this.lessonMaintainer.processTextMessage(
         session.lessonId,
-        client.data.userId,
+        (client.data as SocketData).userId,
         parsed.data.text,
         session.systemPrompt,
         session.history,
@@ -181,7 +185,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
         audio: result.tutorAudio,
         exercise: result.exercise,
       });
-    } catch (error) {
+    } catch {
       client.emit("error", { message: "Something went wrong, mate!" });
     }
   }
@@ -211,7 +215,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const result = await this.lessonMaintainer.processUserAudio(
       updatedSession.lessonId,
-      client.data.userId,
+      (client.data as SocketData).userId,
       "",
       updatedSession.systemPrompt,
       updatedSession.history,

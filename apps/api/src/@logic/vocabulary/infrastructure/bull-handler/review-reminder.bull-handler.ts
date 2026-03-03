@@ -4,8 +4,9 @@ import { QUEUE_NAMES } from "../../../../@shared/shared-job/queue-names";
 
 @Processor(QUEUE_NAMES.REVIEW_REMINDER)
 export class ReviewReminderBullHandler extends WorkerHost {
-  async process(job: Job) {
+  process(job: Job<{ userId: string }>) {
     const { userId } = job.data;
     console.log(`Review reminder for user ${userId}`);
+    return Promise.resolve();
   }
 }

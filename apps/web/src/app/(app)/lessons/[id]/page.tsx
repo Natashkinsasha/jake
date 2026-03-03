@@ -31,7 +31,7 @@ export default function LessonHistoryPage() {
       {/* Header */}
       <div>
         <button
-          onClick={() => router.push("/dashboard")}
+          onClick={() => { router.push("/dashboard"); }}
           className="text-sm text-gray-400 hover:text-gray-600 mb-2 inline-block"
         >
           &larr; Back to dashboard
@@ -44,7 +44,7 @@ export default function LessonHistoryPage() {
           {lesson.createdAt && (
             <span>{formatLessonDate(lesson.createdAt)}</span>
           )}
-          {lesson.duration && <span>{Math.max(1, lesson.duration)} min</span>}
+          {lesson.duration != null && lesson.duration > 0 && <span>{Math.max(1, lesson.duration)} min</span>}
           <span
             className={`px-2 py-0.5 rounded-full text-xs ${
               lesson.status === "completed"

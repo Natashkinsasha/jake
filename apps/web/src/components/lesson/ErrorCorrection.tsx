@@ -19,13 +19,13 @@ export function ErrorCorrection({ exercise, onSubmit }: ErrorCorrectionProps) {
       <ExerciseHint hint={exercise.hint} />
       <textarea
         value={corrected}
-        onChange={(e) => setCorrected(e.target.value)}
+        onChange={(e) => { setCorrected(e.target.value); }}
         className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-gray-900 font-medium focus:border-primary-400 outline-none resize-none"
         rows={2}
       />
       <ExerciseSubmitButton
         disabled={corrected.trim() === exercise.sentence}
-        onClick={() => corrected.trim() && onSubmit(corrected.trim())}
+        onClick={() => { if (corrected.trim()) onSubmit(corrected.trim()); }}
         className="mt-3"
       />
     </div>

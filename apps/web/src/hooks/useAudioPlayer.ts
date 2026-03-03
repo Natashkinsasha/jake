@@ -6,16 +6,16 @@ interface UseAudioPlayerOptions {
   onEnd?: () => void;
 }
 
-const log = (...args: unknown[]) => console.log("[AudioPlayer]", ...args);
+const log = (...args: unknown[]) => { console.log("[AudioPlayer]", ...args); };
 
 // Unlock audio on user gesture — call this from mic permission handler
 export function unlockAudio() {
   // Create and immediately resume a silent audio context
   try {
     const ctx = new AudioContext();
-    ctx.resume().then(() => {
+    void ctx.resume().then(() => {
       log("AudioContext unlocked, state:", ctx.state);
-      ctx.close();
+      void ctx.close();
     });
   } catch {}
 }
@@ -100,16 +100,17 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
         cleanup();
         fireFallback();
       };
-      audio.onpause = () => setIsPlaying(false);
+      audio.onpause = () => { setIsPlaying(false); };
 
-      audio.play().catch((e) => {
-        log("play() rejected:", e.message);
+      audio.play().catch((e: unknown) => {
+        log("play() rejected:", e instanceof Error ? e.message : e);
         fireFallback();
       });
     } catch (e) {
       log("play error:", e);
       fireFallback();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- optionsRef is a stable ref
   }, [cleanup]);
 
   const stop = useCallback((): number => {

@@ -1,5 +1,5 @@
-import { MemoryEmbeddingEntity } from "../../domain/entity/memory-embedding.entity";
-import { memoryEmbeddingTable } from "../table/memory-embedding.table";
+import { type MemoryEmbeddingEntity } from "../../domain/entity/memory-embedding.entity";
+import { type memoryEmbeddingTable } from "../table/memory-embedding.table";
 
 type MemoryEmbeddingRow = typeof memoryEmbeddingTable.$inferSelect;
 
@@ -9,6 +9,6 @@ export class MemoryEmbeddingFactory {
   }
 
   static createMany(rows: MemoryEmbeddingRow[]): MemoryEmbeddingEntity[] {
-    return rows.map(MemoryEmbeddingFactory.create);
+    return rows.map((row) => MemoryEmbeddingFactory.create(row));
   }
 }

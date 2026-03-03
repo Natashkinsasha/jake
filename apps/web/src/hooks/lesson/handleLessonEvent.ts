@@ -44,16 +44,16 @@ export function handleLessonEvent(
           type: "play_audio",
           audio: data.audio,
           pending: {
-            text: data.text || "",
+            text: data.text ?? "",
             audio: data.audio,
-            exercise: data.exercise || null,
+            exercise: data.exercise ?? null,
           },
         };
       }
       return {
         type: "show_message",
-        text: data.text || "",
-        exercise: data.exercise || null,
+        text: data.text ?? "",
+        exercise: data.exercise ?? null,
         status: "idle",
       };
     }
@@ -61,7 +61,7 @@ export function handleLessonEvent(
     case "transcript":
       return {
         type: "show_message",
-        text: data.text || "",
+        text: data.text ?? "",
         exercise: null,
         status: "transcript",
       };
@@ -74,12 +74,12 @@ export function handleLessonEvent(
         return {
           type: "play_audio",
           audio: data.audio,
-          pending: { text: data.text || "", exercise: null },
+          pending: { text: data.text ?? "", exercise: null },
         };
       }
       return {
         type: "show_message",
-        text: data.text || "",
+        text: data.text ?? "",
         exercise: null,
         status: "idle",
       };
@@ -95,7 +95,7 @@ export function handleLessonEvent(
       return { type: "set_state", patch: { status: "idle", lessonEnded: true } };
 
     case "error":
-      return { type: "set_state", patch: { status: "idle", error: data?.message || "Something went wrong" } };
+      return { type: "set_state", patch: { status: "idle", error: data.message ?? "Something went wrong" } };
 
     default:
       return { type: "discard" };

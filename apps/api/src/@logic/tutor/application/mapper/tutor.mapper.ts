@@ -11,7 +11,7 @@ export class TutorMapper {
       personality: tutor.personality,
       accent: tutor.accent,
       avatarUrl: tutor.avatarUrl,
-      traits: (tutor.traits || []) as string[],
+      traits: (tutor.traits ?? []),
     };
   }
 }

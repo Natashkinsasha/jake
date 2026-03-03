@@ -25,7 +25,7 @@ export function ExerciseRenderer({ index, exercise, value, onChange }: ExerciseR
       </div>
 
       <p className="text-gray-900 font-medium mb-3">
-        {exercise.question || exercise.sentence || "Complete the exercise"}
+        {exercise.question ?? exercise.sentence ?? "Complete the exercise"}
       </p>
 
       {exercise.hint && (
@@ -37,7 +37,7 @@ export function ExerciseRenderer({ index, exercise, value, onChange }: ExerciseR
           {exercise.options.map((option, i) => (
             <button
               key={i}
-              onClick={() => onChange(option)}
+              onClick={() => { onChange(option); }}
               className={cn(
                 "w-full text-left px-4 py-2.5 rounded-xl border-2 transition-all text-sm",
                 value === option
@@ -56,7 +56,7 @@ export function ExerciseRenderer({ index, exercise, value, onChange }: ExerciseR
         <input
           type="text"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => { onChange(e.target.value); }}
           className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:border-primary-400 focus:ring-1 focus:ring-primary-400 outline-none text-sm"
           placeholder="Type your answer..."
         />

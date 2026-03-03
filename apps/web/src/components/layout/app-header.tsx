@@ -29,7 +29,7 @@ export function AppHeader() {
             />
           )}
           <span className="text-sm text-gray-700 hidden sm:block">
-            {user?.name || session?.user?.name}
+            {user?.name ?? session?.user?.name}
           </span>
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}

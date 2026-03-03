@@ -6,17 +6,18 @@ async function bootstrap() {
   console.log("Worker started — processing background jobs");
 
   // Graceful shutdown
-  process.on("SIGTERM", async () => {
+  process.on("SIGTERM", () => {
     console.log("Worker shutting down...");
-    await app.close();
-    process.exit(0);
+    void app.close().then(() => process.exit(0));
   });
 
-  process.on("SIGINT", async () => {
+  process.on("SIGINT", () => {
     console.log("Worker shutting down...");
-    await app.close();
-    process.exit(0);
+    void app.close().then(() => process.exit(0));
   });
 }
 
-bootstrap();
+bootstrap().catch((err: unknown) => {
+  console.error("Worker bootstrap failed:", err);
+  process.exit(1);
+});

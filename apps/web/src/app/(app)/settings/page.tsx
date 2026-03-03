@@ -28,12 +28,12 @@ export default function SettingsPage() {
     () => api.auth.me(),
   );
   const [preferences, setPreferences] = useState<UserPreferences | null>(null);
-  const [saving, setSaving] = useState(false);
+  const [, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   // Sync preferences from API data when it arrives
   if (meData && !preferences && !isLoading) {
-    setPreferences(meData.user_preferences || {});
+    setPreferences(meData.user_preferences ?? {});
   }
 
   const updatePref = async (key: string, value: string | boolean) => {
@@ -44,7 +44,7 @@ export default function SettingsPage() {
     try {
       await api.auth.updatePreferences({ [key]: value });
       setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+      setTimeout(() => { setSaved(false); }, 2000);
     } catch (e) {
       console.error(e);
     } finally {
@@ -70,8 +70,8 @@ export default function SettingsPage() {
             <Image src={session.user.image} alt="" width={56} height={56} className="rounded-full" />
           )}
           <div>
-            <p className="font-medium text-gray-900">{user?.name || session?.user?.name}</p>
-            <p className="text-sm text-gray-500">{user?.email || session?.user?.email}</p>
+            <p className="font-medium text-gray-900">{user?.name ?? session?.user?.name}</p>
+            <p className="text-sm text-gray-500">{user?.email ?? session?.user?.email}</p>
             {user?.currentLevel && (
               <span className="inline-block mt-1 text-xs font-medium text-primary-600 bg-primary-50 rounded-full px-2.5 py-0.5">
                 Level {user.currentLevel}

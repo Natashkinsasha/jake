@@ -25,6 +25,7 @@ export function useTabFocus(options?: UseTabFocusOptions): UseTabFocusReturn {
     } else {
       optionsRef.current?.onBlur?.();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- optionsRef is a stable ref
   }, []);
 
   useEffect(() => {

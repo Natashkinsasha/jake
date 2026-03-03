@@ -5,8 +5,8 @@ export function useElapsedTimer(active: boolean) {
 
   useEffect(() => {
     if (!active) return;
-    const interval = setInterval(() => setElapsed((s) => s + 1), 1000);
-    return () => clearInterval(interval);
+    const interval = setInterval(() => { setElapsed((s) => s + 1); }, 1000);
+    return () => { clearInterval(interval); };
   }, [active]);
 
   return elapsed;

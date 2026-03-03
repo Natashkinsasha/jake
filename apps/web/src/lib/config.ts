@@ -1,10 +1,10 @@
 // API & WebSocket URLs
 export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
+  process.env["NEXT_PUBLIC_API_URL"] ??
   (typeof window !== "undefined" ? "/api" : "http://localhost:4000");
 
 function resolveWsUrl(): string {
-  if (process.env.NEXT_PUBLIC_WS_URL) return process.env.NEXT_PUBLIC_WS_URL;
+  if (process.env["NEXT_PUBLIC_WS_URL"]) return process.env["NEXT_PUBLIC_WS_URL"];
   if (typeof window === "undefined") return "http://localhost:4000/ws/lesson";
   // Dev: connect directly to API on port 4000 (Next.js rewrites don't support WebSocket)
   // Prod: same origin via nginx proxy

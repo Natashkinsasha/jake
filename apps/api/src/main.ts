@@ -2,7 +2,7 @@ import { createApp } from "./create-app";
 
 async function bootstrap() {
   const app = await createApp();
-  const port = process.env.PORT || 4000;
+  const port = process.env["PORT"] ?? 4000;
   await app.listen(port, "0.0.0.0");
   console.log(`API running on port ${port}`);
 
@@ -13,7 +13,10 @@ async function bootstrap() {
     process.exit(0);
   };
 
-  process.on("SIGTERM", () => shutdown("SIGTERM"));
-  process.on("SIGINT", () => shutdown("SIGINT"));
+  process.on("SIGTERM", () => { void shutdown("SIGTERM"); });
+  process.on("SIGINT", () => { void shutdown("SIGINT"); });
 }
-bootstrap();
+bootstrap().catch((err: unknown) => {
+  console.error("Bootstrap failed:", err);
+  process.exit(1);
+});

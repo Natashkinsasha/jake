@@ -33,11 +33,11 @@ export class HomeworkGeneratorService {
   ) {
     const prompt = `Generate homework exercises based on today's lesson.
 
-Student level: ${summary.levelAssessment || "A2"}
-Weak areas: ${summary.errorsFound?.map((e) => e.topic).join(", ")}
-Topics covered: ${summary.topics?.join(", ")}
-New words: ${summary.newWords?.join(", ")}
-Student prefers: ${preferences.preferredExerciseTypes?.join(", ") || "no preference"}
+Student level: ${summary.levelAssessment ?? "A2"}
+Weak areas: ${summary.errorsFound.map((e) => e.topic).join(", ")}
+Topics covered: ${summary.topics.join(", ")}
+New words: ${summary.newWords.join(", ")}
+Student prefers: ${preferences.preferredExerciseTypes?.join(", ") ?? "no preference"}
 Student interests: ${preferences.interests?.join(", ")}
 
 Generate 5-7 exercises. Return ONLY valid JSON array:

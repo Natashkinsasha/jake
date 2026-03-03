@@ -1,5 +1,5 @@
-import { VocabularyEntity } from "../../domain/entity/vocabulary.entity";
-import { vocabularyTable } from "../table/vocabulary.table";
+import { type VocabularyEntity } from "../../domain/entity/vocabulary.entity";
+import { type vocabularyTable } from "../table/vocabulary.table";
 
 type VocabularyRow = typeof vocabularyTable.$inferSelect;
 
@@ -9,6 +9,6 @@ export class VocabularyFactory {
   }
 
   static createMany(rows: VocabularyRow[]): VocabularyEntity[] {
-    return rows.map(VocabularyFactory.create);
+    return rows.map((row) => VocabularyFactory.create(row));
   }
 }

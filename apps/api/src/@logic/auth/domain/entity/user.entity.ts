@@ -1,5 +1,5 @@
-import { userTable } from "../../infrastructure/table/user.table";
-import { userPreferenceTable } from "../../infrastructure/table/user-preference.table";
+import { type userTable } from "../../infrastructure/table/user.table";
+import { type userPreferenceTable } from "../../infrastructure/table/user-preference.table";
 
 export type UserEntity = typeof userTable.$inferSelect;
 

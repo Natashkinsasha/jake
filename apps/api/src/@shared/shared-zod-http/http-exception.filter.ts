@@ -1,18 +1,19 @@
 import { Catch, ArgumentsHost, HttpException, Logger } from "@nestjs/common";
 import { BaseExceptionFilter } from "@nestjs/core";
+import type { FastifyReply } from "fastify";
 
 @Catch()
 export class HttpExceptionFilter extends BaseExceptionFilter {
   private readonly logger = new Logger(HttpExceptionFilter.name);
 
-  catch(exception: unknown, host: ArgumentsHost) {
+  override catch(exception: unknown, host: ArgumentsHost) {
     if (host.getType() !== "http") {
       super.catch(exception, host);
       return;
     }
 
     const ctx = host.switchToHttp();
-    const response = ctx.getResponse();
+    const response = ctx.getResponse<FastifyReply>();
 
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
@@ -20,13 +21,13 @@ export class HttpExceptionFilter extends BaseExceptionFilter {
       const message =
         typeof exceptionResponse === "string"
           ? exceptionResponse
-          : (exceptionResponse as Record<string, unknown>).message || exception.message;
+          : (exceptionResponse as Record<string, unknown>)["message"] ?? exception.message;
 
       if (status >= 500) {
-        this.logger.error(`[${status}] ${message}`, exception.stack);
+        this.logger.error(`[${status}] ${String(message)}`, exception.stack);
       }
 
-      response.status(status).json({
+      void response.status(status).send({
         statusCode: status,
         error: exception.name,
         message,
@@ -35,11 +36,11 @@ export class HttpExceptionFilter extends BaseExceptionFilter {
     }
 
     this.logger.error(
-      `Unhandled exception: ${exception instanceof Error ? exception.message : exception}`,
+      `Unhandled exception: ${exception instanceof Error ? exception.message : String(exception)}`,
       exception instanceof Error ? exception.stack : undefined,
     );
 
-    response.status(500).json({
+    void response.status(500).send({
       statusCode: 500,
       error: "Internal Server Error",
       message: "An unexpected error occurred",

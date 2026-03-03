@@ -18,7 +18,7 @@ export async function GET() {
     );
   }
 
-  const apiKey = process.env.DEEPGRAM_API_KEY;
+  const apiKey = process.env["DEEPGRAM_API_KEY"];
   if (!apiKey) {
     return NextResponse.json(
       { error: "DEEPGRAM_API_KEY not configured" },
@@ -38,7 +38,7 @@ export async function GET() {
   }).catch(() => null);
 
   if (grantRes?.ok) {
-    const data = await grantRes.json();
+    const data = (await grantRes.json()) as { access_token: string };
     return NextResponse.json({ key: data.access_token });
   }
 

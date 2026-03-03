@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { type z } from "zod";
 import { createInsertSchema } from "drizzle-zod";
 import { vocabularyTable } from "../table/vocabulary.table";
 

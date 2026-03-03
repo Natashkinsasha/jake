@@ -42,7 +42,7 @@ export class PostLessonBullHandler extends WorkerHost {
     super();
   }
 
-  async process(job: Job) {
+  async process(job: Job<{ lessonId: string; conversationHistory: Array<{ role: string; content: string }> }>) {
     const { lessonId, conversationHistory } = job.data;
     this.logger.log(`Processing post-lesson job for lesson ${lessonId}`);
 
@@ -73,7 +73,7 @@ export class PostLessonBullHandler extends WorkerHost {
       this.logger.log(`Post-lesson job completed for lesson ${lessonId}`);
     } catch (error) {
       this.logger.error(
-        `Post-lesson job failed for lesson ${lessonId}: ${error instanceof Error ? error.message : error}`,
+        `Post-lesson job failed for lesson ${lessonId}: ${error instanceof Error ? error.message : String(error)}`,
         error instanceof Error ? error.stack : undefined,
       );
       throw error;
@@ -112,7 +112,7 @@ export class PostLessonBullHandler extends WorkerHost {
       });
     }
 
-    for (const word of summary.newWords || []) {
+    for (const word of summary.newWords) {
       await this.vocabularyContract.upsert({
         userId: lesson.userId,
         word,
@@ -122,7 +122,7 @@ export class PostLessonBullHandler extends WorkerHost {
       });
     }
 
-    for (const error of summary.errorsFound || []) {
+    for (const error of summary.errorsFound) {
       await this.progressContract.upsertError(lesson.userId, error.topic);
     }
   }
