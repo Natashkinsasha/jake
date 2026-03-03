@@ -1,7 +1,18 @@
 {
-  "version": "6",
+  "id": "a0a0a0a0-0000-0000-0000-000000000000",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
   "dialect": "postgresql",
-  "id": "0000_initial",
-  "prevId": "0000000000000",
-  "tables": {}
+  "tables": {},
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
 }
