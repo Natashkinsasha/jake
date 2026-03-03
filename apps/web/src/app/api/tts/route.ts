@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { TTS_CONFIG } from "@/lib/config";
+import { rateLimit } from "@/lib/rate-limit";
 
 interface ElevenLabsAlignment {
   characters: string[];

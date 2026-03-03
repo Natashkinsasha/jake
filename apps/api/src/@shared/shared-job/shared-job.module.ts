@@ -1,36 +1,33 @@
-import { Module } from "@nestjs/common";
-import { BullModule } from "@nestjs/bullmq";
-import { EnvService } from "../shared-config/env.service";
-import { SharedConfigModule } from "../shared-config/shared-config.module";
+import { RedisService } from '@liaoliaots/nestjs-redis';
+import { Module } from '@nestjs/common';
+import { SharedRedisModule } from "../shared-redis/shared-redis.module";
 
-const defaultJobOptions = {
-  attempts: 3,
-  backoff: { type: "exponential" as const, delay: 5000 },
-  removeOnComplete: 100,
-  removeOnFail: 200,
-};
+import { JobModule } from '../../@lib/job/src';
 
 @Module({
   imports: [
-    SharedConfigModule,
-    BullModule.forRootAsync({
-      imports: [SharedConfigModule],
-      inject: [EnvService],
-      useFactory: (env: EnvService) => ({
-        connection: {
-          host: new URL(env.get("REDIS_URL")).hostname,
-          port: Number(new URL(env.get("REDIS_URL")).port) || 6379,
-        },
-        defaultJobOptions,
-      }),
+    JobModule.forRootAsync({
+      imports: [SharedRedisModule],
+      inject: [RedisService],
+      useFactory: (redisService: RedisService) => {
+        return {
+          connection: redisService
+            .getOrThrow()
+            .duplicate({ maxRetriesPerRequest: null }) as any,
+          defaultJobOptions: {
+            removeOnComplete: {
+              count: 100,
+              age: 60000,
+            },
+            removeOnFail: {
+              count: 10000,
+              age: 60000,
+            },
+          },
+        };
+      },
     }),
-    BullModule.registerQueue(
-      { name: "post-lesson" },
-      { name: "fact-extraction" },
-      { name: "homework-generation" },
-      { name: "review-reminder" },
-    ),
   ],
-  exports: [BullModule],
+  exports: [JobModule],
 })
 export class SharedJobModule {}

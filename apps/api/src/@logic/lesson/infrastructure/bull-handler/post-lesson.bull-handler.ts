@@ -12,6 +12,7 @@ import { GrammarProgressDao } from "../../../progress/infrastructure/dao/grammar
 import { MemoryEmbeddingDao } from "../../../memory/infrastructure/dao/memory-embedding.dao";
 import { HomeworkGeneratorService } from "../../../homework/application/service/homework-generator.service";
 import { PostLessonLlmResponseSchema, PostLessonLlmResponse } from "@jake/shared";
+import { QUEUE_NAMES } from "../../../../@shared/shared-job/queue-names";
 
 const SUMMARY_PROMPT = `Analyze the full lesson conversation and generate a structured summary.
 Return ONLY valid JSON:
@@ -25,7 +26,7 @@ Return ONLY valid JSON:
   "suggestedNextTopics": ["topics"]
 }`;
 
-@Processor("post-lesson")
+@Processor(QUEUE_NAMES.POST_LESSON)
 export class PostLessonBullHandler extends WorkerHost {
   private readonly logger = new Logger(PostLessonBullHandler.name);
 

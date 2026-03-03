@@ -1,6 +1,5 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
-import Redis from "ioredis";
-import { REDIS } from "../../../../@shared/shared-redis/redis.provider";
+import { Injectable, Logger } from "@nestjs/common";
+import { RedisService } from "@liaoliaots/nestjs-redis";
 import { LlmMessage } from "../../../../@lib/llm/src/llm.service";
 
 export interface LessonSession {
@@ -16,8 +15,11 @@ const KEY_PREFIX = "lesson:session:";
 @Injectable()
 export class LessonSessionService {
   private readonly logger = new Logger(LessonSessionService.name);
+  private readonly redis;
 
-  constructor(@Inject(REDIS) private redis: Redis) {}
+  constructor(redisService: RedisService) {
+    this.redis = redisService.getOrThrow();
+  }
 
   async save(socketId: string, session: LessonSession): Promise<void> {
     await this.redis.set(

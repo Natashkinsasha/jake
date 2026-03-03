@@ -18,8 +18,9 @@ import { EmbeddingModule } from "../../@lib/embedding/src/embedding.module";
 import { SharedAuthModule } from "../../@shared/shared-auth/shared-auth.module";
 import { SharedDrizzlePgModule } from "../../@shared/shared-drizzle-pg/shared-drizzle-pg.module";
 import { SharedWsModule } from "../../@shared/shared-ws/shared-ws.module";
-import { SharedJobModule } from "../../@shared/shared-job/shared-job.module";
 import { SharedRedisModule } from "../../@shared/shared-redis/shared-redis.module";
+import { JobModule } from "../../@lib/job/src";
+import { QUEUE_NAMES } from "../../@shared/shared-job/queue-names";
 import { AuthModule } from "../auth/auth.module";
 import { TutorModule } from "../tutor/tutor.module";
 import { MemoryModule } from "../memory/memory.module";
@@ -35,8 +36,9 @@ import { HomeworkModule } from "../homework/homework.module";
     SharedAuthModule,
     SharedDrizzlePgModule,
     SharedWsModule,
-    SharedJobModule,
     SharedRedisModule,
+    JobModule.registerQueue({ name: QUEUE_NAMES.POST_LESSON }),
+    JobModule.registerQueue({ name: QUEUE_NAMES.FACT_EXTRACTION }),
     AuthModule,
     TutorModule,
     MemoryModule,

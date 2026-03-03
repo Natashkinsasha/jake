@@ -1,16 +1,19 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { sql } from "drizzle-orm";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import type Redis from "ioredis";
+import { RedisService } from "@liaoliaots/nestjs-redis";
 import { DRIZZLE } from "../../../@shared/shared-drizzle-pg/drizzle.provider";
-import { REDIS } from "../../../@shared/shared-redis/redis.provider";
 
 @Injectable()
 export class HealthMaintainer {
+  private readonly redis;
+
   constructor(
     @Inject(DRIZZLE) private db: PostgresJsDatabase,
-    @Inject(REDIS) private redis: Redis,
-  ) {}
+    redisService: RedisService,
+  ) {
+    this.redis = redisService.getOrThrow();
+  }
 
   async check() {
     const [dbOk, redisOk] = await Promise.all([

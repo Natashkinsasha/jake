@@ -9,6 +9,13 @@ export const EnvSchema = z.object({
 
   // Redis
   REDIS_URL: z.string().default("redis://localhost:6379"),
+  REDIS_DB_NUMBER: z.coerce.number().default(0),
+
+  // Bull Board
+  BULL_BOARD_PATH: z.string().default("/admin/queues"),
+  BULL_BOARD_USERNAME: z.string().default("admin"),
+  BULL_BOARD_PASSWORD: z.string().default("admin"),
+  BULL_BOARD_ENABLED: z.string().default("false"),
 
   // Auth
   JWT_SECRET: z.string(),

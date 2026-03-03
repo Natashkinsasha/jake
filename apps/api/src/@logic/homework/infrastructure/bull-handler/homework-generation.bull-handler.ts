@@ -1,8 +1,9 @@
 import { Processor, WorkerHost } from "@nestjs/bullmq";
 import { Job } from "bullmq";
 import { HomeworkGeneratorService } from "../../application/service/homework-generator.service";
+import { QUEUE_NAMES } from "../../../../@shared/shared-job/queue-names";
 
-@Processor("homework-generation")
+@Processor(QUEUE_NAMES.HOMEWORK_GENERATION)
 export class HomeworkGenerationBullHandler extends WorkerHost {
   constructor(private generator: HomeworkGeneratorService) {
     super();

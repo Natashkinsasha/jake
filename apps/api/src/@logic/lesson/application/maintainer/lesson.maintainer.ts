@@ -10,6 +10,7 @@ import { TtsService } from "../../../../@lib/voice/src/tts.service";
 import { Queue } from "bullmq";
 import { InjectQueue } from "@nestjs/bullmq";
 import { buildFullSystemPrompt } from "../service/prompt-builder";
+import { QUEUE_NAMES } from "../../../../@shared/shared-job/queue-names";
 
 const GREETING_PROMPTS = [
   "Greet the student casually, like a mate you haven't seen in a bit. Keep it to one short sentence.",
@@ -35,8 +36,8 @@ export class LessonMaintainer {
     private responseService: LessonResponseService,
     private audioPipeline: AudioPipelineService,
     private tts: TtsService,
-    @InjectQueue("post-lesson") private postLessonQueue: Queue,
-    @InjectQueue("fact-extraction") private factQueue: Queue,
+    @InjectQueue(QUEUE_NAMES.POST_LESSON) private postLessonQueue: Queue,
+    @InjectQueue(QUEUE_NAMES.FACT_EXTRACTION) private factQueue: Queue,
   ) {}
 
   async getLesson(lessonId: string) {

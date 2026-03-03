@@ -9,10 +9,11 @@ import { HomeworkGenerationBullHandler } from "./infrastructure/bull-handler/hom
 import { LlmModule } from "../../@lib/llm/src/llm.module";
 import { SharedDrizzlePgModule } from "../../@shared/shared-drizzle-pg/shared-drizzle-pg.module";
 import { SharedAuthModule } from "../../@shared/shared-auth/shared-auth.module";
-import { SharedJobModule } from "../../@shared/shared-job/shared-job.module";
+import { JobModule } from "../../@lib/job/src";
+import { QUEUE_NAMES } from "../../@shared/shared-job/queue-names";
 
 @Module({
-  imports: [LlmModule, SharedDrizzlePgModule, SharedAuthModule, SharedJobModule],
+  imports: [LlmModule, SharedDrizzlePgModule, SharedAuthModule, JobModule.registerQueue({ name: QUEUE_NAMES.HOMEWORK_GENERATION })],
   controllers: [HomeworkController],
   providers: [
     HomeworkMaintainer,

@@ -1,14 +1,15 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable } from '@nestjs/common';
+import { Queue } from 'bullmq';
 
 @Injectable()
 export class QueueRegistryService {
-  private queues = new Map<string, unknown>();
+  private readonly queues = new Set<Queue>();
 
-  register(name: string, queue: unknown) {
-    this.queues.set(name, queue);
+  add(queue: Queue) {
+    this.queues.add(queue);
   }
 
-  get<T>(name: string): T | undefined {
-    return this.queues.get(name) as T | undefined;
+  getAll(): Queue[] {
+    return [...this.queues];
   }
 }

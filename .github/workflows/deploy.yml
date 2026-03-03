@@ -35,7 +35,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm type-check
 
-  test:
+  test-api:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -45,10 +45,22 @@ jobs:
           node-version: 22
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm turbo test
+      - run: pnpm --filter @jake/api test
+
+  test-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @jake/web test
 
   build-api:
-    needs: [lint, type-check, test]
+    needs: [lint, type-check, test-api, test-web]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -71,7 +83,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=api
 
   build-web:
-    needs: [lint, type-check, test]
+    needs: [lint, type-check, test-api, test-web]
     runs-on: ubuntu-latest
     permissions:
       contents: read

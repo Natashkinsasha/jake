@@ -6,10 +6,11 @@ import { VocabularyDao } from "./infrastructure/dao/vocabulary.dao";
 import { ReviewReminderBullHandler } from "./infrastructure/bull-handler/review-reminder.bull-handler";
 import { SharedDrizzlePgModule } from "../../@shared/shared-drizzle-pg/shared-drizzle-pg.module";
 import { SharedAuthModule } from "../../@shared/shared-auth/shared-auth.module";
-import { SharedJobModule } from "../../@shared/shared-job/shared-job.module";
+import { JobModule } from "../../@lib/job/src";
+import { QUEUE_NAMES } from "../../@shared/shared-job/queue-names";
 
 @Module({
-  imports: [SharedDrizzlePgModule, SharedAuthModule, SharedJobModule],
+  imports: [SharedDrizzlePgModule, SharedAuthModule, JobModule.registerQueue({ name: QUEUE_NAMES.REVIEW_REMINDER })],
   controllers: [VocabularyController],
   providers: [
     VocabularyMaintainer,
