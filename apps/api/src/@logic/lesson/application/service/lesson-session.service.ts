@@ -6,6 +6,7 @@ export interface LessonSession {
   lessonId: string;
   systemPrompt: string;
   voiceId: string;
+  speechSpeed: number;
   history: LlmMessage[];
 }
 
@@ -43,6 +44,13 @@ export class LessonSessionService {
 
   async delete(socketId: string): Promise<void> {
     await this.redis.del(KEY_PREFIX + socketId);
+  }
+
+  async updateSpeechSpeed(socketId: string, speed: number): Promise<void> {
+    const session = await this.get(socketId);
+    if (!session) return;
+    session.speechSpeed = speed;
+    await this.save(socketId, session);
   }
 
   async appendHistory(socketId: string, ...messages: LlmMessage[]): Promise<void> {

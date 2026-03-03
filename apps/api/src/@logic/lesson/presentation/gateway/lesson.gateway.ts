@@ -12,13 +12,17 @@ import { Server, Socket } from "socket.io";
 import { JwtService } from "@nestjs/jwt";
 import { z } from "zod";
 import { WsAuthGuard } from "../../../../@shared/shared-ws/ws-auth.guard";
-import { LessonMaintainer } from "../../application/maintainer/lesson.maintainer";
+import { LessonMaintainer, toSpeechSpeed } from "../../application/maintainer/lesson.maintainer";
 import { LessonSessionService } from "../../application/service/lesson-session.service";
 import { wsAudioMessageSchema } from "../dto/ws/ws-audio-message";
 import { wsExerciseAnswerSchema } from "../dto/ws/ws-exercise-answer";
 
 const wsTextMessageSchema = z.object({
   text: z.string().min(1),
+});
+
+const wsSetSpeedSchema = z.object({
+  speed: z.enum(["slow", "normal", "fast"]),
 });
 
 @WebSocketGateway({ namespace: "/ws/lesson", cors: true })
@@ -65,6 +69,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
         lessonId: result.lessonId,
         systemPrompt: result.systemPrompt,
         voiceId: result.voiceId,
+        speechSpeed: result.speechSpeed,
         history: [{ role: "assistant", content: result.greeting.text }],
       });
 
@@ -118,6 +123,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
         session.systemPrompt,
         session.history,
         session.voiceId,
+        session.speechSpeed,
       );
 
       await this.sessionService.appendHistory(
@@ -161,6 +167,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
         session.systemPrompt,
         session.history,
         session.voiceId,
+        session.speechSpeed,
       );
 
       await this.sessionService.appendHistory(
@@ -209,6 +216,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
       updatedSession.systemPrompt,
       updatedSession.history,
       updatedSession.voiceId,
+      updatedSession.speechSpeed,
     );
 
     await this.sessionService.appendHistory(client.id, {
@@ -220,6 +228,26 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
       text: result.tutorText,
       audio: result.tutorAudio,
     });
+  }
+
+  @SubscribeMessage("set_speed")
+  async handleSetSpeed(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: unknown,
+  ) {
+    const parsed = wsSetSpeedSchema.safeParse(data);
+    if (!parsed.success) {
+      client.emit("error", { message: "Invalid speed value" });
+      return;
+    }
+
+    const session = await this.sessionService.get(client.id);
+    if (!session) return;
+
+    const speed = toSpeechSpeed(parsed.data.speed);
+    await this.sessionService.updateSpeechSpeed(client.id, speed);
+
+    client.emit("speed_updated", { speed: parsed.data.speed });
   }
 
   @SubscribeMessage("end_lesson")

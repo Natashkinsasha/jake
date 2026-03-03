@@ -7,19 +7,19 @@ export class TtsService {
 
   constructor(private env: EnvService) {}
 
-  async synthesize(text: string, voiceId: string): Promise<string> {
+  async synthesize(text: string, voiceId: string, speed?: number): Promise<string> {
     const apiKey = this.env.get("ELEVENLABS_API_KEY");
     if (!apiKey) {
       this.logger.warn("ELEVENLABS_API_KEY not set, skipping TTS");
       return "";
     }
 
-    this.logger.log(`Synthesizing ${text.length} chars for voice ${voiceId}`);
+    this.logger.log(`Synthesizing ${text.length} chars for voice ${voiceId} (speed=${speed ?? 1.0})`);
 
-    return this.synthesizeWithRetry(text, voiceId, apiKey, 1);
+    return this.synthesizeWithRetry(text, voiceId, apiKey, 1, speed);
   }
 
-  private async synthesizeWithRetry(text: string, voiceId: string, apiKey: string, retries: number): Promise<string> {
+  private async synthesizeWithRetry(text: string, voiceId: string, apiKey: string, retries: number, speed?: number): Promise<string> {
     const response = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream?output_format=mp3_22050_32`,
       {
@@ -32,6 +32,7 @@ export class TtsService {
           text,
           model_id: "eleven_turbo_v2_5",
           voice_settings: { stability: 0.5, similarity_boost: 0.75, style: 0.3 },
+          ...(speed != null && speed !== 1.0 ? { speed } : {}),
         }),
       },
     );
@@ -41,7 +42,7 @@ export class TtsService {
       if (retries > 0 && response.status >= 500) {
         this.logger.warn(`ElevenLabs error ${response.status}, retrying (${retries} left)`);
         await new Promise((r) => setTimeout(r, 1000));
-        return this.synthesizeWithRetry(text, voiceId, apiKey, retries - 1);
+        return this.synthesizeWithRetry(text, voiceId, apiKey, retries - 1, speed);
       }
       this.logger.error(`ElevenLabs error ${response.status}: ${body}`);
       throw new Error(`ElevenLabs TTS failed with status ${response.status}: ${body}`);

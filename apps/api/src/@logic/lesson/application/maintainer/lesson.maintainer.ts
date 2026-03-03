@@ -11,6 +11,14 @@ import { InjectQueue } from "@nestjs/bullmq";
 import { buildFullSystemPrompt } from "../service/prompt-builder";
 import { QUEUE_NAMES } from "../../../../@shared/shared-job/queue-names";
 
+export function toSpeechSpeed(pref: string): number {
+  switch (pref) {
+    case "slow": return 0.85;
+    case "fast": return 1.2;
+    default: return 1.0;
+  }
+}
+
 const GREETING_PROMPTS = [
   "Greet the student casually, like a mate you haven't seen in a bit. Keep it to one short sentence.",
   "Say hi with a quick question about their day. One sentence max.",
@@ -89,11 +97,14 @@ export class LessonMaintainer {
       greeting.text,
     );
 
+    const speechSpeed = toSpeechSpeed(context.preferences.speakingSpeed);
+
     let greetingAudio = "";
     try {
       greetingAudio = await this.tts.synthesize(
         greeting.text,
         context.tutorVoiceId,
+        speechSpeed,
       );
     } catch (error) {
       this.logger.warn(`TTS failed for greeting, sending text only: ${error instanceof Error ? error.message : error}`);
@@ -103,6 +114,7 @@ export class LessonMaintainer {
       lessonId: lesson.id,
       systemPrompt,
       voiceId: context.tutorVoiceId,
+      speechSpeed,
       greeting: { text: greeting.text, audio: greetingAudio, exercise: greeting.exercise },
     };
   }
@@ -114,12 +126,14 @@ export class LessonMaintainer {
     systemPrompt: string,
     history: LlmMessage[],
     voiceId: string,
+    speechSpeed?: number,
   ) {
     const result = await this.audioPipeline.processAudio(
       audioBase64,
       systemPrompt,
       history,
       voiceId,
+      speechSpeed,
     );
 
     await this.messageRepository.create({
@@ -150,6 +164,7 @@ export class LessonMaintainer {
     systemPrompt: string,
     history: LlmMessage[],
     voiceId: string,
+    speechSpeed?: number,
   ) {
     const updatedHistory: LlmMessage[] = [
       ...history,
@@ -163,7 +178,7 @@ export class LessonMaintainer {
 
     let tutorAudio = "";
     try {
-      tutorAudio = await this.tts.synthesize(response.text, voiceId);
+      tutorAudio = await this.tts.synthesize(response.text, voiceId, speechSpeed);
     } catch (error) {
       this.logger.warn(`TTS failed, sending text only: ${error instanceof Error ? error.message : error}`);
     }

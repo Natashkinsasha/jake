@@ -19,6 +19,7 @@ export class AudioPipelineService {
     systemPrompt: string,
     history: LlmMessage[],
     voiceId: string,
+    speechSpeed?: number,
   ) {
     // 1. STT
     const transcript = audioBase64
@@ -39,7 +40,7 @@ export class AudioPipelineService {
     const response = await this.lessonResponse.generate(systemPrompt, updatedHistory);
 
     // 4. TTS
-    const audio = await this.tts.synthesize(response.text, voiceId);
+    const audio = await this.tts.synthesize(response.text, voiceId, speechSpeed);
 
     return {
       transcript,
