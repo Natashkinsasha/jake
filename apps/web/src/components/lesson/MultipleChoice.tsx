@@ -17,9 +17,10 @@ export function MultipleChoice({ exercise, onSubmit }: MultipleChoiceProps) {
     <div>
       <p className="text-gray-700 mb-4">{exercise.question}</p>
       <div className="space-y-2 mb-4">
-        {exercise.options.map((option, i) => (
+        {exercise.options.map((option) => (
           <button
-            key={i}
+            type="button"
+            key={option}
             onClick={() => { setSelected(option); }}
             className={cn(
               "w-full text-left px-4 py-3 rounded-xl border-2 transition-all",
@@ -28,7 +29,7 @@ export function MultipleChoice({ exercise, onSubmit }: MultipleChoiceProps) {
                 : "border-gray-200 hover:border-gray-300 text-gray-700"
             )}
           >
-            <span className="font-medium mr-2 text-gray-400">{String.fromCharCode(65 + i)}.</span>
+            <span className="font-medium mr-2 text-gray-400">{String.fromCharCode(65 + exercise.options.indexOf(option))}.</span>
             {option}
           </button>
         ))}

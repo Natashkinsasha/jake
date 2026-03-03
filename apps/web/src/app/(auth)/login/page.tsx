@@ -20,6 +20,7 @@ export default function LoginPage() {
           <h2 className="text-xl font-semibold text-center mb-6">Get Started</h2>
 
           <button
+            type="button"
             onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
             className="w-full flex items-center justify-center gap-3 rounded-xl border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
           >

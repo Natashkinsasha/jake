@@ -11,6 +11,7 @@ export function ErrorMessage({ message, onRetry, className = "" }: ErrorMessageP
       <p className="text-sm text-gray-500 mb-4">{message}</p>
       {onRetry && (
         <button
+          type="button"
           onClick={onRetry}
           className="btn-primary text-sm px-6 py-2"
         >

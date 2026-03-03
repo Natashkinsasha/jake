@@ -32,6 +32,7 @@ export default function DashboardPage() {
             <p className="text-blue-100">Have a conversation with Jake, your AI mate</p>
           </div>
           <button
+            type="button"
             onClick={() => { router.push("/lesson"); }}
             className="bg-white text-primary-600 font-semibold px-6 py-3 rounded-xl hover:bg-blue-50 transition-colors"
           >

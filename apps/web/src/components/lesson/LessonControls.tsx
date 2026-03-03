@@ -16,6 +16,7 @@ export function LessonControls({
       <div className="flex items-center justify-center gap-6">
         {/* Pause/Resume */}
         <button
+          type="button"
           onClick={onTogglePause}
           className={`w-12 h-12 rounded-full flex items-center justify-center transition-all ${
             isPaused
@@ -37,6 +38,7 @@ export function LessonControls({
 
         {/* Mic toggle */}
         <button
+          type="button"
           onClick={onToggleMute}
           disabled={isPaused}
           className={`w-16 h-16 rounded-full flex items-center justify-center transition-all ${

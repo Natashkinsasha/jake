@@ -70,7 +70,7 @@ export function ChatHistory({
     <div className="flex-1 overflow-y-auto px-4 space-y-3 pb-4">
       {messages.map((msg, i) => {
         return (
-          <div key={i}>
+          <div key={msg.timestamp}>
             <div
               className={cn(
                 "flex",

@@ -24,6 +24,7 @@ export function StatsSkeleton() {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {Array.from({ length: 4 }).map((_, i) => (
+        // eslint-disable-next-line @eslint-react/no-array-index-key
         <div key={i} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5 text-center">
           <Skeleton className="h-8 w-16 mx-auto mb-2" />
           <Skeleton className="h-3 w-20 mx-auto" />
@@ -37,6 +38,7 @@ export function ListSkeleton({ count = 3 }: { count?: number }) {
   return (
     <div className="space-y-3">
       {Array.from({ length: count }).map((_, i) => (
+        // eslint-disable-next-line @eslint-react/no-array-index-key
         <div key={i} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
           <div className="flex items-center gap-4">
             <Skeleton className="w-10 h-10 rounded-full" />

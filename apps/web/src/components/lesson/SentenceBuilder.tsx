@@ -35,6 +35,7 @@ export function SentenceBuilder({ exercise, onSubmit }: SentenceBuilderProps) {
         )}
         {selected.map((key) => (
           <button
+            type="button"
             key={key}
             onClick={() => { removeWord(key); }}
             className="px-3 py-1.5 bg-primary-100 text-primary-700 rounded-lg text-sm font-medium hover:bg-primary-200 transition-colors"
@@ -50,6 +51,7 @@ export function SentenceBuilder({ exercise, onSubmit }: SentenceBuilderProps) {
           const isUsed = selected.includes(key);
           return (
             <button
+              type="button"
               key={key}
               onClick={() => { if (!isUsed) addWord(word, i); }}
               disabled={isUsed}

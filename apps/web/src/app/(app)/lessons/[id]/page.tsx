@@ -31,6 +31,7 @@ export default function LessonHistoryPage() {
       {/* Header */}
       <div>
         <button
+          type="button"
           onClick={() => { router.push("/dashboard"); }}
           className="text-sm text-gray-400 hover:text-gray-600 mb-2 inline-block"
         >
@@ -73,9 +74,9 @@ export default function LessonHistoryPage() {
           </p>
         ) : (
           <div className="space-y-3">
-            {lesson.messages.map((msg, i) => (
+            {lesson.messages.map((msg) => (
               <div
-                key={i}
+                key={msg.timestamp}
                 className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div

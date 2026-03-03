@@ -13,6 +13,7 @@ export function ExerciseSubmitButton({
 }: ExerciseSubmitButtonProps) {
   return (
     <button
+      type="button"
       onClick={onClick}
       disabled={disabled}
       className={`btn-primary w-full ${className}`}

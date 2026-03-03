@@ -32,6 +32,7 @@ export function AppHeader() {
             {user?.name ?? session?.user?.name}
           </span>
           <button
+            type="button"
             onClick={() => signOut({ callbackUrl: "/login" })}
             className="text-sm text-gray-400 hover:text-red-500 transition-colors"
           >
