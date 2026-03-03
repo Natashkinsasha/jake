@@ -45,9 +45,11 @@ CREATE TABLE IF NOT EXISTS "user_preferences" (
   CONSTRAINT "user_preferences_user_id_unique" UNIQUE("user_id")
 );
 
-ALTER TABLE "user_preferences"
-  ADD CONSTRAINT "user_preferences_user_id_users_id_fk"
-  FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+DO $$ BEGIN
+ ALTER TABLE "user_preferences" ADD CONSTRAINT "user_preferences_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
 
 -- ============================================================================
 -- 3. tutors
@@ -77,13 +79,17 @@ CREATE TABLE IF NOT EXISTS "user_tutors" (
   "selected_at" timestamp DEFAULT now() NOT NULL
 );
 
-ALTER TABLE "user_tutors"
-  ADD CONSTRAINT "user_tutors_user_id_users_id_fk"
-  FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+DO $$ BEGIN
+ ALTER TABLE "user_tutors" ADD CONSTRAINT "user_tutors_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
 
-ALTER TABLE "user_tutors"
-  ADD CONSTRAINT "user_tutors_tutor_id_tutors_id_fk"
-  FOREIGN KEY ("tutor_id") REFERENCES "tutors"("id") ON DELETE NO ACTION;
+DO $$ BEGIN
+ ALTER TABLE "user_tutors" ADD CONSTRAINT "user_tutors_tutor_id_tutors_id_fk" FOREIGN KEY ("tutor_id") REFERENCES "tutors"("id") ON DELETE NO ACTION;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
 
 -- ============================================================================
 -- 5. lessons (references: users, tutors)
@@ -105,13 +111,17 @@ CREATE TABLE IF NOT EXISTS "lessons" (
   "lesson_number" integer NOT NULL
 );
 
-ALTER TABLE "lessons"
-  ADD CONSTRAINT "lessons_user_id_users_id_fk"
-  FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+DO $$ BEGIN
+ ALTER TABLE "lessons" ADD CONSTRAINT "lessons_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
 
-ALTER TABLE "lessons"
-  ADD CONSTRAINT "lessons_tutor_id_tutors_id_fk"
-  FOREIGN KEY ("tutor_id") REFERENCES "tutors"("id") ON DELETE NO ACTION;
+DO $$ BEGIN
+ ALTER TABLE "lessons" ADD CONSTRAINT "lessons_tutor_id_tutors_id_fk" FOREIGN KEY ("tutor_id") REFERENCES "tutors"("id") ON DELETE NO ACTION;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
 
 -- ============================================================================
 -- 6. lesson_messages (references: lessons)
@@ -126,9 +136,11 @@ CREATE TABLE IF NOT EXISTS "lesson_messages" (
   "timestamp" timestamp DEFAULT now() NOT NULL
 );
 
-ALTER TABLE "lesson_messages"
-  ADD CONSTRAINT "lesson_messages_lesson_id_lessons_id_fk"
-  FOREIGN KEY ("lesson_id") REFERENCES "lessons"("id") ON DELETE CASCADE;
+DO $$ BEGIN
+ ALTER TABLE "lesson_messages" ADD CONSTRAINT "lesson_messages_lesson_id_lessons_id_fk" FOREIGN KEY ("lesson_id") REFERENCES "lessons"("id") ON DELETE CASCADE;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
 
 -- ============================================================================
 -- 7. memory_facts (references: users)
@@ -145,9 +157,11 @@ CREATE TABLE IF NOT EXISTS "memory_facts" (
   "updated_at" timestamp DEFAULT now() NOT NULL
 );
 
-ALTER TABLE "memory_facts"
-  ADD CONSTRAINT "memory_facts_user_id_users_id_fk"
-  FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+DO $$ BEGIN
+ ALTER TABLE "memory_facts" ADD CONSTRAINT "memory_facts_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
 
 CREATE INDEX IF NOT EXISTS "memory_facts_user_idx" ON "memory_facts" ("user_id");
 CREATE INDEX IF NOT EXISTS "memory_facts_category_idx" ON "memory_facts" ("user_id", "category");
@@ -166,13 +180,17 @@ CREATE TABLE IF NOT EXISTS "memory_embeddings" (
   "created_at" timestamp DEFAULT now() NOT NULL
 );
 
-ALTER TABLE "memory_embeddings"
-  ADD CONSTRAINT "memory_embeddings_user_id_users_id_fk"
-  FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+DO $$ BEGIN
+ ALTER TABLE "memory_embeddings" ADD CONSTRAINT "memory_embeddings_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
 
-ALTER TABLE "memory_embeddings"
-  ADD CONSTRAINT "memory_embeddings_lesson_id_lessons_id_fk"
-  FOREIGN KEY ("lesson_id") REFERENCES "lessons"("id") ON DELETE NO ACTION;
+DO $$ BEGIN
+ ALTER TABLE "memory_embeddings" ADD CONSTRAINT "memory_embeddings_lesson_id_lessons_id_fk" FOREIGN KEY ("lesson_id") REFERENCES "lessons"("id") ON DELETE NO ACTION;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
 
 CREATE INDEX IF NOT EXISTS "memory_embeddings_user_idx" ON "memory_embeddings" ("user_id");
 
@@ -191,13 +209,17 @@ CREATE TABLE IF NOT EXISTS "homework" (
   "score" integer
 );
 
-ALTER TABLE "homework"
-  ADD CONSTRAINT "homework_user_id_users_id_fk"
-  FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+DO $$ BEGIN
+ ALTER TABLE "homework" ADD CONSTRAINT "homework_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
 
-ALTER TABLE "homework"
-  ADD CONSTRAINT "homework_lesson_id_lessons_id_fk"
-  FOREIGN KEY ("lesson_id") REFERENCES "lessons"("id") ON DELETE NO ACTION;
+DO $$ BEGIN
+ ALTER TABLE "homework" ADD CONSTRAINT "homework_lesson_id_lessons_id_fk" FOREIGN KEY ("lesson_id") REFERENCES "lessons"("id") ON DELETE NO ACTION;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
 
 -- ============================================================================
 -- 10. vocabulary (references: users, lessons)
@@ -214,13 +236,17 @@ CREATE TABLE IF NOT EXISTS "vocabulary" (
   "updated_at" timestamp DEFAULT now() NOT NULL
 );
 
-ALTER TABLE "vocabulary"
-  ADD CONSTRAINT "vocabulary_user_id_users_id_fk"
-  FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+DO $$ BEGIN
+ ALTER TABLE "vocabulary" ADD CONSTRAINT "vocabulary_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
 
-ALTER TABLE "vocabulary"
-  ADD CONSTRAINT "vocabulary_lesson_id_lessons_id_fk"
-  FOREIGN KEY ("lesson_id") REFERENCES "lessons"("id") ON DELETE NO ACTION;
+DO $$ BEGIN
+ ALTER TABLE "vocabulary" ADD CONSTRAINT "vocabulary_lesson_id_lessons_id_fk" FOREIGN KEY ("lesson_id") REFERENCES "lessons"("id") ON DELETE NO ACTION;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
 
 CREATE INDEX IF NOT EXISTS "vocabulary_user_idx" ON "vocabulary" ("user_id");
 CREATE INDEX IF NOT EXISTS "vocabulary_review_idx" ON "vocabulary" ("user_id", "next_review");
@@ -239,9 +265,11 @@ CREATE TABLE IF NOT EXISTS "grammar_progress" (
   "updated_at" timestamp DEFAULT now() NOT NULL
 );
 
-ALTER TABLE "grammar_progress"
-  ADD CONSTRAINT "grammar_progress_user_id_users_id_fk"
-  FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+DO $$ BEGIN
+ ALTER TABLE "grammar_progress" ADD CONSTRAINT "grammar_progress_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;
+EXCEPTION
+ WHEN duplicate_object THEN null;
+END $$;
 
 CREATE INDEX IF NOT EXISTS "grammar_progress_user_idx" ON "grammar_progress" ("user_id");
 CREATE INDEX IF NOT EXISTS "grammar_progress_topic_idx" ON "grammar_progress" ("user_id", "topic");
