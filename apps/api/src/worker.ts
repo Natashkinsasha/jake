@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { initTracing, shutdownTracing } from "./@lib/llm/src/llm-tracing";
 import { NestFactory } from "@nestjs/core";
 import { AppModule } from "./app.module";

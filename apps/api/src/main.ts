@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { initTracing, shutdownTracing } from "./@lib/llm/src/llm-tracing";
 import { createApp } from "./create-app";
 
