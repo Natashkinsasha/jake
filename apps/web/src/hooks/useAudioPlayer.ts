@@ -24,6 +24,7 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const urlRef = useRef<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [duration, setDuration] = useState<number | null>(null);
   const optionsRef = useCallbackRef(options);
 
   const cleanup = useCallback(() => {
@@ -75,6 +76,13 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
       const audio = new Audio(url);
       audioRef.current = audio;
 
+      audio.onloadedmetadata = () => {
+        const dur = audio.duration;
+        if (Number.isFinite(dur)) {
+          setDuration(dur);
+          log("duration:", dur.toFixed(2), "s");
+        }
+      };
       audio.onplay = () => {
         setIsPlaying(true);
         log("playback started");
@@ -112,5 +120,5 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
     }
   }, [cleanup]);
 
-  return { isPlaying, play, stop };
+  return { isPlaying, duration, play, stop };
 }

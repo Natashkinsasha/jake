@@ -21,7 +21,7 @@ interface LessonScreenProps {
 export function LessonScreen({ token }: LessonScreenProps) {
   const router = useRouter();
   const {
-    messages, currentExercise, status, connected, isPlaying,
+    messages, currentExercise, status, connected, isPlaying, audioDuration,
     lessonEnded: serverLessonEnded, error: lessonError, sendText,
     submitExerciseAnswer, endLesson, interruptTutor, stopAudio,
     playPending, setUserSpeaking,
@@ -61,7 +61,7 @@ export function LessonScreen({ token }: LessonScreenProps) {
       }
 
       speechBuffer.push(text);
-      setLiveTranscript(speechBuffer.getText() + " " + text);
+      setLiveTranscript(speechBuffer.getText());
     },
   });
 
@@ -87,7 +87,8 @@ export function LessonScreen({ token }: LessonScreenProps) {
   // Show interim transcript
   useEffect(() => {
     if (stt.finalText) {
-      setLiveTranscript(speechBuffer.getText() + " " + stt.finalText);
+      const buf = speechBuffer.getText();
+      setLiveTranscript(buf ? buf + " " + stt.finalText : stt.finalText);
     }
   }, [stt.finalText, speechBuffer]);
 
@@ -156,6 +157,7 @@ export function LessonScreen({ token }: LessonScreenProps) {
         messages={messages}
         isThinking={status === "thinking"}
         isSpeaking={isPlaying || status === "speaking"}
+        audioDuration={audioDuration}
         currentExercise={currentExercise}
         onSubmitExercise={submitExerciseAnswer}
       />

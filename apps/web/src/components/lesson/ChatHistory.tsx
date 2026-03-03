@@ -3,13 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { ExerciseCard } from "./ExerciseCard";
-import { CHAT_CONFIG } from "@/lib/config";
 import type { ChatMessage, LessonExercise } from "@/types";
 
 interface ChatHistoryProps {
   messages: ChatMessage[];
   isThinking: boolean;
   isSpeaking: boolean;
+  audioDuration: number | null;
   currentExercise: LessonExercise | null;
   onSubmitExercise: (exerciseId: string, answer: string) => void;
 }
@@ -19,11 +19,15 @@ function formatTime(timestamp: number): string {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 }
 
-const { WORDS_PER_TICK, TICK_MS } = CHAT_CONFIG;
+const DEFAULT_TICK_MS = 150;
 
-function StreamingText({ text, isActive }: { text: string; isActive: boolean }) {
+function StreamingText({ text, isActive, audioDuration }: { text: string; isActive: boolean; audioDuration: number | null }) {
   const words = text.split(" ");
-  const [count, setCount] = useState<number>(WORDS_PER_TICK);
+  const tickMs = audioDuration && words.length > 0
+    ? Math.max(50, Math.min(500, (audioDuration * 1000) / words.length))
+    : DEFAULT_TICK_MS;
+
+  const [count, setCount] = useState(1);
   const wasActiveRef = useRef(false);
   const [frozen, setFrozen] = useState(false);
 
@@ -37,9 +41,9 @@ function StreamingText({ text, isActive }: { text: string; isActive: boolean }) 
 
   useEffect(() => {
     if (frozen || !isActive || count >= words.length) return;
-    const timer = setTimeout(() => setCount((c) => Math.min(c + WORDS_PER_TICK, words.length)), TICK_MS);
+    const timer = setTimeout(() => setCount((c) => Math.min(c + 1, words.length)), tickMs);
     return () => clearTimeout(timer);
-  }, [count, words.length, frozen, isActive]);
+  }, [count, words.length, frozen, isActive, tickMs]);
 
   if (!wasActiveRef.current) return <>{text}</>;
   if (frozen) return <>{words.slice(0, count).join(" ")}...</>;
@@ -50,6 +54,7 @@ export function ChatHistory({
   messages,
   isThinking,
   isSpeaking,
+  audioDuration,
   currentExercise,
   onSubmitExercise,
 }: ChatHistoryProps) {
@@ -82,7 +87,7 @@ export function ChatHistory({
               >
                 <p className="text-sm leading-relaxed">
                   {msg.role === "assistant" && i === lastAssistantIdx && isLastAssistantNew ? (
-                    <StreamingText text={msg.text} isActive={isSpeaking} />
+                    <StreamingText text={msg.text} isActive={isSpeaking} audioDuration={audioDuration} />
                   ) : (
                     msg.text
                   )}

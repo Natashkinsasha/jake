@@ -145,16 +145,28 @@ export function useLessonState(token?: string | null) {
     (text: string) => {
       if (!text.trim()) return;
       pendingTurnsRef.current++;
-      console.log("[Lesson] sendText:", text.trim(), `(pendingTurns=${pendingTurnsRef.current})`);
-      setState((prev) => ({
-        ...prev,
-        messages: [
-          ...prev.messages,
-          { role: "user", text: text.trim(), timestamp: Date.now() },
-        ],
-        status: "thinking",
-      }));
-      emit("text", { text: text.trim() });
+      const trimmed = text.trim();
+      console.log("[Lesson] sendText:", trimmed, `(pendingTurns=${pendingTurnsRef.current})`);
+      setState((prev) => {
+        const last = prev.messages[prev.messages.length - 1];
+        if (last?.role === "user") {
+          const updated = [...prev.messages];
+          updated[updated.length - 1] = {
+            ...last,
+            text: last.text + " " + trimmed,
+          };
+          return { ...prev, messages: updated, status: "thinking" };
+        }
+        return {
+          ...prev,
+          messages: [
+            ...prev.messages,
+            { role: "user", text: trimmed, timestamp: Date.now() },
+          ],
+          status: "thinking",
+        };
+      });
+      emit("text", { text: trimmed });
     },
     [emit],
   );
@@ -196,6 +208,7 @@ export function useLessonState(token?: string | null) {
     ...state,
     connected,
     isPlaying: audioPlayer.isPlaying,
+    audioDuration: audioPlayer.duration,
     sendText,
     submitExerciseAnswer,
     endLesson,

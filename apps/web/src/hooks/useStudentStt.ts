@@ -175,6 +175,7 @@ export function useStudentStt(
           if (isFinal && transcript) {
             log("is_final segment:", transcript);
             onSegmentRef.current?.(transcript);
+            setFinalText("");
           }
 
           if (speechFinal) {

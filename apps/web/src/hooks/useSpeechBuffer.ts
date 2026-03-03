@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect } from "react";
+import { useRef, useCallback, useEffect, useMemo } from "react";
 import { LESSON_CONFIG } from "@/lib/config";
 
 interface UseSpeechBufferOptions {
@@ -44,5 +44,5 @@ export function useSpeechBuffer({ onFlush, onSpeechDone }: UseSpeechBufferOption
     };
   }, []);
 
-  return { push, clear, flush, getText };
+  return useMemo(() => ({ push, clear, flush, getText }), [push, clear, flush, getText]);
 }
