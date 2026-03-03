@@ -20,7 +20,9 @@ CORE RULES:
 - At the end, summarize what was practiced and tease next lesson.`;
 
 async function seed() {
-  const client = postgres(process.env.DATABASE_URL!);
+  const dbUrl = process.env["DATABASE_URL"];
+  if (!dbUrl) throw new Error("DATABASE_URL is required for seeding");
+  const client = postgres(dbUrl);
   const db = drizzle(client);
 
   console.log("Seeding database...");
@@ -41,13 +43,14 @@ async function seed() {
     })
     .returning();
 
+  if (!jake) throw new Error("INSERT into tutors did not return a row");
   console.log(`Created tutor: ${jake.name} (${jake.id})`);
   console.log("Seeding complete!");
 
   await client.end();
 }
 
-seed().catch((err) => {
+seed().catch((err: unknown) => {
   console.error("Seed failed:", err);
   process.exit(1);
 });

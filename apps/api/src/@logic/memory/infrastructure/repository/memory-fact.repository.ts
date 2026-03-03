@@ -11,6 +11,7 @@ export class MemoryFactRepository {
 
   async create(data: typeof memoryFactTable.$inferInsert): Promise<MemoryFactEntity> {
     const [row] = await this.txHost.tx.insert(memoryFactTable).values(data).returning();
+    if (!row) throw new Error("INSERT into memory_facts did not return a row");
     return MemoryFactFactory.create(row);
   }
 

@@ -1,5 +1,5 @@
-import { LlmService, LlmMessage } from "./llm.service";
-import { EnvService } from "../../../@shared/shared-config/env.service";
+import { LlmService, type LlmMessage } from "./llm.service";
+import { type EnvService } from "../../../@shared/shared-config/env.service";
 
 // Mock the Anthropic SDK
 jest.mock("@anthropic-ai/sdk", () => {
@@ -14,9 +14,9 @@ jest.mock("@anthropic-ai/sdk", () => {
 });
 
 // Access the mock create function
-function getMockCreate() {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  return require("@anthropic-ai/sdk")._mockCreate;
+function getMockCreate(): jest.Mock {
+  const sdk: unknown = jest.requireMock("@anthropic-ai/sdk");
+  return (sdk as { _mockCreate: jest.Mock })._mockCreate;
 }
 
 describe("LlmService", () => {

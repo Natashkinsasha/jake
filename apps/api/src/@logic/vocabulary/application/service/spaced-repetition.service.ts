@@ -9,7 +9,7 @@ export class SpacedRepetitionService {
 
     const intervals = [1, 3, 7, 14, 30, 60];
     const intervalIndex = Math.min(Math.floor(newStrength / 20), intervals.length - 1);
-    const days = intervals[intervalIndex];
+    const days = intervals[intervalIndex] ?? 1;
 
     return {
       strength: newStrength,

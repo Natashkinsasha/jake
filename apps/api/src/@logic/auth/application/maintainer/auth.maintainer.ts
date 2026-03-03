@@ -29,8 +29,9 @@ export class AuthMaintainer {
     const activeTutor = await this.tutorContract.findActiveUserTutor(user.id);
     if (!activeTutor) {
       const activeTutors = await this.tutorContract.findActiveTutors();
-      if (activeTutors.length > 0) {
-        await this.tutorContract.selectTutor(user.id, activeTutors[0].id);
+      const firstTutor = activeTutors[0];
+      if (firstTutor) {
+        await this.tutorContract.selectTutor(user.id, firstTutor.id);
       }
     }
 

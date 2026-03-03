@@ -29,7 +29,8 @@ export class GrammarProgressRepository {
       )
       .limit(1);
 
-    if (existing.length > 0) {
+    const existingRow = existing[0];
+    if (existingRow) {
       await this.txHost.tx
         .update(grammarProgressTable)
         .set({
@@ -37,7 +38,7 @@ export class GrammarProgressRepository {
           level: sql`GREATEST(0, ${grammarProgressTable.level} - 5)`,
           updatedAt: new Date(),
         })
-        .where(eq(grammarProgressTable.id, existing[0].id));
+        .where(eq(grammarProgressTable.id, existingRow.id));
     } else {
       await this.txHost.tx.insert(grammarProgressTable).values({
         userId,
@@ -60,7 +61,8 @@ export class GrammarProgressRepository {
       )
       .limit(1);
 
-    if (existing.length > 0) {
+    const existingRow = existing[0];
+    if (existingRow) {
       await this.txHost.tx
         .update(grammarProgressTable)
         .set({
@@ -68,7 +70,7 @@ export class GrammarProgressRepository {
           level: sql`LEAST(100, ${grammarProgressTable.level} + 5)`,
           updatedAt: new Date(),
         })
-        .where(eq(grammarProgressTable.id, existing[0].id));
+        .where(eq(grammarProgressTable.id, existingRow.id));
     } else {
       await this.txHost.tx.insert(grammarProgressTable).values({
         userId,

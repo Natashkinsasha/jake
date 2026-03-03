@@ -12,6 +12,7 @@ export class LessonRepository {
 
   async create(data: typeof lessonTable.$inferInsert): Promise<LessonEntity> {
     const [row] = await this.txHost.tx.insert(lessonTable).values(data).returning();
+    if (!row) throw new Error("INSERT into lessons did not return a row");
     return LessonFactory.create(row);
   }
 
@@ -42,7 +43,7 @@ export class LessonRepository {
       .select({ count: sql<number>`count(*)::int` })
       .from(lessonTable)
       .where(eq(lessonTable.userId, userId));
-    return result.count;
+    return result?.count ?? 0;
   }
 
   async findRecentByUser(userId: string, limit = 10): Promise<LessonEntity[]> {

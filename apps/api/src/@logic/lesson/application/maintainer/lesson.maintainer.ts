@@ -28,7 +28,7 @@ const GREETING_PROMPTS = [
 ];
 
 function pickGreetingPrompt(): string {
-  return GREETING_PROMPTS[Math.floor(Math.random() * GREETING_PROMPTS.length)];
+  return GREETING_PROMPTS[Math.floor(Math.random() * GREETING_PROMPTS.length)] ?? GREETING_PROMPTS[0] ?? "";
 }
 
 @Injectable()
@@ -53,7 +53,7 @@ export class LessonMaintainer {
     return {
       id: lesson.id,
       status: lesson.status,
-      topic: (lesson.topics as string[] | null)?.length ? (lesson.topics as string[]).join(", ") : null,
+      topic: lesson.topics != null && lesson.topics.length > 0 ? lesson.topics.join(", ") : null,
       createdAt: lesson.startedAt,
       duration: lesson.durationMinutes,
       summary: lesson.summary,
@@ -71,7 +71,7 @@ export class LessonMaintainer {
     return lessons.map((l) => ({
       id: l.id,
       status: l.status,
-      topic: l.topics?.length ? l.topics.join(", ") : null,
+      topic: l.topics != null && l.topics.length > 0 ? l.topics.join(", ") : null,
       createdAt: l.startedAt,
       duration: l.durationMinutes,
       summary: l.summary,
@@ -107,7 +107,7 @@ export class LessonMaintainer {
         speechSpeed,
       );
     } catch (error) {
-      this.logger.warn(`TTS failed for greeting, sending text only: ${error instanceof Error ? error.message : error}`);
+      this.logger.warn(`TTS failed for greeting, sending text only: ${error instanceof Error ? error.message : String(error)}`);
     }
 
     return {
@@ -180,7 +180,7 @@ export class LessonMaintainer {
     try {
       tutorAudio = await this.tts.synthesize(response.text, voiceId, speechSpeed);
     } catch (error) {
-      this.logger.warn(`TTS failed, sending text only: ${error instanceof Error ? error.message : error}`);
+      this.logger.warn(`TTS failed, sending text only: ${error instanceof Error ? error.message : String(error)}`);
     }
 
     await this.messageRepository.create({ lessonId, role: "user", content: text });

@@ -21,15 +21,17 @@ export class VocabularyRepository {
       )
       .limit(1);
 
-    if (existing.length > 0) {
+    const existingRow = existing[0];
+    if (existingRow) {
       await this.txHost.tx
         .update(vocabularyTable)
         .set({ strength: data.strength, nextReview: data.nextReview, updatedAt: new Date() })
-        .where(eq(vocabularyTable.id, existing[0].id));
-      return VocabularyFactory.create(existing[0]);
+        .where(eq(vocabularyTable.id, existingRow.id));
+      return VocabularyFactory.create(existingRow);
     }
 
     const [row] = await this.txHost.tx.insert(vocabularyTable).values(data).returning();
+    if (!row) throw new Error("INSERT into vocabulary did not return a row");
     return VocabularyFactory.create(row);
   }
 

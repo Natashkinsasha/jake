@@ -45,7 +45,7 @@ export function ReviewSession({ words, onComplete }: ReviewSessionProps) {
           <ProgressBar value={remembered} max={total} color={remembered >= total * 0.7 ? "bg-green-500" : "bg-orange-400"} />
           <p className="text-sm text-gray-400 mt-2">{Math.round((remembered / total) * 100)}%</p>
         </div>
-        <button onClick={() => onComplete(results)} className="btn-primary">
+        <button onClick={() => { onComplete(results); }} className="btn-primary">
           Done
         </button>
       </div>
@@ -53,6 +53,7 @@ export function ReviewSession({ words, onComplete }: ReviewSessionProps) {
   }
 
   const word = words[currentIndex];
+  if (!word) return null;
 
   return (
     <div>

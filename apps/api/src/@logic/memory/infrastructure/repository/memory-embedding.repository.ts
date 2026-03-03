@@ -19,6 +19,7 @@ export class MemoryEmbeddingRepository {
 
   async create(data: typeof memoryEmbeddingTable.$inferInsert): Promise<MemoryEmbeddingEntity> {
     const [row] = await this.txHost.tx.insert(memoryEmbeddingTable).values(data).returning();
+    if (!row) throw new Error("INSERT into memory_embeddings did not return a row");
     return MemoryEmbeddingFactory.create(row);
   }
 
@@ -34,6 +35,7 @@ export class MemoryEmbeddingRepository {
 
   async findSimilar(userId: string, queryEmbedding: number[], limit = 5, threshold = 0.8): Promise<EmbeddingSimilarityResult[]> {
     const vectorStr = `[${queryEmbedding.join(",")}]`;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- raw SQL query returns untyped result
     const results = await this.txHost.tx.execute(
       sql`SELECT id, content, emotional_tone, created_at,
           1 - (embedding <=> ${vectorStr}::vector) as similarity
@@ -44,6 +46,7 @@ export class MemoryEmbeddingRepository {
         ORDER BY similarity DESC
         LIMIT ${limit}`
     );
-    return (results.rows ?? results) as EmbeddingSimilarityResult[];
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- raw SQL result structure
+    return ((results as Record<string, unknown>)["rows"] ?? results) as EmbeddingSimilarityResult[];
   }
 }

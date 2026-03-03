@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { TTS_CONFIG } from "@/lib/config";
@@ -26,6 +26,7 @@ function computeWordBoundaries(alignment: ElevenLabsAlignment): WordTiming[] {
     const char = alignment.characters[i];
     const start = alignment.character_start_times_seconds[i];
     const end = alignment.character_end_times_seconds[i];
+    if (char === undefined || start === undefined || end === undefined) continue;
 
     if (char === " " || char === "\n" || char === "\t") {
       if (currentWord) {
@@ -65,7 +66,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const apiKey = process.env.ELEVENLABS_API_KEY;
+  const apiKey = process.env["ELEVENLABS_API_KEY"];
   if (!apiKey) {
     return NextResponse.json(
       { error: "ELEVENLABS_API_KEY not configured" },
@@ -73,7 +74,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const body = await request.json();
+  const body = (await request.json()) as { text?: string; voiceId?: string };
   const { text, voiceId = TTS_CONFIG.DEFAULT_VOICE_ID } = body;
 
   if (!text || typeof text !== "string") {
@@ -117,7 +118,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const data = await response.json();
+  const data = (await response.json()) as { audio_base64: string; alignment: ElevenLabsAlignment };
   const audioBase64: string = data.audio_base64;
   const alignment: ElevenLabsAlignment = data.alignment;
   const words = computeWordBoundaries(alignment);

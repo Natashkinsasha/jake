@@ -40,6 +40,7 @@ export class UserTutorRepository {
       .insert(userTutorTable)
       .values({ userId, tutorId, isActive: true })
       .returning();
+    if (!result) throw new Error("INSERT into user_tutors did not return a row");
     return UserTutorFactory.create(result);
   }
 }

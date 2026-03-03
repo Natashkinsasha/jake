@@ -11,6 +11,7 @@ export class HomeworkRepository {
 
   async create(data: typeof homeworkTable.$inferInsert): Promise<HomeworkEntity> {
     const [row] = await this.txHost.tx.insert(homeworkTable).values(data).returning();
+    if (!row) throw new Error("INSERT into homework did not return a row");
     return HomeworkFactory.create(row);
   }
 

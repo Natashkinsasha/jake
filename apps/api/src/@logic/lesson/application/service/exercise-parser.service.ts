@@ -7,9 +7,9 @@ export class ExerciseParserService {
 
   extract(text: string): Exercise | null {
     const match = text.match(/<exercise>([\s\S]*?)<\/exercise>/);
-    if (!match) return null;
+    if (!match?.[1]) return null;
     try {
-      const parsed = JSON.parse(match[1]);
+      const parsed: unknown = JSON.parse(match[1]);
       const result = ExerciseSchema.safeParse(parsed);
       if (!result.success) {
         this.logger.warn(`Invalid exercise JSON from LLM: ${JSON.stringify(result.error.issues)}`);
