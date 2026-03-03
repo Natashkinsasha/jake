@@ -30,29 +30,258 @@ jake/
 └── pnpm-workspace.yaml
 ```
 
-## Getting Started
+## Local Development
+
+### 1. Prerequisites
+
+| Tool | Version | Install |
+|------|---------|---------|
+| Node.js | 20+ (Volta pinned to 22.22.0) | `brew install node` or [volta.sh](https://volta.sh) |
+| pnpm | 9.15.0 | `corepack enable && corepack prepare pnpm@9 --activate` |
+| Docker | 24+ | [docker.com](https://docs.docker.com/get-docker/) |
+
+### 2. Поднять базы данных
+
+PostgreSQL (с pgvector) и Redis запускаются через Docker Compose:
 
 ```bash
-pnpm install
-pnpm db:migrate
-pnpm db:seed
-pnpm dev            # starts both API (port 4000) and web (port 3000)
+docker compose up -d
 ```
 
-### Environment Variables (API)
+Это поднимает:
+- **PostgreSQL 16 + pgvector** на `localhost:5432` (user: `jake`, password: `jake`, db: `jake`)
+- **Redis 7** на `localhost:6379`
 
+Данные хранятся в Docker volumes (`pgdata`, `redisdata`) и переживают перезапуск контейнеров.
+
+```bash
+# проверить что работает
+docker compose ps
+docker compose logs postgres   # логи postgres
+docker compose logs redis      # логи redis
+
+# остановить
+docker compose down
+
+# остановить и удалить данные
+docker compose down -v
 ```
-DATABASE_URL=postgres://...
+
+### 3. Environment Variables
+
+Создать `.env` в корне проекта. API читает его напрямую (symlink на `apps/api/.env`):
+
+```bash
+PORT=4000
+NODE_ENV=development
+
+# Database (совпадает с docker-compose.yml)
+DATABASE_URL=postgres://jake:jake@localhost:5432/jake
+POSTGRES_USER=jake
+POSTGRES_PASSWORD=jake
+POSTGRES_DB=jake
+
+# Redis
 REDIS_URL=redis://localhost:6379
-JWT_SECRET=...
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
+
+# Auth
+JWT_SECRET=any-random-string-for-dev
+NEXTAUTH_SECRET=any-random-string-for-dev
+NEXTAUTH_URL=http://localhost:3000
+GOOGLE_CLIENT_ID=<from Google Cloud Console>
+GOOGLE_CLIENT_SECRET=<from Google Cloud Console>
+
+# Frontend
 FRONTEND_URL=http://localhost:3000
-ANTHROPIC_API_KEY=...
-OPENAI_API_KEY=...
+
+# AI
+ANTHROPIC_API_KEY=sk-ant-...
+OPENAI_API_KEY=sk-...
+
+# Voice
 DEEPGRAM_API_KEY=...
 ELEVENLABS_API_KEY=...
 ```
+
+### 4. Google OAuth (for login)
+
+1. Зайти в [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → Credentials
+2. Create OAuth 2.0 Client ID (type: Web application)
+3. Authorized redirect URI: `http://localhost:3000/api/auth/callback/google`
+4. Скопировать Client ID и Client Secret в `.env`
+
+### 5. Install & Run
+
+```bash
+# поднять PostgreSQL и Redis (если ещё не запущены)
+docker compose up -d
+
+# установить зависимости
+pnpm install
+
+# применить миграции (создаёт все таблицы + pgvector extension)
+pnpm db:migrate
+
+# засидить тьютора Jake в базу (нужно 1 раз)
+pnpm db:seed
+
+# запустить API + Web в dev-режиме
+pnpm dev
+```
+
+После `pnpm dev`:
+- **Web**: http://localhost:3000
+- **API**: http://localhost:4000
+
+### 6. BullMQ Worker (background jobs)
+
+`pnpm dev` запускает только API и Web. Background-задачи (извлечение фактов из разговора, пост-обработка урока, обновление прогресса) обрабатывает отдельный воркер. Без него уроки работают, но память и прогресс не обновляются.
+
+```bash
+# в отдельном терминале
+pnpm --filter @jake/api start:worker
+```
+
+### Как работает проксирование в dev
+
+Nginx не нужен локально. Next.js проксирует запросы к API через rewrites (`apps/web/next.config.js`):
+
+| Запрос в браузере | Куда проксируется |
+|-------------------|-------------------|
+| `/api/auth/*` | Остаётся в Next.js (NextAuth) |
+| `/api/stt/*` | Остаётся в Next.js (Deepgram token) |
+| `/api/*` (всё остальное) | `http://localhost:4000/*` (NestJS) |
+| `/socket.io/*` | `http://localhost:4000/socket.io/*` (WebSocket) |
+
+### Полезные команды
+
+```bash
+pnpm dev                              # запустить всё
+pnpm build                            # собрать оба приложения
+pnpm lint                             # линтинг
+pnpm type-check                       # проверка типов
+pnpm db:migrate                       # применить миграции
+pnpm db:seed                          # засидить данные
+pnpm --filter @jake/api db:generate   # сгенерировать миграцию после изменения схемы
+pnpm --filter @jake/api start:worker  # запустить BullMQ воркер
+pnpm --filter @jake/api test          # тесты API
+pnpm --filter @jake/web test          # тесты Web
+```
+
+---
+
+## Deployment
+
+### Infrastructure
+
+| Component | Details |
+|-----------|---------|
+| Server | Vultr VPS, Frankfurt, `vc2-2c-4gb` |
+| Domain | `jakestudy.xyz` (Porkbun, A-record → `192.248.177.48`) |
+| SSL | Let's Encrypt via certbot |
+| Registry | GitHub Container Registry (`ghcr.io`) |
+
+### CI/CD Pipeline
+
+Deployment is fully automated via GitHub Actions (`.github/workflows/deploy.yml`):
+
+```
+Push to main
+    │
+    ▼
+┌──────────────────────────────┐
+│  build-and-push (GitHub CI)  │
+│                              │
+│  1. Build API Docker image   │
+│  2. Build Web Docker image   │
+│  3. Push both to ghcr.io     │
+│     with :latest and :sha    │
+└──────────────┬───────────────┘
+               │
+               ▼
+┌──────────────────────────────┐
+│  deploy (SSH to Vultr)       │
+│                              │
+│  1. docker login ghcr.io     │
+│  2. docker compose pull      │
+│  3. docker compose up -d     │
+│  4. restart nginx            │
+│  5. prune old images         │
+└──────────────────────────────┘
+```
+
+**Trigger**: push to `main` or manual `workflow_dispatch`.
+
+### Production Compose (`docker-compose.prod.yml`)
+
+Services:
+
+| Service | Image | Purpose |
+|---------|-------|---------|
+| `postgres` | `pgvector/pgvector:pg16` | Database with vector extension |
+| `redis` | `redis:7-alpine` | BullMQ job queue |
+| `api` | `ghcr.io/natashkinsasha/jake-api` | NestJS API (port 4000) |
+| `worker` | Same API image, `node dist/worker.js` | BullMQ background jobs |
+| `web` | `ghcr.io/natashkinsasha/jake-web` | Next.js frontend (port 3000) |
+| `nginx` | `nginx:alpine` | Reverse proxy, SSL termination |
+
+### Nginx Routing (`infra/nginx.conf`)
+
+```
+HTTP :80 → redirect to HTTPS
+HTTPS :443:
+  /api/auth/*    → web:3000   (NextAuth handles OAuth)
+  /api/stt/*     → web:3000   (Deepgram token endpoint)
+  /api/*         → api:4000   (NestJS REST API)
+  /socket.io/*   → api:4000   (WebSocket, with upgrade headers)
+  /*             → web:3000   (Next.js pages)
+```
+
+### Docker Images
+
+Both images use multi-stage builds (`node:20-alpine`):
+
+- **API** (`apps/api/Dockerfile`): builds `@jake/shared` → builds `@jake/api` → `pnpm deploy --prod` for minimal `node_modules` → final image has only `dist/` and dependencies.
+- **Web** (`apps/web/Dockerfile`): builds `@jake/shared` → builds `@jake/web` → copies Next.js `standalone` output → final image runs `node apps/web/server.js`.
+
+### Server Setup
+
+Files on the server (`/root/jake/`):
+
+```
+/root/jake/
+├── .env                       # production env vars (manual)
+├── docker-compose.prod.yml    # copied from repo
+└── infra/
+    └── nginx.conf             # copied from repo
+```
+
+### Known Gotchas
+
+- **Next.js PORT**: The `.env` has `PORT=4000` (for API), but Next.js standalone also reads `PORT`. In `docker-compose.prod.yml`, the `web` service overrides it with `PORT: 3000`.
+- **NextAuth routing**: `/api/auth/*` must proxy to the web container, not API. NextAuth runs inside Next.js.
+- **DB migrations**: `drizzle-kit` is a devDependency and not included in production images. Run migrations manually via `psql` on the server or use a one-off container.
+- **SSL certificates**: Managed by certbot. Volumes `certbot-webroot` and `letsencrypt` are shared with nginx. The ACME challenge path `/.well-known/acme-challenge/` is served from the webroot.
+- **WebSocket timeout**: Nginx has `proxy_read_timeout 86400s` for `/socket.io/` to keep long-lived lesson connections alive.
+
+### Manual Deploy (without CI)
+
+```bash
+ssh root@192.248.177.48
+cd /root/jake
+docker compose -f docker-compose.prod.yml pull api web
+docker compose -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.prod.yml restart nginx
+docker image prune -f
+```
+
+### GitHub Secrets
+
+| Secret | Purpose |
+|--------|---------|
+| `DROPLET_HOST` | Server IP |
+| `DROPLET_SSH_KEY` | Private SSH key for deploy |
+| `GITHUB_TOKEN` | Auto-provided, used for ghcr.io login |
 
 ## Architecture Overview
 
