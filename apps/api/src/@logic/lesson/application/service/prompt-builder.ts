@@ -61,28 +61,6 @@ ${context.facts.map((f) => `- [${f.category}] ${f.fact}`).join("\n")}`);
 ${context.recentEmotionalContext.join("\n")}`);
   }
 
-  parts.push(`\n=== LEARNING FOCUS ===
-Weak areas: ${context.learningFocus.weakAreas.join(", ") || "none identified"}
-Strong areas: ${context.learningFocus.strongAreas.join(", ") || "none identified"}
-Recent words: ${context.learningFocus.recentWords.join(", ") || "none"}`);
-
-  if (context.learningFocus.suggestedTopics.length > 0) {
-    const topicList = context.learningFocus.suggestedTopics
-      .map((t, i) => `${i + 1}. ${t}${i === 0 ? " (priority — focus here first)" : ""}`)
-      .join("\n");
-    parts.push(`\n=== LESSON TOPICS (prepared) ===
-${topicList}
-
-TOPIC FLOW:
-- Start with topic #1, spend most time there
-- If the student seems comfortable or bored, transition naturally to the next
-- Don't force transitions — follow the conversation
-- You don't have to cover all topics — quality over quantity`);
-  } else {
-    parts.push(`\n=== LESSON TOPICS (prepared) ===
-Free conversation (no specific topics prepared)`);
-  }
-
   if (context.lessonNumber === 1) {
     parts.push(`\n=== FIRST LESSON INSTRUCTIONS ===
 This is the student's FIRST lesson. Your goals:

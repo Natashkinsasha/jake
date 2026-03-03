@@ -23,9 +23,6 @@ import { QUEUE_NAMES } from "../../@shared/shared-job/queue-names";
 import { AuthModule } from "../auth/auth.module";
 import { TutorModule } from "../tutor/tutor.module";
 import { MemoryModule } from "../memory/memory.module";
-import { VocabularyModule } from "../vocabulary/vocabulary.module";
-import { ProgressModule } from "../progress/progress.module";
-import { HomeworkModule } from "../homework/homework.module";
 
 @Module({
   imports: [
@@ -41,9 +38,6 @@ import { HomeworkModule } from "../homework/homework.module";
     AuthModule,
     TutorModule,
     MemoryModule,
-    VocabularyModule,
-    ProgressModule,
-    HomeworkModule,
   ],
   controllers: [LessonController],
   providers: [

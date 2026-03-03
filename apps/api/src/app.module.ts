@@ -15,9 +15,6 @@ import { HealthModule } from "./@logic/health/health.module";
 import { AuthModule } from "./@logic/auth/auth.module";
 import { TutorModule } from "./@logic/tutor/tutor.module";
 import { MemoryModule } from "./@logic/memory/memory.module";
-import { VocabularyModule } from "./@logic/vocabulary/vocabulary.module";
-import { ProgressModule } from "./@logic/progress/progress.module";
-import { HomeworkModule } from "./@logic/homework/homework.module";
 import { LessonModule } from "./@logic/lesson/lesson.module";
 
 @Module({
@@ -38,9 +35,6 @@ import { LessonModule } from "./@logic/lesson/lesson.module";
     AuthModule,
     TutorModule,
     MemoryModule,
-    VocabularyModule,
-    ProgressModule,
-    HomeworkModule,
     LessonModule,
   ],
 })

@@ -19,12 +19,6 @@ function createMockContext(overrides: Partial<LessonContext> = {}): LessonContex
     },
     facts: [],
     recentEmotionalContext: [],
-    learningFocus: {
-      weakAreas: [],
-      strongAreas: [],
-      recentWords: [],
-      suggestedTopics: [],
-    },
     ...overrides,
   };
 }
@@ -112,50 +106,6 @@ describe("buildFullSystemPrompt", () => {
   it("should not include emotional context when empty", () => {
     const result = buildFullSystemPrompt(createMockContext({ recentEmotionalContext: [] }));
     expect(result).not.toContain("=== EMOTIONAL CONTEXT ===");
-  });
-
-  it("should include learning focus and lesson topics section", () => {
-    const context = createMockContext({
-      learningFocus: {
-        weakAreas: ["past tense", "articles"],
-        strongAreas: ["vocabulary", "pronunciation"],
-        recentWords: ["accomplish", "determine"],
-        suggestedTopics: ["past_simple", "articles", "present_perfect"],
-      },
-    });
-    const result = buildFullSystemPrompt(context);
-    expect(result).toContain("=== LEARNING FOCUS ===");
-    expect(result).toContain("Weak areas: past tense, articles");
-    expect(result).toContain("Strong areas: vocabulary, pronunciation");
-    expect(result).toContain("Recent words: accomplish, determine");
-    expect(result).toContain("=== LESSON TOPICS (prepared) ===");
-    expect(result).toContain("1. past_simple (priority — focus here first)");
-    expect(result).toContain("2. articles");
-    expect(result).toContain("3. present_perfect");
-    expect(result).toContain("TOPIC FLOW:");
-    expect(result).toContain("Start with topic #1");
-  });
-
-  it("should show free conversation when no topics", () => {
-    const result = buildFullSystemPrompt(createMockContext());
-    expect(result).toContain("Weak areas: none identified");
-    expect(result).toContain("Strong areas: none identified");
-    expect(result).toContain("Recent words: none");
-    expect(result).toContain("Free conversation (no specific topics prepared)");
-  });
-
-  it("should handle single suggested topic", () => {
-    const context = createMockContext({
-      learningFocus: {
-        weakAreas: ["past tense"],
-        strongAreas: [],
-        recentWords: [],
-        suggestedTopics: ["past_simple"],
-      },
-    });
-    const result = buildFullSystemPrompt(context);
-    expect(result).toContain("1. past_simple (priority — focus here first)");
-    expect(result).not.toContain("2.");
   });
 
   it("should include first lesson instructions for lesson 1", () => {
