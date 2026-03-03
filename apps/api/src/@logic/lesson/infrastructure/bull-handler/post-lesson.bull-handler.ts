@@ -9,7 +9,6 @@ import { AuthContract } from "../../../auth/contract/auth.contract";
 import { VocabularyContract } from "../../../vocabulary/contract/vocabulary.contract";
 import { ProgressContract } from "../../../progress/contract/progress.contract";
 import { MemoryContract } from "../../../memory/contract/memory.contract";
-import { HomeworkContract } from "../../../homework/contract/homework.contract";
 import { PostLessonLlmResponseSchema, PostLessonLlmResponse } from "@jake/shared";
 import { QUEUE_NAMES } from "../../../../@shared/shared-job/queue-names";
 
@@ -37,7 +36,6 @@ export class PostLessonBullHandler extends WorkerHost {
     private vocabularyContract: VocabularyContract,
     private progressContract: ProgressContract,
     private memoryContract: MemoryContract,
-    private homeworkContract: HomeworkContract,
   ) {
     super();
   }
@@ -56,19 +54,6 @@ export class PostLessonBullHandler extends WorkerHost {
       const summary = await this.summarizeLesson(conversationHistory);
 
       await this.savePostLessonData(lessonId, lesson, summary);
-
-      // Homework generation outside transaction — can fail independently
-      const user = await this.authContract.findByIdWithPreferences(lesson.userId);
-      const prefs = user?.user_preferences;
-      await this.homeworkContract.generateAndSave(
-        lessonId,
-        lesson.userId,
-        summary,
-        {
-          preferredExerciseTypes: prefs?.preferredExerciseTypes ?? undefined,
-          interests: prefs?.interests ?? undefined,
-        },
-      );
 
       this.logger.log(`Post-lesson job completed for lesson ${lessonId}`);
     } catch (error) {

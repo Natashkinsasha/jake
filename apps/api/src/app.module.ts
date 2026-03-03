@@ -17,7 +17,6 @@ import { TutorModule } from "./@logic/tutor/tutor.module";
 import { MemoryModule } from "./@logic/memory/memory.module";
 import { VocabularyModule } from "./@logic/vocabulary/vocabulary.module";
 import { ProgressModule } from "./@logic/progress/progress.module";
-import { HomeworkModule } from "./@logic/homework/homework.module";
 import { LessonModule } from "./@logic/lesson/lesson.module";
 
 @Module({
@@ -40,7 +39,6 @@ import { LessonModule } from "./@logic/lesson/lesson.module";
     MemoryModule,
     VocabularyModule,
     ProgressModule,
-    HomeworkModule,
     LessonModule,
   ],
 })
