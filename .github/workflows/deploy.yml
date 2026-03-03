@@ -11,7 +11,44 @@ env:
   WEB_IMAGE: ghcr.io/natashkinsasha/jake-web
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+
+  type-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm type-check
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo test
+
   build-api:
+    needs: [lint, type-check, test]
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -34,6 +71,7 @@ jobs:
           cache-to: type=gha,mode=max,scope=api
 
   build-web:
+    needs: [lint, type-check, test]
     runs-on: ubuntu-latest
     permissions:
       contents: read
