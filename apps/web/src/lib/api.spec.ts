@@ -42,16 +42,6 @@ describe("api", () => {
     });
   });
 
-  describe("progress.get", () => {
-    it("fetches /progress with userId", async () => {
-      await api.progress.get("user-1");
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining("/progress?userId=user-1"),
-        expect.any(Object),
-      );
-    });
-  });
-
   it("throws on non-ok response", async () => {
     mockFetch.mockResolvedValue({
       ok: false,

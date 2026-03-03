@@ -3,9 +3,6 @@ import type {
   UserPreferences,
   LessonListItem,
   LessonDetail,
-  HomeworkListItem,
-  VocabularyWord,
-  ProgressData,
 } from "@/types";
 import { getBackendToken } from "@/lib/session";
 import { API_URL } from "@/lib/config";
@@ -62,23 +59,5 @@ export const api = {
         method: "POST",
         body: JSON.stringify({ history }),
       }),
-  },
-  homework: {
-    list: () => request<HomeworkListItem[]>("/homework"),
-    get: (id: string) => request<HomeworkListItem>(`/homework/${id}`),
-    submit: (id: string, answers: Record<string, string>) =>
-      request<{ score: number }>(`/homework/${id}/submit`, {
-        method: "POST",
-        body: JSON.stringify({ answers }),
-      }),
-  },
-  vocabulary: {
-    list: (userId: string) =>
-      request<{ words: VocabularyWord[] }>(`/vocabulary?userId=${userId}`),
-    review: (userId: string) =>
-      request<{ words: VocabularyWord[] }>(`/vocabulary/review?userId=${userId}`),
-  },
-  progress: {
-    get: (userId: string) => request<ProgressData>(`/progress?userId=${userId}`),
   },
 };
