@@ -15,4 +15,10 @@ export interface LessonContext {
   };
   facts: Array<{ category: string; fact: string }>;
   recentEmotionalContext: string[];
+  learningFocus: {
+    weakAreas: string[];
+    strongAreas: string[];
+    recentWords: string[];
+    suggestedTopics: string[];
+  };
 }
