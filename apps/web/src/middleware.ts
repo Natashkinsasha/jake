@@ -11,6 +11,7 @@ export const config = {
     "/prototype/:path*",
     "/dashboard/:path*",
     "/lesson/:path*",
+    "/lessons/:path*",
     "/homework/:path*",
     "/vocabulary/:path*",
     "/progress/:path*",
