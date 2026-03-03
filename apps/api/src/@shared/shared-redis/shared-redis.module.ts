@@ -1,19 +1,19 @@
 import { RedisModule, RedisModuleOptions } from '@liaoliaots/nestjs-redis';
 import type { Redis } from 'ioredis';
 import { Logger, Module } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 
 import { SharedConfigModule } from '../shared-config/shared-config.module';
+import { EnvService } from '../shared-config/env.service';
 
 @Module({
   imports: [
     RedisModule.forRootAsync(
       {
         imports: [SharedConfigModule],
-        useFactory: (configService: unknown): RedisModuleOptions => {
-          const cfg = configService as ConfigService;
-          const redisUrl: string = cfg.getOrThrow('REDIS_URL');
-          const redisDbNumber = Number(cfg.getOrThrow('REDIS_DB_NUMBER'));
+        useFactory: (...args: unknown[]): RedisModuleOptions => {
+          const envService = args[0] as EnvService;
+          const redisUrl = envService.get('REDIS_URL');
+          const redisDbNumber = envService.get('REDIS_DB_NUMBER');
           Logger.debug(
             `Redis uri: ${redisUrl}. Db number: ${redisDbNumber}`,
             'RedisModule',
@@ -40,7 +40,7 @@ import { SharedConfigModule } from '../shared-config/shared-config.module';
             ],
           };
         },
-        inject: [ConfigService],
+        inject: [EnvService],
       },
       false,
     ),

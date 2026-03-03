@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { AppDrizzleTransactionHost } from "@shared/shared-cls/app-drizzle-transaction-host";
+import { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
 import { eq, desc, lte, and } from "drizzle-orm";
 import { vocabularyTable } from "../table/vocabulary.table";
 import { VocabularyEntity } from "../../domain/entity/vocabulary.entity";

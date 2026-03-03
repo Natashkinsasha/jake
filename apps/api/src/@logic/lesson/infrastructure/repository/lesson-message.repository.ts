@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { AppDrizzleTransactionHost } from "@shared/shared-cls/app-drizzle-transaction-host";
+import { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
 import { eq } from "drizzle-orm";
 import { lessonMessageTable } from "../table/lesson-message.table";
 import { LessonMessageEntity } from "../../domain/entity/lesson-message.entity";

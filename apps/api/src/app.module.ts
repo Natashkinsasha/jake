@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import {SharedJobBoardModule} from "@shared/shared-job-board";
 // @shared
 import { SharedConfigModule } from "./@shared/shared-config/shared-config.module";
+import { SharedClsModule } from "./@shared/shared-cls/shared-cls.module";
 import { SharedDrizzlePgModule } from "./@shared/shared-drizzle-pg/shared-drizzle-pg.module";
 import { SharedRedisModule } from "./@shared/shared-redis/shared-redis.module";
 import { SharedJobModule } from "./@shared/shared-job/shared-job.module";
@@ -24,6 +25,7 @@ import { LessonModule } from "./@logic/lesson/lesson.module";
     // Shared infrastructure
     SharedConfigModule,
     SharedDrizzlePgModule,
+    SharedClsModule,
     SharedRedisModule,
     SharedJobModule,
     SharedJobBoardModule,

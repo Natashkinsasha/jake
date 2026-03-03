@@ -20,5 +20,6 @@ WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app/deploy/node_modules ./node_modules
 COPY --from=builder /app/deploy/dist ./dist
+COPY --from=builder /app/apps/api/drizzle ./drizzle
 EXPOSE 4000
 CMD ["node", "dist/main.js"]

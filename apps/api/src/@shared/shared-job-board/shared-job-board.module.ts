@@ -1,21 +1,21 @@
 import { Module } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 
 import { JobBoardModule } from '../../@lib/job-board/src';
 import { SharedConfigModule } from '../shared-config/shared-config.module';
+import { EnvService } from '../shared-config/env.service';
 import { SharedJobModule } from '../shared-job';
 
 @Module({
   imports: [
     JobBoardModule.forRootAsync({
       imports: [SharedJobModule, SharedConfigModule],
-      inject: [ConfigService],
-      useFactory: (configService: ConfigService) => {
+      inject: [EnvService],
+      useFactory: (envService: EnvService) => {
         return {
-          route: configService.getOrThrow('BULL_BOARD_PATH'),
-          username: configService.getOrThrow('BULL_BOARD_USERNAME'),
-          password: configService.getOrThrow('BULL_BOARD_PASSWORD'),
-          enabled: configService.getOrThrow('BULL_BOARD_ENABLED') === 'true',
+          route: envService.get('BULL_BOARD_PATH'),
+          username: envService.get('BULL_BOARD_USERNAME'),
+          password: envService.get('BULL_BOARD_PASSWORD'),
+          enabled: envService.get('BULL_BOARD_ENABLED') === 'true',
         };
       },
     }),

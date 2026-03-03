@@ -1,15 +1,14 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { sql } from "drizzle-orm";
-import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { RedisService } from "@liaoliaots/nestjs-redis";
-import { DRIZZLE } from "../../../@shared/shared-drizzle-pg/drizzle.provider";
+import { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
 
 @Injectable()
 export class HealthMaintainer {
   private readonly redis;
 
   constructor(
-    @Inject(DRIZZLE) private db: PostgresJsDatabase,
+    private readonly txHost: AppDrizzleTransactionHost<Record<string, never>>,
     redisService: RedisService,
   ) {
     this.redis = redisService.getOrThrow();
@@ -33,7 +32,7 @@ export class HealthMaintainer {
 
   private async checkDb(): Promise<boolean> {
     try {
-      await this.db.execute(sql`SELECT 1`);
+      await this.txHost.tx.execute(sql`SELECT 1`);
       return true;
     } catch {
       return false;

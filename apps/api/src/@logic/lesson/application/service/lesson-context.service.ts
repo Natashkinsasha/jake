@@ -35,11 +35,26 @@ export class LessonContextService {
 
     if (!user || !activeTutor) throw new NotFoundException("User or tutor not found");
 
-    const suggestedTopic = grammarProgress.find((g) => g.level < 30)?.topic || null;
+    const suggestedTopics: string[] = [];
+    const weak = grammarProgress
+      .filter((g) => g.level < 30)
+      .sort((a, b) => a.level - b.level);
+    const medium = grammarProgress
+      .filter((g) => g.level >= 30 && g.level < 50)
+      .sort((a, b) => a.level - b.level);
+
+    for (const g of weak) {
+      if (suggestedTopics.length >= 3) break;
+      suggestedTopics.push(g.topic);
+    }
+    for (const g of medium) {
+      if (suggestedTopics.length >= 3) break;
+      suggestedTopics.push(g.topic);
+    }
 
     const { facts, relevantMemories } = await this.memoryContract.retrieve(
       userId,
-      suggestedTopic || "general English lesson",
+      suggestedTopics[0] || "general English lesson",
     );
 
     const prefs = user.user_preferences;
@@ -70,7 +85,7 @@ export class LessonContextService {
         weakAreas: grammarProgress.filter((g) => g.level < 50).map((g) => g.topic),
         strongAreas: grammarProgress.filter((g) => g.level >= 70).map((g) => g.topic),
         recentWords: recentVocab.map((v) => v.word),
-        suggestedTopic,
+        suggestedTopics,
       },
     };
   }

@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { AppDrizzleTransactionHost } from "@shared/shared-cls/app-drizzle-transaction-host";
+import { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
 import { eq, and, sql } from "drizzle-orm";
 import { grammarProgressTable } from "../table/grammar-progress.table";
 import { GrammarProgressEntity } from "../../domain/entity/grammar-progress.entity";

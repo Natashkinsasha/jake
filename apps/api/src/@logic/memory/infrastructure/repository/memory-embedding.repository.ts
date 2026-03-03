@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { AppDrizzleTransactionHost } from "@shared/shared-cls/app-drizzle-transaction-host";
+import { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
 import { eq, desc, sql } from "drizzle-orm";
 import { memoryEmbeddingTable } from "../table/memory-embedding.table";
 import { MemoryEmbeddingEntity } from "../../domain/entity/memory-embedding.entity";

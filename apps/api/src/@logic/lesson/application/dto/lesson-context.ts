@@ -19,6 +19,6 @@ export interface LessonContext {
     weakAreas: string[];
     strongAreas: string[];
     recentWords: string[];
-    suggestedTopic: string | null;
+    suggestedTopics: string[];
   };
 }

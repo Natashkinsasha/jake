@@ -1,14 +1,13 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import {EnvService} from "@shared/shared-config/env.service";
 
-import * as schema from '../../@logic/token-ticker/infrastructure/table';
 
 @Injectable()
 export class DrizzlePgConfig {
-  constructor(private readonly configService: ConfigService) {}
+  constructor(private readonly envService: EnvService) {}
 
   create() {
-    const url = this.configService.get<string>('DATABASE_URL');
+    const url = this.envService.get('DATABASE_URL');
     return {
       pg: {
         connection: 'pool' as const,
@@ -16,7 +15,6 @@ export class DrizzlePgConfig {
           connectionString: url,
         },
       },
-      config: { schema },
     };
   }
 }
