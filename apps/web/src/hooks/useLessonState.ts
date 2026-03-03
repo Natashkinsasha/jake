@@ -184,12 +184,25 @@ export function useLessonState(token?: string | null) {
 
   const interruptTutor = useCallback(() => {
     pendingRef.current = null;
-    audioPlayer.stop();
-    setState((prev) => ({
-      ...prev,
-      hasPending: false,
-      status: prev.status === "speaking" ? "idle" : prev.status,
-    }));
+    const progress = audioPlayer.stop();
+    setState((prev) => {
+      const messages = [...prev.messages];
+      const last = messages[messages.length - 1];
+      if (last?.role === "assistant" && progress < 0.95) {
+        const cutAt = Math.max(1, Math.floor(last.text.length * progress));
+        const truncated = last.text.substring(0, cutAt).replace(/\s+\S*$/, "");
+        messages[messages.length - 1] = {
+          ...last,
+          text: (truncated || last.text.substring(0, cutAt)) + "...",
+        };
+      }
+      return {
+        ...prev,
+        messages,
+        hasPending: false,
+        status: prev.status === "speaking" ? "idle" : prev.status,
+      };
+    });
   }, [audioPlayer]);
 
   const setUserSpeaking = useCallback((speaking: boolean) => {

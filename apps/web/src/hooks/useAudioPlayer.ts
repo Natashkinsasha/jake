@@ -112,12 +112,18 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
     }
   }, [cleanup]);
 
-  const stop = useCallback(() => {
+  const stop = useCallback((): number => {
+    let progress = 1;
     if (audioRef.current) {
+      const { currentTime, duration } = audioRef.current;
+      if (duration > 0 && Number.isFinite(duration)) {
+        progress = currentTime / duration;
+      }
       setIsPlaying(false);
       cleanup();
-      log("stopped");
+      log("stopped at", `${(progress * 100).toFixed(0)}%`);
     }
+    return progress;
   }, [cleanup]);
 
   return { isPlaying, duration, play, stop };
