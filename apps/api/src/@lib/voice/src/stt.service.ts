@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { withSpan } from "../../llm/src/llm-tracing";
 import { createClient, type DeepgramClient } from "@deepgram/sdk";
 import { EnvService } from "../../../@shared/shared-config/env.service";
 
@@ -15,7 +16,12 @@ export class SttService {
     const audioBuffer = Buffer.from(audioBase64, "base64");
     this.logger.debug(`STT request: audioSize=${audioBuffer.byteLength} bytes`);
 
-    return this.transcribeWithRetry(audioBuffer, 1);
+    return withSpan(
+      "deepgram.stt",
+      { "stt.provider": "deepgram", "stt.model": "nova-3", "stt.input_bytes": audioBuffer.byteLength },
+      () => this.transcribeWithRetry(audioBuffer, 1),
+      (transcript) => ({ "stt.output_length": transcript.length }),
+    );
   }
 
   private async transcribeWithRetry(audioBuffer: Buffer, retries: number): Promise<string> {

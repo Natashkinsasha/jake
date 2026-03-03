@@ -1,4 +1,7 @@
+import { initTracing, shutdownTracing } from "./@lib/llm/src/llm-tracing";
 import { createApp } from "./create-app";
+
+initTracing();
 
 async function bootstrap() {
   const app = await createApp();
@@ -9,6 +12,7 @@ async function bootstrap() {
   const shutdown = async (signal: string) => {
     console.log(`Received ${signal}, shutting down gracefully…`);
     await app.close();
+    await shutdownTracing();
     console.log("App closed");
     process.exit(0);
   };

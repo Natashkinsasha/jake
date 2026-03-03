@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { withSpan } from "../../llm/src/llm-tracing";
 import { EnvService } from "../../../@shared/shared-config/env.service";
 
 @Injectable()
@@ -16,7 +17,12 @@ export class TtsService {
 
     this.logger.log(`Synthesizing ${text.length} chars for voice ${voiceId} (speed=${speed ?? 1.0})`);
 
-    return this.synthesizeWithRetry(text, voiceId, apiKey, 1, speed);
+    return withSpan(
+      "elevenlabs.tts",
+      { "tts.provider": "elevenlabs", "tts.model": "eleven_turbo_v2_5", "tts.voice_id": voiceId, "tts.input_length": text.length, "tts.speed": speed ?? 1.0 },
+      () => this.synthesizeWithRetry(text, voiceId, apiKey, 1, speed),
+      (result) => ({ "tts.output_bytes": Buffer.byteLength(result, "base64") }),
+    );
   }
 
   private async synthesizeWithRetry(text: string, voiceId: string, apiKey: string, retries: number, speed?: number): Promise<string> {

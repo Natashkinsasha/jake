@@ -32,6 +32,11 @@ export const EnvSchema = z.object({
   // Voice
   DEEPGRAM_API_KEY: z.string().optional(),
   ELEVENLABS_API_KEY: z.string().optional(),
+
+  // Langfuse
+  LANGFUSE_PUBLIC_KEY: z.string().optional(),
+  LANGFUSE_SECRET_KEY: z.string().optional(),
+  LANGFUSE_BASE_URL: z.string().default("https://cloud.langfuse.com"),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
