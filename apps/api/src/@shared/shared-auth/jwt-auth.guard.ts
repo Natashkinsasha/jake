@@ -22,7 +22,7 @@ export class JwtAuthGuard implements CanActivate {
     }
   }
 
-  private extractToken(request: any): string | null {
+  private extractToken(request: { headers?: { authorization?: string } }): string | null {
     const auth = request.headers?.authorization;
     if (!auth) return null;
     const [type, token] = auth.split(" ");

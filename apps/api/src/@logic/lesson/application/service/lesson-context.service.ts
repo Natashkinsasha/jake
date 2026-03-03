@@ -79,7 +79,7 @@ export class LessonContextService {
         fact: f.fact,
       })),
       recentEmotionalContext: relevantMemories.map(
-        (e: any) => `- Lesson (relevance: ${(e.similarity * 100).toFixed(0)}%): ${e.emotional_tone} — ${e.content}`,
+         (e) => `- Lesson (relevance: ${(e.similarity * 100).toFixed(0)}%): ${e.emotional_tone} — ${e.content}`,
       ),
       learningFocus: {
         weakAreas: grammarProgress.filter((g) => g.level < 50).map((g) => g.topic),

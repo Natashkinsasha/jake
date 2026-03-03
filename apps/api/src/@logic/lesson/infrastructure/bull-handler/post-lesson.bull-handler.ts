@@ -59,11 +59,15 @@ export class PostLessonBullHandler extends WorkerHost {
 
       // Homework generation outside transaction — can fail independently
       const user = await this.authContract.findByIdWithPreferences(lesson.userId);
+      const prefs = user?.user_preferences;
       await this.homeworkContract.generateAndSave(
         lessonId,
         lesson.userId,
         summary,
-        (user?.user_preferences || {}) as any,
+        {
+          preferredExerciseTypes: prefs?.preferredExerciseTypes ?? undefined,
+          interests: prefs?.interests ?? undefined,
+        },
       );
 
       this.logger.log(`Post-lesson job completed for lesson ${lessonId}`);

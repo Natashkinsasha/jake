@@ -1,7 +1,6 @@
 import { RedisService } from '@liaoliaots/nestjs-redis';
 import { Module } from '@nestjs/common';
 import { SharedRedisModule } from "../shared-redis/shared-redis.module";
-
 import { JobModule } from '../../@lib/job/src';
 
 @Module({
@@ -13,6 +12,7 @@ import { JobModule } from '../../@lib/job/src';
         return {
           connection: redisService
             .getOrThrow()
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any -- ioredis version mismatch between packages
             .duplicate({ maxRetriesPerRequest: null }) as any,
           defaultJobOptions: {
             removeOnComplete: {

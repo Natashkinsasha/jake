@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import { useCallbackRef } from "./useCallbackRef";
+import type { LessonEventData } from "./lesson/handleLessonEvent";
 
 interface UseWebSocketOptions {
   url: string;
   token: string | null;
-  onEvent: (event: string, data: any) => void;
+  onEvent: (event: string, data: LessonEventData) => void;
 }
 
 export function useWebSocket({ url, token, onEvent }: UseWebSocketOptions) {
@@ -38,7 +39,7 @@ export function useWebSocket({ url, token, onEvent }: UseWebSocketOptions) {
     return () => { socket.disconnect(); };
   }, [url, token]);
 
-  const emit = useCallback((event: string, data: any) => {
+  const emit = useCallback((event: string, data: Record<string, unknown>) => {
     socketRef.current?.emit(event, data);
   }, []);
 

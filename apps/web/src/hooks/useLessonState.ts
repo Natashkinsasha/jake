@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { useWebSocket } from "./useWebSocket";
 import { useAudioPlayer } from "./useAudioPlayer";
-import { handleLessonEvent } from "./lesson/handleLessonEvent";
+import { handleLessonEvent, type LessonEventData } from "./lesson/handleLessonEvent";
 import { WS_URL } from "@/lib/config";
 import type { ChatMessage, LessonExercise, LessonStatus } from "@/types";
 
@@ -70,7 +70,7 @@ export function useLessonState(token?: string | null) {
     },
   });
 
-  const handleEvent = useCallback((event: string, data: any) => {
+  const handleEvent = useCallback((event: string, data: LessonEventData) => {
     console.log("[Lesson] event:", event, data?.text ? `"${data.text.slice(0, 50)}..."` : "", data?.audio ? `audio:${data.audio.length}chars` : "");
 
     const action = handleLessonEvent(event, data, {

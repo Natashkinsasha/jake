@@ -11,7 +11,7 @@ import type {
 } from '@nestjs/common';
 import { HttpStatus, Module, UnauthorizedException } from '@nestjs/common';
 import { HttpAdapterHost, ModuleRef } from '@nestjs/core';
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 
 import { QueueRegistryService } from '../../job/src';
 
@@ -24,9 +24,9 @@ export interface JobBoardModuleOptions {
 
 export interface JobBoardModuleAsyncOptions
   extends Pick<ModuleMetadata, 'imports'> {
-  useFactory?: (
-    ...args: any[]
-  ) => Promise<JobBoardModuleOptions> | JobBoardModuleOptions;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- NestJS DI requires any[] for factory args
+  useFactory?: (...args: any[]) => Promise<JobBoardModuleOptions> | JobBoardModuleOptions;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- NestJS DI injection tokens
   inject?: any[];
   useClass?: Type<JobBoardModuleOptionsFactory>;
   useExisting?: Type<JobBoardModuleOptionsFactory>;
@@ -62,6 +62,7 @@ export class JobBoardModule implements NestModule {
       return [
         {
           provide: JOB_BOARD_OPTIONS,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- NestJS DI pattern
           useFactory: async (...args: any[]) => {
             const config = await userFactory(...args);
             return {
@@ -158,20 +159,20 @@ export class JobBoardModule implements NestModule {
 
     const bullboardPlugin = serverAdapter.registerPlugin();
 
-    app.register(async (instance: any) => {
-      instance.addHook('onRequest', (req: any, reply: any, next: any) => {
-        instance.basicAuth(req, reply, function (error: any) {
+    app.register(async (instance: FastifyInstance) => {
+      instance.addHook('onRequest', (req: FastifyRequest, reply: FastifyReply, next: (err?: Error) => void) => {
+        (instance as FastifyInstance & { basicAuth: (req: FastifyRequest, reply: FastifyReply, cb: (err?: Error) => void) => void }).basicAuth(req, reply, function (error?: Error) {
           if (!error) {
             return next();
           }
 
           const statusCode =
-            (error as any).statusCode || HttpStatus.INTERNAL_SERVER_ERROR;
+            (error as Error & { statusCode?: number }).statusCode || HttpStatus.INTERNAL_SERVER_ERROR;
           reply.code(statusCode).send({ error: error.name });
         });
       });
 
-      (instance as any).register(bullboardPlugin, {
+      instance.register(bullboardPlugin, {
         prefix: route,
       });
     });

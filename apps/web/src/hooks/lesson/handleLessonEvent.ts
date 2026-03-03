@@ -1,5 +1,14 @@
 import type { LessonExercise } from "@/types";
 
+export interface LessonEventData {
+  lessonId?: string;
+  text?: string;
+  audio?: string;
+  exercise?: LessonExercise | null;
+  state?: string;
+  message?: string;
+}
+
 interface EventContext {
   userSpeaking: boolean;
   pendingTurns: number;
@@ -19,7 +28,7 @@ export type LessonAction =
 
 export function handleLessonEvent(
   event: string,
-  data: any,
+  data: LessonEventData,
   ctx: EventContext,
 ): LessonAction {
   switch (event) {
@@ -35,7 +44,7 @@ export function handleLessonEvent(
           type: "play_audio",
           audio: data.audio,
           pending: {
-            text: data.text,
+            text: data.text || "",
             audio: data.audio,
             exercise: data.exercise || null,
           },
@@ -43,7 +52,7 @@ export function handleLessonEvent(
       }
       return {
         type: "show_message",
-        text: data.text,
+        text: data.text || "",
         exercise: data.exercise || null,
         status: "idle",
       };
@@ -52,7 +61,7 @@ export function handleLessonEvent(
     case "transcript":
       return {
         type: "show_message",
-        text: data.text,
+        text: data.text || "",
         exercise: null,
         status: "transcript",
       };
@@ -65,12 +74,12 @@ export function handleLessonEvent(
         return {
           type: "play_audio",
           audio: data.audio,
-          pending: { text: data.text, exercise: null },
+          pending: { text: data.text || "", exercise: null },
         };
       }
       return {
         type: "show_message",
-        text: data.text,
+        text: data.text || "",
         exercise: null,
         status: "idle",
       };

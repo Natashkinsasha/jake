@@ -3,6 +3,15 @@ import { FastifyAdapter, NestFastifyApplication } from "@nestjs/platform-fastify
 import { AppModule } from "./app.module";
 import { IoAdapter } from "@nestjs/platform-socket.io";
 
+class CustomIoAdapter extends IoAdapter {
+  createIOServer(port: number, options?: Record<string, unknown>) {
+    return super.createIOServer(port, {
+      ...options,
+      maxHttpBufferSize: 10 * 1024 * 1024, // 10MB for base64 audio
+    });
+  }
+}
+
 export async function createApp(): Promise<NestFastifyApplication> {
   const app = await NestFactory.create<NestFastifyApplication>(
     AppModule,
@@ -14,14 +23,7 @@ export async function createApp(): Promise<NestFastifyApplication> {
     credentials: true,
   });
 
-  const ioAdapter = new IoAdapter(app);
-  (ioAdapter as any).createIOServer = function (port: number, options?: any) {
-    return IoAdapter.prototype.createIOServer.call(this, port, {
-      ...options,
-      maxHttpBufferSize: 10 * 1024 * 1024, // 10MB for base64 audio
-    });
-  };
-  app.useWebSocketAdapter(ioAdapter);
+  app.useWebSocketAdapter(new CustomIoAdapter(app));
 
   return app;
 }

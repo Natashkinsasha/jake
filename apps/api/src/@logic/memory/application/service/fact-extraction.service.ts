@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { LlmService, LlmMessage } from "../../../../@lib/llm/src/llm.service";
 import { MemoryFactRepository } from "../../infrastructure/repository/memory-fact.repository";
-import { FactExtractionResultSchema } from "@jake/shared";
+import { FactExtractionResultSchema, type FactExtractionResult } from "@jake/shared";
 
 const FACT_EXTRACTION_PROMPT = `
 Analyze the student's message in the context of the conversation.
@@ -29,7 +29,7 @@ export class FactExtractionService {
     userMessage: string,
     history: LlmMessage[],
   ) {
-    const result = await this.llm.generateJson<any>(
+    const result = await this.llm.generateJson<FactExtractionResult>(
       FACT_EXTRACTION_PROMPT,
       [...history, { role: "user", content: userMessage }],
     );

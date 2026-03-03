@@ -5,6 +5,14 @@ import { memoryEmbeddingTable } from "../table/memory-embedding.table";
 import { MemoryEmbeddingEntity } from "../../domain/entity/memory-embedding.entity";
 import { MemoryEmbeddingFactory } from "../factory/memory-embedding.factory";
 
+export interface EmbeddingSimilarityResult {
+  id: string;
+  content: string;
+  emotional_tone: string;
+  created_at: Date;
+  similarity: number;
+}
+
 @Injectable()
 export class MemoryEmbeddingRepository {
   constructor(private readonly txHost: AppDrizzleTransactionHost<{ memoryEmbedding: typeof memoryEmbeddingTable }>) {}
@@ -24,7 +32,7 @@ export class MemoryEmbeddingRepository {
     return MemoryEmbeddingFactory.createMany(rows);
   }
 
-  async findSimilar(userId: string, queryEmbedding: number[], limit = 5, threshold = 0.8) {
+  async findSimilar(userId: string, queryEmbedding: number[], limit = 5, threshold = 0.8): Promise<EmbeddingSimilarityResult[]> {
     const vectorStr = `[${queryEmbedding.join(",")}]`;
     const results = await this.txHost.tx.execute(
       sql`SELECT id, content, emotional_tone, created_at,
@@ -36,6 +44,6 @@ export class MemoryEmbeddingRepository {
         ORDER BY similarity DESC
         LIMIT ${limit}`
     );
-    return (results.rows ?? results) as any[];
+    return (results.rows ?? results) as EmbeddingSimilarityResult[];
   }
 }
