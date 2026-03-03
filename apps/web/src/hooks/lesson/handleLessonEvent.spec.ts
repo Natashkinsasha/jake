@@ -103,9 +103,14 @@ describe("handleLessonEvent", () => {
     expect(action).toEqual({ type: "set_state", patch: { status: "idle", lessonEnded: true } });
   });
 
-  it("error → set_state idle", () => {
+  it("error → set_state idle with error message", () => {
     const action = handleLessonEvent("error", { message: "oops" }, idle);
-    expect(action).toEqual({ type: "set_state", patch: { status: "idle" } });
+    expect(action).toEqual({ type: "set_state", patch: { status: "idle", error: "oops" } });
+  });
+
+  it("error without message → set_state with default error", () => {
+    const action = handleLessonEvent("error", {}, idle);
+    expect(action).toEqual({ type: "set_state", patch: { status: "idle", error: "Something went wrong" } });
   });
 
   it("status thinking → set_state", () => {

@@ -22,8 +22,9 @@ export function LessonScreen({ token }: LessonScreenProps) {
   const router = useRouter();
   const {
     messages, currentExercise, status, connected, isPlaying,
-    lessonEnded: serverLessonEnded, sendText, submitExerciseAnswer,
-    endLesson, interruptTutor, stopAudio, playPending, setUserSpeaking,
+    lessonEnded: serverLessonEnded, error: lessonError, sendText,
+    submitExerciseAnswer, endLesson, interruptTutor, stopAudio,
+    playPending, setUserSpeaking,
   } = useLessonState(token);
 
   const [isMuted, setIsMuted] = useState(false);
@@ -129,6 +130,15 @@ export function LessonScreen({ token }: LessonScreenProps) {
       router.push("/dashboard");
     }
   }, [serverLessonEnded, stt, router, stopAudio]);
+
+  // Error starting/during lesson — go back to dashboard
+  useEffect(() => {
+    if (lessonError) {
+      stt.disable();
+      stopAudio();
+      router.push("/dashboard");
+    }
+  }, [lessonError, stt, stopAudio, router]);
 
   if (!connected) return <LessonConnecting />;
   if (!hasReceivedFirstMessage) return <LessonWaiting />;

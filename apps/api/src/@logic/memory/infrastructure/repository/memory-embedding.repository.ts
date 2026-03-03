@@ -36,6 +36,6 @@ export class MemoryEmbeddingRepository {
         ORDER BY similarity DESC
         LIMIT ${limit}`
     );
-    return results as any[];
+    return (results.rows ?? results) as any[];
   }
 }

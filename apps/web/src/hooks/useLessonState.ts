@@ -18,6 +18,7 @@ interface LessonState {
   status: LessonStatus;
   lessonEnded: boolean;
   hasPending: boolean;
+  error: string | null;
 }
 
 export function useLessonState(token?: string | null) {
@@ -28,6 +29,7 @@ export function useLessonState(token?: string | null) {
     status: "connecting",
     lessonEnded: false,
     hasPending: false,
+    error: null,
   });
 
   const pendingRef = useRef<PendingTutorMessage | null>(null);

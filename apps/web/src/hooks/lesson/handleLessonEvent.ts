@@ -86,7 +86,7 @@ export function handleLessonEvent(
       return { type: "set_state", patch: { status: "idle", lessonEnded: true } };
 
     case "error":
-      return { type: "set_state", patch: { status: "idle" } };
+      return { type: "set_state", patch: { status: "idle", error: data?.message || "Something went wrong" } };
 
     default:
       return { type: "discard" };

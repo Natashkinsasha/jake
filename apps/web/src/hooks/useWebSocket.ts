@@ -25,6 +25,7 @@ export function useWebSocket({ url, token, onEvent }: UseWebSocketOptions) {
     socket.on("disconnect", () => setConnected(false));
     socket.on("connect_error", (err) => {
       console.error("WS connect error:", err.message);
+      onEventRef.current("error", { message: "Connection failed" });
     });
 
     const events = [
