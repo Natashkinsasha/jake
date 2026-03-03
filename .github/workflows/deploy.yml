@@ -111,7 +111,7 @@ jobs:
           host: ${{ secrets.DROPLET_HOST }}
           username: root
           key: ${{ secrets.DROPLET_SSH_KEY }}
-          envs: GITHUB_TOKEN,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,JWT_SECRET,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,ANTHROPIC_API_KEY,DEEPGRAM_API_KEY,ELEVENLABS_API_KEY,NEXTAUTH_SECRET,FRONTEND_URL,NEXTAUTH_URL
+          envs: GITHUB_TOKEN,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,JWT_SECRET,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,ANTHROPIC_API_KEY,DEEPGRAM_API_KEY,ELEVENLABS_API_KEY,NEXTAUTH_SECRET,FRONTEND_URL,NEXTAUTH_URL,OPENAI_API_KEY
           script: |
             echo "$GITHUB_TOKEN" | docker login ghcr.io -u github --password-stdin
             cd /root/jake
@@ -127,6 +127,7 @@ jobs:
             ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
             DEEPGRAM_API_KEY=${DEEPGRAM_API_KEY}
             ELEVENLABS_API_KEY=${ELEVENLABS_API_KEY}
+            OPENAI_API_KEY=${OPENAI_API_KEY}
             POSTGRES_USER=${POSTGRES_USER}
             POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
             POSTGRES_DB=${POSTGRES_DB}
@@ -135,8 +136,40 @@ jobs:
             EOF
             docker compose -f docker-compose.prod.yml pull api web
             docker compose -f docker-compose.prod.yml run --rm api node dist/migrate.js
+
+            # Save current image digests for rollback
+            API_OLD=$(docker inspect --format='{{.Image}}' jake-api-1 2>/dev/null || echo "")
+            WEB_OLD=$(docker inspect --format='{{.Image}}' jake-web-1 2>/dev/null || echo "")
+
             docker compose -f docker-compose.prod.yml up -d
             docker compose -f docker-compose.prod.yml restart nginx
+
+            # Wait for API health check
+            echo "Waiting for API health check..."
+            HEALTHY=false
+            for i in $(seq 1 12); do
+              STATUS=$(docker inspect --format='{{.State.Health.Status}}' jake-api-1 2>/dev/null || echo "unknown")
+              echo "  Attempt $i/12: $STATUS"
+              if [ "$STATUS" = "healthy" ]; then
+                HEALTHY=true
+                break
+              fi
+              sleep 10
+            done
+
+            if [ "$HEALTHY" != "true" ]; then
+              echo "API health check failed! Rolling back..."
+              docker compose -f docker-compose.prod.yml logs api --tail 50
+              if [ -n "$API_OLD" ]; then
+                docker tag "$API_OLD" ghcr.io/natashkinsasha/jake-api:latest 2>/dev/null || true
+                docker tag "$WEB_OLD" ghcr.io/natashkinsasha/jake-web:latest 2>/dev/null || true
+                docker compose -f docker-compose.prod.yml up -d
+                docker compose -f docker-compose.prod.yml restart nginx
+              fi
+              exit 1
+            fi
+
+            echo "API is healthy!"
             docker image prune -f
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -152,3 +185,4 @@ jobs:
           NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
           FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
           NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
