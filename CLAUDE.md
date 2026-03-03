@@ -25,7 +25,7 @@ jake/
 │   │   ├── src/
 │   │   │   ├── @lib/           # Internal libraries (llm, voice, embedding, job, job-board)
 │   │   │   ├── @shared/        # Infra modules (config, auth, db, redis, ws, job, cls, zod-http)
-│   │   │   ├── @logic/         # Domain modules (auth, health, lesson, homework, memory, progress, tutor, vocabulary)
+│   │   │   ├── @logic/         # Domain modules (auth, health, lesson, memory, progress, tutor, vocabulary)
 │   │   │   ├── main.ts         # API entry point
 │   │   │   ├── worker.ts       # BullMQ worker entry point
 │   │   │   ├── migrate.ts      # DB migrations runner
@@ -35,7 +35,7 @@ jake/
 │   └── web/                    # Next.js frontend (port 3000)
 │       ├── src/
 │       │   ├── app/
-│       │   │   ├── (app)/      # Protected routes: dashboard, lesson, homework, vocabulary, progress, settings
+│       │   │   ├── (app)/      # Protected routes: dashboard, lessons
 │       │   │   ├── (auth)/     # Login page
 │       │   │   └── (lesson)/   # Live lesson page (voice interface)
 │       │   ├── components/     # UI components
@@ -112,9 +112,8 @@ Each domain module in `@logic/` follows this structure:
 | **lesson** | Real-time voice lessons, WebSocket gateway, audio pipeline |
 | **tutor** | Tutor profiles (personality, voice, system prompt) |
 | **memory** | Two-tier memory: structured facts + vector embeddings |
-| **vocabulary** | Word tracking with spaced repetition |
-| **progress** | Grammar topic scores (0-100) |
-| **homework** | Post-lesson exercises |
+| **vocabulary** | Data layer only (contract + repo). Written by post-lesson job, read by lesson context |
+| **progress** | Data layer only (contract + repo). Grammar topic scores (0-100), used by lesson context |
 | **health** | Health check endpoint |
 
 ### Library Modules (`@lib/`)
@@ -148,7 +147,7 @@ SharedConfigModule, SharedDrizzlePgModule, SharedRedisModule, SharedAuthModule, 
 3. Claude generates greeting → ElevenLabs synthesizes → sent as `lesson_started`
 4. User speaks → Deepgram (client-side) transcribes → `text` event sent
 5. Claude generates response → TTS → `tutor_message` with text + base64 MP3
-6. On disconnect/end → lesson saved to DB → `post-lesson` BullMQ job runs async
+6. On disconnect/end → lesson saved to DB → `post-lesson` BullMQ job runs async (summary, vocabulary, progress, memory)
 
 ### Session
 
@@ -179,7 +178,6 @@ PostgreSQL 16 with pgvector. All tables use UUID PKs. Key tables:
 - `memory_facts`, `memory_embeddings` — personalization
 - `vocabulary` — words with spaced repetition
 - `grammar_progress` — per-topic scores
-- `homework` — post-lesson exercises
 
 Migrations in `drizzle/` folder, applied via `drizzle-kit`. In production: `docker compose run --rm api node dist/migrate.js`.
 

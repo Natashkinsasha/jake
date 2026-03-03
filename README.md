@@ -73,7 +73,7 @@ After `pnpm dev`:
 
 ### BullMQ Worker (background jobs)
 
-Background tasks (fact extraction, post-lesson processing, progress updates) run in a separate worker. Without it, lessons work but memory and progress don't update.
+Background tasks (fact extraction, post-lesson summary, vocabulary and progress updates) run in a separate worker. Without it, lessons work but memory, vocabulary, and progress don't update.
 
 ```bash
 pnpm --filter @jake/api start:worker
@@ -279,5 +279,4 @@ users ──< memory_facts
 users ──< memory_embeddings ──< lessons
 users ──< grammar_progress
 users ──< vocabulary ──< lessons
-users ──< homework ──< lessons
 ```
