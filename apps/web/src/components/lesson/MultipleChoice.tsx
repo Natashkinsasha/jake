@@ -2,12 +2,11 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { ExerciseSubmitButton } from "./ExerciseSubmitButton";
+import type { MultipleChoiceExercise } from "@/types";
 
 interface MultipleChoiceProps {
-  exercise: {
-    question: string;
-    options: string[];
-  };
+  exercise: MultipleChoiceExercise;
   onSubmit: (answer: string) => void;
 }
 
@@ -34,13 +33,10 @@ export function MultipleChoice({ exercise, onSubmit }: MultipleChoiceProps) {
           </button>
         ))}
       </div>
-      <button
-        onClick={() => selected && onSubmit(selected)}
+      <ExerciseSubmitButton
         disabled={!selected}
-        className="btn-primary w-full"
-      >
-        Check
-      </button>
+        onClick={() => selected && onSubmit(selected)}
+      />
     </div>
   );
 }

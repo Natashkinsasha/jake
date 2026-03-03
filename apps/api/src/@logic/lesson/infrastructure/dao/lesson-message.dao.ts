@@ -1,20 +1,19 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
+import { AppDrizzleTransactionHost } from "@shared/shared-cls/app-drizzle-transaction-host";
 import { eq } from "drizzle-orm";
-import { DRIZZLE } from "../../../../@shared/shared-drizzle-pg/drizzle.provider";
 import { lessonMessageTable } from "../table/lesson-message.table";
-import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 @Injectable()
 export class LessonMessageDao {
-  constructor(@Inject(DRIZZLE) private db: PostgresJsDatabase) {}
+  constructor(private readonly txHost: AppDrizzleTransactionHost<{ lessonMessage: typeof lessonMessageTable }>) {}
 
   async create(data: typeof lessonMessageTable.$inferInsert) {
-    const [msg] = await this.db.insert(lessonMessageTable).values(data).returning();
+    const [msg] = await this.txHost.tx.insert(lessonMessageTable).values(data).returning();
     return msg;
   }
 
   async findByLesson(lessonId: string) {
-    return this.db
+    return this.txHost.tx
       .select()
       .from(lessonMessageTable)
       .where(eq(lessonMessageTable.lessonId, lessonId))

@@ -1,10 +1,10 @@
 import { Injectable } from "@nestjs/common";
-import { SelectTutor } from "../../infrastructure/model/select-tutor";
+import { TutorEntity } from "../../domain/entity/tutor.entity";
 import { TutorListResponse } from "../../presentation/dto/response/tutor-list.response";
 
 @Injectable()
 export class TutorMapper {
-  toResponse(tutor: SelectTutor): TutorListResponse {
+  toResponse(tutor: TutorEntity): TutorListResponse {
     return {
       id: tutor.id,
       name: tutor.name,

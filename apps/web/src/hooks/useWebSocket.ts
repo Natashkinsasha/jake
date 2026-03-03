@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
+import { useCallbackRef } from "./useCallbackRef";
 
 interface UseWebSocketOptions {
   url: string;
@@ -9,10 +10,8 @@ interface UseWebSocketOptions {
 
 export function useWebSocket({ url, token, onEvent }: UseWebSocketOptions) {
   const socketRef = useRef<Socket | null>(null);
-  const onEventRef = useRef(onEvent);
+  const onEventRef = useCallbackRef(onEvent);
   const [connected, setConnected] = useState(false);
-
-  onEventRef.current = onEvent;
 
   useEffect(() => {
     if (!token) return;

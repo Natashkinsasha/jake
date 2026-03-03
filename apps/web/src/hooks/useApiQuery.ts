@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useCallbackRef } from "./useCallbackRef";
 
 interface UseApiQueryResult<T> {
   data: T | null;
@@ -9,13 +10,14 @@ interface UseApiQueryResult<T> {
 
 export function useApiQuery<T>(
   fetcher: (() => Promise<T>) | null,
+  deps?: unknown[],
 ): UseApiQueryResult<T> {
   const [data, setData] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const fetcherRef = useRef(fetcher);
-  fetcherRef.current = fetcher;
+  const fetcherRef = useCallbackRef(fetcher);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const execute = useCallback(() => {
     const fn = fetcherRef.current;
     if (!fn) {
@@ -36,7 +38,7 @@ export function useApiQuery<T>(
         setError(message);
       })
       .finally(() => setIsLoading(false));
-  }, []);
+  }, deps ?? []);
 
   useEffect(() => {
     execute();

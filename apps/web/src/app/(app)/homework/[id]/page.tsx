@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { useParams } from "next/navigation";
 import { api } from "@/lib/api";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -11,7 +11,8 @@ export default function HomeworkDetailPage() {
   const params = useParams();
   const id = params.id as string;
   const { data: homework, isLoading, error, refetch } = useApiQuery(
-    useCallback(() => api.homework.get(id), [id]),
+    () => api.homework.get(id),
+    [id],
   );
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);

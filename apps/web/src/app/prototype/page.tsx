@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef } from "react";
-import { useTeacherTts } from "@/hooks/useTeacherTts";
+import { useTeacherTts } from "./_hooks/useTeacherTts";
 import { useStudentStt } from "@/hooks/useStudentStt";
 import { useTabFocus } from "@/hooks/useTabFocus";
 import { phrases } from "@/data/phrases";

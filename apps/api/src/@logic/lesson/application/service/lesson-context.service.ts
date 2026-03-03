@@ -4,7 +4,7 @@ import { LessonDao } from "../../infrastructure/dao/lesson.dao";
 import { MemoryRetrievalService } from "../../../memory/application/service/memory-retrieval.service";
 import { GrammarProgressDao } from "../../../progress/infrastructure/dao/grammar-progress.dao";
 import { VocabularyDao } from "../../../vocabulary/infrastructure/dao/vocabulary.dao";
-import { UserTutorDao } from "../../../tutor/infrastructure/dao/user-tutor.dao";
+import { UserTutorRepository } from "../../../tutor/infrastructure/repository/user-tutor.repository";
 import { LessonContext } from "../dto/lesson-context";
 
 @Injectable()
@@ -15,7 +15,7 @@ export class LessonContextService {
     private memoryRetrievalService: MemoryRetrievalService,
     private grammarProgressDao: GrammarProgressDao,
     private vocabularyDao: VocabularyDao,
-    private userTutorDao: UserTutorDao,
+    private userTutorRepository: UserTutorRepository,
   ) {}
 
   async build(userId: string): Promise<LessonContext> {
@@ -29,7 +29,7 @@ export class LessonContextService {
       this.userDao.findByIdWithPreferences(userId),
       this.grammarProgressDao.findByUser(userId),
       this.vocabularyDao.findRecentByUser(userId, 20),
-      this.userTutorDao.findActiveByUser(userId),
+      this.userTutorRepository.findActiveByUser(userId),
       this.lessonDao.countByUser(userId),
     ]);
 
@@ -48,9 +48,9 @@ export class LessonContextService {
       studentName: user.users.name,
       level: user.users.currentLevel,
       lessonNumber: lessonCount + 1,
-      tutorSystemPrompt: activeTutor.tutors.systemPrompt,
-      tutorVoiceId: activeTutor.tutors.voiceId,
-      tutorId: activeTutor.user_tutors.tutorId,
+      tutorSystemPrompt: activeTutor.tutor.systemPrompt,
+      tutorVoiceId: activeTutor.tutor.voiceId,
+      tutorId: activeTutor.userTutor.tutorId,
       preferences: {
         correctionStyle: prefs?.correctionStyle || "immediate",
         speakingSpeed: prefs?.speakingSpeed || "natural",

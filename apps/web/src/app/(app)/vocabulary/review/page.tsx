@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { ReviewSession } from "@/components/vocabulary/ReviewSession";
@@ -13,10 +12,8 @@ export default function VocabularyReviewPage() {
   const { user } = useBackendSession();
   const router = useRouter();
   const { data, isLoading, error, refetch } = useApiQuery(
-    useCallback(
-      () => user?.id ? api.vocabulary.review(user.id) : Promise.resolve({ words: [] }),
-      [user?.id],
-    ),
+    () => user?.id ? api.vocabulary.review(user.id) : Promise.resolve({ words: [] }),
+    [user?.id],
   );
   const words = data?.words ?? [];
 

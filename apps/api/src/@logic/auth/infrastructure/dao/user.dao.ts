@@ -1,17 +1,16 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
+import { AppDrizzleTransactionHost } from "@shared/shared-cls/app-drizzle-transaction-host";
 import { eq } from "drizzle-orm";
-import { DRIZZLE } from "../../../../@shared/shared-drizzle-pg/drizzle.provider";
 import { userTable } from "../table/user.table";
 import { userPreferenceTable } from "../table/user-preference.table";
 import { InsertUser } from "../model/insert-user";
-import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 @Injectable()
 export class UserDao {
-  constructor(@Inject(DRIZZLE) private db: PostgresJsDatabase) {}
+  constructor(private readonly txHost: AppDrizzleTransactionHost<{ user: typeof userTable; userPreference: typeof userPreferenceTable }>) {}
 
   async findByGoogleId(googleId: string) {
-    const [user] = await this.db
+    const [user] = await this.txHost.tx
       .select()
       .from(userTable)
       .where(eq(userTable.googleId, googleId))
@@ -20,7 +19,7 @@ export class UserDao {
   }
 
   async findById(id: string) {
-    const [user] = await this.db
+    const [user] = await this.txHost.tx
       .select()
       .from(userTable)
       .where(eq(userTable.id, id))
@@ -29,7 +28,7 @@ export class UserDao {
   }
 
   async findByIdWithPreferences(id: string) {
-    const [result] = await this.db
+    const [result] = await this.txHost.tx
       .select()
       .from(userTable)
       .leftJoin(userPreferenceTable, eq(userTable.id, userPreferenceTable.userId))
@@ -39,13 +38,13 @@ export class UserDao {
   }
 
   async create(data: InsertUser) {
-    const [user] = await this.db.insert(userTable).values(data).returning();
-    await this.db.insert(userPreferenceTable).values({ userId: user.id });
+    const [user] = await this.txHost.tx.insert(userTable).values(data).returning();
+    await this.txHost.tx.insert(userPreferenceTable).values({ userId: user.id });
     return user;
   }
 
-  async updateLevel(id: string, level: string, tx?: PostgresJsDatabase) {
-    await (tx ?? this.db)
+  async updateLevel(id: string, level: string) {
+    await this.txHost.tx
       .update(userTable)
       .set({ currentLevel: level, updatedAt: new Date() })
       .where(eq(userTable.id, id));
@@ -59,6 +58,6 @@ export class UserDao {
     preferredExerciseTypes: string[];
     interests: string[];
   }>): Promise<void> {
-    await this.db.update(userPreferenceTable).set(data).where(eq(userPreferenceTable.userId, userId));
+    await this.txHost.tx.update(userPreferenceTable).set(data).where(eq(userPreferenceTable.userId, userId));
   }
 }

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { unlockAudio } from "./useAudioPlayer";
+import { useCallbackRef } from "./useCallbackRef";
 import { STT_CONFIG } from "@/lib/config";
 
 interface UseStudentSttReturn {
@@ -47,12 +48,9 @@ export function useStudentStt(
   const wsRef = useRef<WebSocket | null>(null);
   const enabledRef = useRef(false);
   const speechDetectedRef = useRef(false);
-  const onSpeechStartRef = useRef(options?.onSpeechStart);
-  onSpeechStartRef.current = options?.onSpeechStart;
-  const onSpeechEndRef = useRef(options?.onSpeechEnd);
-  onSpeechEndRef.current = options?.onSpeechEnd;
-  const onSegmentRef = useRef(options?.onSegment);
-  onSegmentRef.current = options?.onSegment;
+  const onSpeechStartRef = useCallbackRef(options?.onSpeechStart);
+  const onSpeechEndRef = useCallbackRef(options?.onSpeechEnd);
+  const onSegmentRef = useCallbackRef(options?.onSegment);
 
   useEffect(() => {
     const supported = !!navigator.mediaDevices?.getUserMedia;

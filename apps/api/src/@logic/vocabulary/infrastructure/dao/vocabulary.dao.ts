@@ -1,16 +1,14 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
+import { AppDrizzleTransactionHost } from "@shared/shared-cls/app-drizzle-transaction-host";
 import { eq, desc, lte, and } from "drizzle-orm";
-import { DRIZZLE } from "../../../../@shared/shared-drizzle-pg/drizzle.provider";
 import { vocabularyTable } from "../table/vocabulary.table";
-import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 @Injectable()
 export class VocabularyDao {
-  constructor(@Inject(DRIZZLE) private db: PostgresJsDatabase) {}
+  constructor(private readonly txHost: AppDrizzleTransactionHost<{ vocabulary: typeof vocabularyTable }>) {}
 
-  async upsert(data: { userId: string; word: string; lessonId: string; strength: number; nextReview: Date }, tx?: PostgresJsDatabase) {
-    const db = tx ?? this.db;
-    const existing = await db
+  async upsert(data: { userId: string; word: string; lessonId: string; strength: number; nextReview: Date }) {
+    const existing = await this.txHost.tx
       .select()
       .from(vocabularyTable)
       .where(
@@ -22,19 +20,19 @@ export class VocabularyDao {
       .limit(1);
 
     if (existing.length > 0) {
-      await db
+      await this.txHost.tx
         .update(vocabularyTable)
         .set({ strength: data.strength, nextReview: data.nextReview, updatedAt: new Date() })
         .where(eq(vocabularyTable.id, existing[0].id));
       return existing[0];
     }
 
-    const [vocab] = await db.insert(vocabularyTable).values(data).returning();
+    const [vocab] = await this.txHost.tx.insert(vocabularyTable).values(data).returning();
     return vocab;
   }
 
   async findByUser(userId: string) {
-    return this.db
+    return this.txHost.tx
       .select()
       .from(vocabularyTable)
       .where(eq(vocabularyTable.userId, userId))
@@ -42,7 +40,7 @@ export class VocabularyDao {
   }
 
   async findRecentByUser(userId: string, limit = 20) {
-    return this.db
+    return this.txHost.tx
       .select()
       .from(vocabularyTable)
       .where(eq(vocabularyTable.userId, userId))
@@ -51,7 +49,7 @@ export class VocabularyDao {
   }
 
   async findDueForReview(userId: string) {
-    return this.db
+    return this.txHost.tx
       .select()
       .from(vocabularyTable)
       .where(

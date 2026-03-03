@@ -1,8 +1,7 @@
-import { Inject, Logger } from "@nestjs/common";
+import { Logger } from "@nestjs/common";
 import { Processor, WorkerHost } from "@nestjs/bullmq";
 import { Job } from "bullmq";
-import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import { DRIZZLE } from "../../../../@shared/shared-drizzle-pg/drizzle.provider";
+import { Transaction } from "../../../../@shared/shared-cls/transaction";
 import { LlmService } from "../../../../@lib/llm/src/llm.service";
 import { EmbeddingService } from "../../../../@lib/embedding/src/embedding.service";
 import { LessonDao } from "../dao/lesson.dao";
@@ -31,7 +30,6 @@ export class PostLessonBullHandler extends WorkerHost {
   private readonly logger = new Logger(PostLessonBullHandler.name);
 
   constructor(
-    @Inject(DRIZZLE) private db: PostgresJsDatabase,
     private llm: LlmService,
     private embeddingService: EmbeddingService,
     private lessonDao: LessonDao,
@@ -57,14 +55,7 @@ export class PostLessonBullHandler extends WorkerHost {
 
       const summary = await this.summarizeLesson(conversationHistory);
 
-      // Wrap all DB writes in a transaction
-      await this.db.transaction(async (tx) => {
-        await this.updateLessonRecord(tx, lessonId, lesson, summary);
-        await this.updateUserLevel(tx, lesson.userId, summary.levelAssessment);
-        await this.embedEmotionalContext(tx, lesson.userId, lessonId, summary.emotionalSummary);
-        await this.processVocabulary(tx, lesson.userId, lessonId, summary.newWords);
-        await this.processGrammarErrors(tx, lesson.userId, summary.errorsFound);
-      });
+      await this.savePostLessonData(lessonId, lesson, summary);
 
       // Homework generation outside transaction — can fail independently
       const user = await this.userDao.findByIdWithPreferences(lesson.userId);
@@ -85,23 +76,10 @@ export class PostLessonBullHandler extends WorkerHost {
     }
   }
 
-  private async summarizeLesson(conversationHistory: Array<{ role: string; content: string }>): Promise<PostLessonLlmResponse> {
-    const historyText = conversationHistory
-      .map((m) => `${m.role}: ${m.content}`)
-      .join("\n");
-
-    return this.llm.generateJson(
-      SUMMARY_PROMPT,
-      [{ role: "user", content: historyText }],
-      undefined,
-      PostLessonLlmResponseSchema,
-    );
-  }
-
-  private async updateLessonRecord(
-    tx: PostgresJsDatabase,
+  @Transaction()
+  private async savePostLessonData(
     lessonId: string,
-    lesson: { startedAt: Date },
+    lesson: { startedAt: Date; userId: string },
     summary: PostLessonLlmResponse,
   ) {
     await this.lessonDao.complete(lessonId, {
@@ -113,57 +91,48 @@ export class PostLessonBullHandler extends WorkerHost {
       durationMinutes: Math.max(1, Math.round(
         (Date.now() - lesson.startedAt.getTime()) / 60000,
       )),
-    }, tx);
-  }
+    });
 
-  private async updateUserLevel(tx: PostgresJsDatabase, userId: string, levelAssessment: string | null) {
-    if (levelAssessment) {
-      await this.userDao.updateLevel(userId, levelAssessment, tx);
+    if (summary.levelAssessment) {
+      await this.userDao.updateLevel(lesson.userId, summary.levelAssessment);
     }
-  }
 
-  private async embedEmotionalContext(
-    tx: PostgresJsDatabase,
-    userId: string,
-    lessonId: string,
-    emotionalSummary: string | null,
-  ) {
-    if (!emotionalSummary) return;
+    if (summary.emotionalSummary) {
+      const embedding = await this.embeddingService.embed(summary.emotionalSummary);
+      await this.embeddingDao.create({
+        userId: lesson.userId,
+        lessonId,
+        content: summary.emotionalSummary,
+        embedding,
+        emotionalTone: "neutral",
+      });
+    }
 
-    const embedding = await this.embeddingService.embed(emotionalSummary);
-    await this.embeddingDao.create({
-      userId,
-      lessonId,
-      content: emotionalSummary,
-      embedding,
-      emotionalTone: "neutral",
-    }, tx);
-  }
-
-  private async processVocabulary(
-    tx: PostgresJsDatabase,
-    userId: string,
-    lessonId: string,
-    newWords: string[],
-  ) {
-    for (const word of newWords || []) {
+    for (const word of summary.newWords || []) {
       await this.vocabDao.upsert({
-        userId,
+        userId: lesson.userId,
         word,
         lessonId,
         strength: 10,
         nextReview: new Date(Date.now() + 24 * 60 * 60 * 1000),
-      }, tx);
+      });
+    }
+
+    for (const error of summary.errorsFound || []) {
+      await this.grammarDao.upsertError(lesson.userId, error.topic);
     }
   }
 
-  private async processGrammarErrors(
-    tx: PostgresJsDatabase,
-    userId: string,
-    errorsFound: PostLessonLlmResponse["errorsFound"],
-  ) {
-    for (const error of errorsFound || []) {
-      await this.grammarDao.upsertError(userId, error.topic, tx);
-    }
+  private async summarizeLesson(conversationHistory: Array<{ role: string; content: string }>): Promise<PostLessonLlmResponse> {
+    const historyText = conversationHistory
+      .map((m) => `${m.role}: ${m.content}`)
+      .join("\n");
+
+    return this.llm.generateJson(
+      SUMMARY_PROMPT,
+      [{ role: "user", content: historyText }],
+      undefined,
+      PostLessonLlmResponseSchema,
+    );
   }
 }

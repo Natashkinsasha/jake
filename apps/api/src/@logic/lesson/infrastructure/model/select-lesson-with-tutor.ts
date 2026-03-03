@@ -1,7 +1,7 @@
 import { SelectLesson } from "./select-lesson";
-import { SelectTutor } from "../../../tutor/infrastructure/model/select-tutor";
+import { TutorEntity } from "../../../tutor/domain/entity/tutor.entity";
 
 export type SelectLessonWithTutor = {
   lessons: SelectLesson;
-  tutors: SelectTutor;
+  tutors: TutorEntity;
 };

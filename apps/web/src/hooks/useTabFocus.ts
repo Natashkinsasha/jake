@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useCallbackRef } from "./useCallbackRef";
 
 interface UseTabFocusOptions {
   onFocus?: () => void;
@@ -13,8 +14,7 @@ interface UseTabFocusReturn {
 
 export function useTabFocus(options?: UseTabFocusOptions): UseTabFocusReturn {
   const [isFocused, setIsFocused] = useState(true);
-  const optionsRef = useRef(options);
-  optionsRef.current = options;
+  const optionsRef = useCallbackRef(options);
 
   const handleVisibilityChange = useCallback(() => {
     const focused = !document.hidden;

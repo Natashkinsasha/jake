@@ -1,4 +1,5 @@
 import { useRef, useState, useCallback } from "react";
+import { useCallbackRef } from "./useCallbackRef";
 
 interface UseAudioPlayerOptions {
   onPlay?: () => void;
@@ -23,8 +24,7 @@ export function useAudioPlayer(options?: UseAudioPlayerOptions) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const urlRef = useRef<string | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const optionsRef = useRef(options);
-  optionsRef.current = options;
+  const optionsRef = useCallbackRef(options);
 
   const cleanup = useCallback(() => {
     if (audioRef.current) {

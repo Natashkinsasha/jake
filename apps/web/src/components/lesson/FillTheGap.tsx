@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { ExerciseHint } from "./ExerciseHint";
+import { ExerciseSubmitButton } from "./ExerciseSubmitButton";
+import type { FillTheGapExercise } from "@/types";
 
 interface FillTheGapProps {
-  exercise: {
-    sentence: string;
-    hint?: string;
-  };
+  exercise: FillTheGapExercise;
   onSubmit: (answer: string) => void;
 }
 
@@ -30,16 +30,11 @@ export function FillTheGap({ exercise, onSubmit }: FillTheGapProps) {
         />
         {parts[1]}
       </p>
-      {exercise.hint && (
-        <p className="text-sm text-gray-400 mb-3">Hint: {exercise.hint}</p>
-      )}
-      <button
-        onClick={() => answer.trim() && onSubmit(answer.trim())}
+      <ExerciseHint hint={exercise.hint} />
+      <ExerciseSubmitButton
         disabled={!answer.trim()}
-        className="btn-primary w-full"
-      >
-        Check
-      </button>
+        onClick={() => answer.trim() && onSubmit(answer.trim())}
+      />
     </div>
   );
 }

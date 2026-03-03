@@ -6,7 +6,6 @@ import { EnvService } from "./env.service";
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true,
       validate: (config) => EnvSchema.parse(config),
     }),
   ],

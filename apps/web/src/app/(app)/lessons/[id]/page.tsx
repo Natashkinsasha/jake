@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { formatLessonDate } from "@/lib/utils";
@@ -12,7 +11,8 @@ export default function LessonHistoryPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const { data: lesson, isLoading, error, refetch } = useApiQuery(
-    useCallback(() => api.lessons.get(id), [id]),
+    () => api.lessons.get(id),
+    [id],
   );
 
   if (isLoading) {

@@ -1,10 +1,17 @@
-import { Module } from "@nestjs/common";
-import { SharedConfigModule } from "../shared-config/shared-config.module";
-import { drizzleProvider, DRIZZLE } from "./drizzle.provider";
+import { DrizzlePGModule } from '@knaadh/nestjs-drizzle-pg';
+import { Module } from '@nestjs/common';
+
+import { SharedConfigModule } from '../shared-config/shared-config.module';
+import { DrizzlePgConfig } from './drizzle-pg.config';
 
 @Module({
-  imports: [SharedConfigModule],
-  providers: [drizzleProvider],
-  exports: [DRIZZLE],
+  imports: [
+    DrizzlePGModule.registerAsync({
+      tag: 'DB',
+      imports: [SharedConfigModule],
+      useClass: DrizzlePgConfig,
+    }),
+  ],
+  exports: [DrizzlePGModule],
 })
 export class SharedDrizzlePgModule {}

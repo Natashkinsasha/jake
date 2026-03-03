@@ -26,15 +26,46 @@ export interface ChatMessage {
   exercise?: LessonExercise | null;
 }
 
-export interface LessonExercise {
-  type: "fill_the_gap" | "multiple_choice" | "sentence_builder" | "error_correction";
+export const EXERCISE_TYPES = {
+  fill_the_gap: "fill_the_gap",
+  multiple_choice: "multiple_choice",
+  sentence_builder: "sentence_builder",
+  error_correction: "error_correction",
+} as const;
+
+export type ExerciseType = (typeof EXERCISE_TYPES)[keyof typeof EXERCISE_TYPES];
+
+interface ExerciseBase {
   id: string;
-  sentence?: string;
-  question?: string;
-  options?: string[];
-  words?: string[];
   hint?: string;
 }
+
+export interface FillTheGapExercise extends ExerciseBase {
+  type: "fill_the_gap";
+  sentence: string;
+}
+
+export interface MultipleChoiceExercise extends ExerciseBase {
+  type: "multiple_choice";
+  question: string;
+  options: string[];
+}
+
+export interface SentenceBuilderExercise extends ExerciseBase {
+  type: "sentence_builder";
+  words: string[];
+}
+
+export interface ErrorCorrectionExercise extends ExerciseBase {
+  type: "error_correction";
+  sentence: string;
+}
+
+export type LessonExercise =
+  | FillTheGapExercise
+  | MultipleChoiceExercise
+  | SentenceBuilderExercise
+  | ErrorCorrectionExercise;
 
 export interface LessonListItem {
   id: string;
@@ -65,7 +96,9 @@ export interface HomeworkListItem {
 export interface HomeworkExercise {
   question?: string;
   sentence?: string;
-  [key: string]: unknown;
+  type?: ExerciseType;
+  options?: string[];
+  hint?: string;
 }
 
 // Vocabulary types

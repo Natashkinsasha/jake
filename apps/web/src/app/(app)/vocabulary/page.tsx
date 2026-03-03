@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { ProgressBar } from "@/components/ui/ProgressBar";
@@ -13,10 +12,8 @@ import { useApiQuery } from "@/hooks/useApiQuery";
 export default function VocabularyPage() {
   const { user } = useBackendSession();
   const { data, isLoading, error, refetch } = useApiQuery(
-    useCallback(
-      () => user?.id ? api.vocabulary.list(user.id) : Promise.resolve({ words: [] }),
-      [user?.id],
-    ),
+    () => user?.id ? api.vocabulary.list(user.id) : Promise.resolve({ words: [] }),
+    [user?.id],
   );
   const words = data?.words ?? [];
 

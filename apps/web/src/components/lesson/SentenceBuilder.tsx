@@ -2,20 +2,17 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { ExerciseHint } from "./ExerciseHint";
+import { ExerciseSubmitButton } from "./ExerciseSubmitButton";
+import type { SentenceBuilderExercise } from "@/types";
 
 interface SentenceBuilderProps {
-  exercise: {
-    words: string[];
-    hint?: string;
-  };
+  exercise: SentenceBuilderExercise;
   onSubmit: (answer: string) => void;
 }
 
 export function SentenceBuilder({ exercise, onSubmit }: SentenceBuilderProps) {
   const [selected, setSelected] = useState<string[]>([]);
-  const available = exercise.words.filter(
-    (w, i) => !selected.includes(`${i}-${w}`),
-  );
 
   const addWord = (word: string, index: number) => {
     setSelected([...selected, `${index}-${word}`]);
@@ -30,9 +27,7 @@ export function SentenceBuilder({ exercise, onSubmit }: SentenceBuilderProps) {
   return (
     <div>
       <p className="text-gray-700 mb-3">Build the sentence:</p>
-      {exercise.hint && (
-        <p className="text-sm text-gray-400 mb-3">{exercise.hint}</p>
-      )}
+      <ExerciseHint hint={exercise.hint} />
 
       <div className="min-h-[48px] bg-gray-50 rounded-xl p-3 mb-4 flex flex-wrap gap-2 border-2 border-dashed border-gray-200">
         {selected.length === 0 && (
@@ -71,13 +66,10 @@ export function SentenceBuilder({ exercise, onSubmit }: SentenceBuilderProps) {
         })}
       </div>
 
-      <button
-        onClick={() => sentence.trim() && onSubmit(sentence.trim())}
+      <ExerciseSubmitButton
         disabled={selected.length === 0}
-        className="btn-primary w-full"
-      >
-        Check
-      </button>
+        onClick={() => sentence.trim() && onSubmit(sentence.trim())}
+      />
     </div>
   );
 }

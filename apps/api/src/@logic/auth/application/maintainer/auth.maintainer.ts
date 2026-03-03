@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { UserDao } from "../../infrastructure/dao/user.dao";
-import { TutorDao } from "../../../tutor/infrastructure/dao/tutor.dao";
-import { UserTutorDao } from "../../../tutor/infrastructure/dao/user-tutor.dao";
+import { TutorRepository } from "../../../tutor/infrastructure/repository/tutor.repository";
+import { UserTutorRepository } from "../../../tutor/infrastructure/repository/user-tutor.repository";
 import { GoogleAuthBody } from "../../presentation/dto/body/google-auth.body";
 import { UpdatePreferencesBody } from "../../presentation/dto/body/update-preferences.body";
 
@@ -11,8 +11,8 @@ export class AuthMaintainer {
   constructor(
     private userDao: UserDao,
     private jwtService: JwtService,
-    private tutorDao: TutorDao,
-    private userTutorDao: UserTutorDao,
+    private tutorRepository: TutorRepository,
+    private userTutorRepository: UserTutorRepository,
   ) {}
 
   async googleAuth(googleUser: GoogleAuthBody) {
@@ -28,11 +28,11 @@ export class AuthMaintainer {
     }
 
     // Ensure user has an active tutor
-    const activeTutor = await this.userTutorDao.findActiveByUser(user.id);
+    const activeTutor = await this.userTutorRepository.findActiveByUser(user.id);
     if (!activeTutor) {
-      const activeTutors = await this.tutorDao.findActive();
+      const activeTutors = await this.tutorRepository.findActive();
       if (activeTutors.length > 0) {
-        await this.userTutorDao.selectTutor(user.id, activeTutors[0].id);
+        await this.userTutorRepository.selectTutor(user.id, activeTutors[0].id);
       }
     }
 

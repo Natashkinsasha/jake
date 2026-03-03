@@ -1,16 +1,11 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import type { HomeworkExercise } from "@/types";
 
 interface ExerciseRendererProps {
   index: number;
-  exercise: {
-    type?: string;
-    question?: string;
-    sentence?: string;
-    options?: string[];
-    hint?: string;
-  };
+  exercise: HomeworkExercise;
   value: string;
   onChange: (value: string) => void;
 }

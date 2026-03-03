@@ -1,16 +1,16 @@
 import { Injectable } from "@nestjs/common";
-import { TutorDao } from "../../infrastructure/dao/tutor.dao";
+import { TutorRepository } from "../../infrastructure/repository/tutor.repository";
 import { TutorMapper } from "../mapper/tutor.mapper";
 
 @Injectable()
 export class TutorMaintainer {
   constructor(
-    private tutorDao: TutorDao,
+    private tutorRepository: TutorRepository,
     private tutorMapper: TutorMapper,
   ) {}
 
   async listActive() {
-    const tutors = await this.tutorDao.findActive();
+    const tutors = await this.tutorRepository.findActive();
     return tutors.map((t) => this.tutorMapper.toResponse(t));
   }
 }

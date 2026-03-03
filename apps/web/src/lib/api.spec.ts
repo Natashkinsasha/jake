@@ -53,8 +53,12 @@ describe("api", () => {
   });
 
   it("throws on non-ok response", async () => {
-    mockFetch.mockResolvedValue({ ok: false, status: 401 });
-    await expect(api.tutors.list()).rejects.toThrow("API Error: 401");
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 401,
+      json: () => Promise.resolve({ message: "Unauthorized" }),
+    });
+    await expect(api.tutors.list()).rejects.toThrow("API Error 401 /tutors: Unauthorized");
   });
 
   it("includes authorization header", async () => {

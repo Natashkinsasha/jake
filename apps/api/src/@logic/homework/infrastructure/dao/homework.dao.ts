@@ -1,20 +1,19 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
+import { AppDrizzleTransactionHost } from "@shared/shared-cls/app-drizzle-transaction-host";
 import { eq } from "drizzle-orm";
-import { DRIZZLE } from "../../../../@shared/shared-drizzle-pg/drizzle.provider";
 import { homeworkTable } from "../table/homework.table";
-import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 @Injectable()
 export class HomeworkDao {
-  constructor(@Inject(DRIZZLE) private db: PostgresJsDatabase) {}
+  constructor(private readonly txHost: AppDrizzleTransactionHost<{ homework: typeof homeworkTable }>) {}
 
   async create(data: typeof homeworkTable.$inferInsert) {
-    const [hw] = await this.db.insert(homeworkTable).values(data).returning();
+    const [hw] = await this.txHost.tx.insert(homeworkTable).values(data).returning();
     return hw;
   }
 
   async findById(id: string) {
-    const [hw] = await this.db
+    const [hw] = await this.txHost.tx
       .select()
       .from(homeworkTable)
       .where(eq(homeworkTable.id, id))
@@ -23,14 +22,14 @@ export class HomeworkDao {
   }
 
   async findByUser(userId: string) {
-    return this.db
+    return this.txHost.tx
       .select()
       .from(homeworkTable)
       .where(eq(homeworkTable.userId, userId));
   }
 
   async complete(id: string, score: number) {
-    await this.db
+    await this.txHost.tx
       .update(homeworkTable)
       .set({ completedAt: new Date(), score })
       .where(eq(homeworkTable.id, id));

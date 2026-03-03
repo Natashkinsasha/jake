@@ -1,6 +1,5 @@
 "use client";
 
-import { useCallback } from "react";
 import { api } from "@/lib/api";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
@@ -13,10 +12,8 @@ const levelOrder = ["A1", "A2", "B1", "B2", "C1", "C2"];
 export default function ProgressPage() {
   const { user } = useBackendSession();
   const { data: progress, isLoading, error, refetch } = useApiQuery(
-    useCallback(
-      () => user?.id ? api.progress.get(user.id) : Promise.reject(new Error("No user")),
-      [user?.id],
-    ),
+    () => user?.id ? api.progress.get(user.id) : Promise.reject(new Error("No user")),
+    [user?.id],
   );
 
   if (isLoading) return <LoadingSpinner className="h-64" />;

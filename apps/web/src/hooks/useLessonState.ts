@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { useWebSocket } from "./useWebSocket";
 import { useAudioPlayer } from "./useAudioPlayer";
+import { handleLessonEvent } from "./lesson/handleLessonEvent";
 import { WS_URL } from "@/lib/config";
 import type { ChatMessage, LessonExercise, LessonStatus } from "@/types";
 
@@ -69,26 +70,43 @@ export function useLessonState(token?: string | null) {
 
   const handleEvent = useCallback((event: string, data: any) => {
     console.log("[Lesson] event:", event, data?.text ? `"${data.text.slice(0, 50)}..."` : "", data?.audio ? `audio:${data.audio.length}chars` : "");
-    switch (event) {
-      case "lesson_started":
-        setState((prev) => ({ ...prev, lessonId: data.lessonId, status: "idle" }));
+
+    const action = handleLessonEvent(event, data, {
+      userSpeaking: userSpeakingRef.current,
+      pendingTurns: pendingTurnsRef.current,
+    });
+
+    // Decrement pending turns for response events
+    if (event === "tutor_message" || event === "exercise_feedback") {
+      pendingTurnsRef.current = Math.max(0, pendingTurnsRef.current - 1);
+    }
+
+    switch (action.type) {
+      case "set_state":
+        setState((prev) => {
+          const patch = action.patch;
+          // For status event, only update if the patch has a defined status
+          if (event === "status" && patch.status === undefined) return prev;
+          return { ...prev, ...patch } as LessonState;
+        });
+        if (event === "error") console.error("Lesson error:", data.message);
         break;
-      case "tutor_message": {
-        const shouldDiscard = userSpeakingRef.current || pendingTurnsRef.current > 1;
-        if (shouldDiscard) {
-          pendingTurnsRef.current = Math.max(0, pendingTurnsRef.current - 1);
-          console.log("[Lesson] discarding tutor_message —", userSpeakingRef.current ? "user is speaking" : "newer message pending", `(pendingTurns=${pendingTurnsRef.current})`);
-          break;
-        }
-        pendingTurnsRef.current = Math.max(0, pendingTurnsRef.current - 1);
-        if (data.audio) {
-          pendingRef.current = {
-            text: data.text,
-            audio: data.audio,
-            exercise: data.exercise || null,
-          };
-          setState((prev) => ({ ...prev, hasPending: true }));
-          audioPlayer.play(data.audio);
+
+      case "play_audio":
+        pendingRef.current = action.pending;
+        setState((prev) => ({ ...prev, hasPending: true }));
+        audioPlayer.play(action.audio);
+        break;
+
+      case "show_message":
+        if (action.status === "transcript") {
+          setState((prev) => ({
+            ...prev,
+            messages: [
+              ...prev.messages,
+              { role: "user", text: action.text, timestamp: Date.now() },
+            ],
+          }));
         } else {
           setState((prev) => ({
             ...prev,
@@ -96,63 +114,21 @@ export function useLessonState(token?: string | null) {
               ...prev.messages,
               {
                 role: "assistant",
-                text: data.text,
+                text: action.text,
                 timestamp: Date.now(),
-                exercise: data.exercise || null,
+                exercise: action.exercise,
               },
             ],
-            currentExercise: data.exercise || null,
+            currentExercise: action.exercise,
             status: "idle",
           }));
         }
         break;
-      }
-      case "transcript":
-        setState((prev) => ({
-          ...prev,
-          messages: [
-            ...prev.messages,
-            { role: "user", text: data.text, timestamp: Date.now() },
-          ],
-        }));
-        break;
-      case "exercise_feedback": {
-        const shouldDiscardFb = userSpeakingRef.current || pendingTurnsRef.current > 1;
-        if (shouldDiscardFb) {
-          pendingTurnsRef.current = Math.max(0, pendingTurnsRef.current - 1);
-          console.log("[Lesson] discarding exercise_feedback —", userSpeakingRef.current ? "user is speaking" : "newer message pending");
-          break;
+
+      case "discard":
+        if (event === "tutor_message" || event === "exercise_feedback") {
+          console.log("[Lesson] discarding", event, "—", userSpeakingRef.current ? "user is speaking" : "newer message pending", `(pendingTurns=${pendingTurnsRef.current})`);
         }
-        pendingTurnsRef.current = Math.max(0, pendingTurnsRef.current - 1);
-        if (data.audio) {
-          pendingRef.current = { text: data.text, exercise: null };
-          setState((prev) => ({ ...prev, hasPending: true }));
-          audioPlayer.play(data.audio);
-        } else {
-          setState((prev) => ({
-            ...prev,
-            messages: [
-              ...prev.messages,
-              { role: "assistant", text: data.text, timestamp: Date.now() },
-            ],
-            currentExercise: null,
-            status: "idle",
-          }));
-        }
-        break;
-      }
-      case "status":
-        setState((prev) => ({
-          ...prev,
-          status: data.state === "thinking" ? "thinking" : prev.status,
-        }));
-        break;
-      case "lesson_ended":
-        setState((prev) => ({ ...prev, status: "idle", lessonEnded: true }));
-        break;
-      case "error":
-        console.error("Lesson error:", data.message);
-        setState((prev) => ({ ...prev, status: "idle" }));
         break;
     }
   }, [audioPlayer, showPendingMessage]);

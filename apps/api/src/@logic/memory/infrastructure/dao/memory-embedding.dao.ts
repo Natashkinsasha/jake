@@ -1,20 +1,19 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
+import { AppDrizzleTransactionHost } from "@shared/shared-cls/app-drizzle-transaction-host";
 import { eq, desc, sql } from "drizzle-orm";
-import { DRIZZLE } from "../../../../@shared/shared-drizzle-pg/drizzle.provider";
 import { memoryEmbeddingTable } from "../table/memory-embedding.table";
-import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
 
 @Injectable()
 export class MemoryEmbeddingDao {
-  constructor(@Inject(DRIZZLE) private db: PostgresJsDatabase) {}
+  constructor(private readonly txHost: AppDrizzleTransactionHost<{ memoryEmbedding: typeof memoryEmbeddingTable }>) {}
 
-  async create(data: typeof memoryEmbeddingTable.$inferInsert, tx?: PostgresJsDatabase) {
-    const [embedding] = await (tx ?? this.db).insert(memoryEmbeddingTable).values(data).returning();
+  async create(data: typeof memoryEmbeddingTable.$inferInsert) {
+    const [embedding] = await this.txHost.tx.insert(memoryEmbeddingTable).values(data).returning();
     return embedding;
   }
 
   async findRecentByUser(userId: string, limit = 5) {
-    return this.db
+    return this.txHost.tx
       .select()
       .from(memoryEmbeddingTable)
       .where(eq(memoryEmbeddingTable.userId, userId))
@@ -24,7 +23,7 @@ export class MemoryEmbeddingDao {
 
   async findSimilar(userId: string, queryEmbedding: number[], limit = 5, threshold = 0.8) {
     const vectorStr = `[${queryEmbedding.join(",")}]`;
-    const results = await this.db.execute(
+    const results = await this.txHost.tx.execute(
       sql`SELECT id, content, emotional_tone, created_at,
           1 - (embedding <=> ${vectorStr}::vector) as similarity
         FROM memory_embeddings
