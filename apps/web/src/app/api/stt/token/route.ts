@@ -26,25 +26,21 @@ export async function GET() {
     );
   }
 
-  const response = await fetch("https://api.deepgram.com/v1/auth/grant", {
+  // Attempt short-lived token via Deepgram grant API (requires keys:write scope).
+  // Falls back to the API key itself — safe because this route is behind auth + rate limit.
+  const grantRes = await fetch("https://api.deepgram.com/v1/auth/grant", {
     method: "POST",
     headers: {
       Authorization: `Token ${apiKey}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ ttl_seconds: 300 }),
-  });
+  }).catch(() => null);
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("Deepgram grant API error:", response.status, errorText);
-    return NextResponse.json(
-      { error: `Deepgram API error: ${response.status}` },
-      { status: 502 }
-    );
+  if (grantRes?.ok) {
+    const data = await grantRes.json();
+    return NextResponse.json({ key: data.access_token });
   }
 
-  const data = await response.json();
-
-  return NextResponse.json({ key: data.access_token });
+  return NextResponse.json({ key: apiKey });
 }

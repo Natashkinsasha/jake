@@ -3,11 +3,19 @@ export const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
   (typeof window !== "undefined" ? "/api" : "http://localhost:4000");
 
-export const WS_URL =
-  process.env.NEXT_PUBLIC_WS_URL ||
-  (typeof window !== "undefined"
-    ? `${window.location.origin}/ws/lesson`
-    : "http://localhost:4000/ws/lesson");
+function resolveWsUrl(): string {
+  if (process.env.NEXT_PUBLIC_WS_URL) return process.env.NEXT_PUBLIC_WS_URL;
+  if (typeof window === "undefined") return "http://localhost:4000/ws/lesson";
+  // Dev: connect directly to API on port 4000 (Next.js rewrites don't support WebSocket)
+  // Prod: same origin via nginx proxy
+  const { protocol, hostname, port } = window.location;
+  const isLocalDev = hostname === "localhost" && port === "3000";
+  if (isLocalDev) return "http://localhost:4000/ws/lesson";
+  const wsProtocol = protocol === "https:" ? "wss:" : "ws:";
+  return `${wsProtocol}//${hostname}/ws/lesson`;
+}
+
+export const WS_URL = resolveWsUrl();
 
 // STT (Deepgram)
 export const STT_CONFIG = {

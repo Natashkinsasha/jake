@@ -44,7 +44,7 @@ export default function LessonHistoryPage() {
           {lesson.createdAt && (
             <span>{formatLessonDate(lesson.createdAt)}</span>
           )}
-          {lesson.duration && <span>{lesson.duration} min</span>}
+          {lesson.duration && <span>{Math.max(1, lesson.duration)} min</span>}
           <span
             className={`px-2 py-0.5 rounded-full text-xs ${
               lesson.status === "completed"

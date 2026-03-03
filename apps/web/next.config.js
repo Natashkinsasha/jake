@@ -1,4 +1,17 @@
 /** @type {import('next').NextConfig} */
+
+const isDev = process.env.NODE_ENV === "development";
+
+const cspDirectives = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+  "style-src 'self' 'unsafe-inline'",
+  `connect-src 'self' wss://api.deepgram.com https://api.deepgram.com${isDev ? " ws://localhost:4000 http://localhost:4000" : ""}`,
+  "img-src 'self' https://lh3.googleusercontent.com data:",
+  "media-src 'self' blob:",
+  "frame-ancestors 'none'",
+];
+
 const nextConfig = {
   output: "standalone",
   transpilePackages: ["@jake/shared"],
@@ -14,15 +27,7 @@ const nextConfig = {
         headers: [
           {
             key: "Content-Security-Policy",
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-inline'",
-              "style-src 'self' 'unsafe-inline'",
-              "connect-src 'self' wss://api.deepgram.com https://api.deepgram.com",
-              "img-src 'self' https://lh3.googleusercontent.com data:",
-              "media-src 'self' blob:",
-              "frame-ancestors 'none'",
-            ].join("; "),
+            value: cspDirectives.join("; "),
           },
         ],
       },

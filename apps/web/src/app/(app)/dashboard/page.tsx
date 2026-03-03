@@ -66,11 +66,9 @@ export default function DashboardPage() {
                     {lesson.createdAt ? formatLessonDate(lesson.createdAt) : ""}
                   </p>
                 </div>
-                {lesson.duration && (
-                  <span className="text-xs text-gray-400">
-                    {lesson.duration} min
-                  </span>
-                )}
+                <span className="text-xs text-gray-400">
+                  {Math.max(1, lesson.duration ?? 0)} min
+                </span>
               </div>
             ))}
           </div>
