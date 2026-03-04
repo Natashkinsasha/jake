@@ -8,5 +8,5 @@
     "skipLibCheck": true,
     "outDir": "dist"
   },
-  "include": ["providers/**/*.ts"]
+  "include": ["providers/**/*.ts", "scripts/**/*.ts", "fixtures/**/*.ts"]
 }
