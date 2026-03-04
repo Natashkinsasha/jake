@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "generate-prompts": "tsx scripts/generate-prompts.ts",
-    "eval": "tsx scripts/generate-prompts.ts && promptfoo eval --env-file ../.env",
-    "eval:multi": "tsx scripts/generate-prompts.ts && promptfoo eval -c multi-turn.yaml --env-file ../.env",
+    "eval": "tsx scripts/generate-prompts.ts && promptfoo eval $([ -f ../.env ] && echo '--env-file ../.env')",
+    "eval:multi": "tsx scripts/generate-prompts.ts && promptfoo eval -c multi-turn.yaml $([ -f ../.env ] && echo '--env-file ../.env')",
     "eval:view": "promptfoo view"
   },
   "devDependencies": {
