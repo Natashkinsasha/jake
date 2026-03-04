@@ -4,6 +4,8 @@ import { LessonMessageRepository } from "../../infrastructure/repository/lesson-
 import { LessonContextService } from "../service/lesson-context.service";
 import { LessonResponseService } from "../service/lesson-response.service";
 import { AudioPipelineService } from "../service/audio-pipeline.service";
+import { StreamingPipelineService } from "../service/streaming-pipeline.service";
+import type { StreamCallbacks } from "../service/streaming-pipeline.service";
 import { TtsProvider } from "../../../../@lib/provider/src";
 import type { LlmMessage } from "../../../../@lib/provider/src";
 import { Queue } from "bullmq";
@@ -41,6 +43,7 @@ export class LessonMaintainer {
     private contextService: LessonContextService,
     private responseService: LessonResponseService,
     private audioPipeline: AudioPipelineService,
+    private streamingPipeline: StreamingPipelineService,
     private tts: TtsProvider,
     @InjectQueue(QUEUE_NAMES.POST_LESSON) private postLessonQueue: Queue,
     @InjectQueue(QUEUE_NAMES.FACT_EXTRACTION) private factQueue: Queue,
@@ -202,6 +205,48 @@ export class LessonMaintainer {
       tutorAudio: tutorAudio,
       exercise: response.exercise,
     };
+  }
+
+  async processTextMessageStreaming(
+    lessonId: string,
+    userId: string,
+    text: string,
+    systemPrompt: string,
+    history: LlmMessage[],
+    voiceId: string,
+    callbacks: StreamCallbacks,
+    options?: { speechSpeed?: number; signal?: AbortSignal },
+  ) {
+    const updatedHistory: LlmMessage[] = [
+      ...history,
+      { role: "user", content: text },
+    ];
+
+    await this.streamingPipeline.stream(
+      systemPrompt,
+      updatedHistory,
+      voiceId,
+      {
+        onChunk: (chunk) => { callbacks.onChunk(chunk); },
+        onEnd: (result) => {
+          void (async () => {
+            await this.messageRepository.create({ lessonId, role: "user", content: text });
+            await this.messageRepository.create({ lessonId, role: "tutor", content: result.fullText });
+
+            await this.factQueue.add("extract", {
+              userId,
+              lessonId,
+              userMessage: text,
+              history: updatedHistory,
+            });
+
+            callbacks.onEnd(result);
+          })();
+        },
+        onError: (error) => { callbacks.onError(error); },
+      },
+      { speechSpeed: options?.speechSpeed, signal: options?.signal },
+    );
   }
 
   async endLesson(lessonId: string, history: LlmMessage[]) {

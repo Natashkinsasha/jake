@@ -21,7 +21,7 @@ interface LessonScreenProps {
 export function LessonScreen({ token }: LessonScreenProps) {
   const router = useRouter();
   const {
-    messages, currentExercise, status, connected, isPlaying, audioDuration,
+    messages, currentExercise, status, connected, isPlaying, isStreaming, audioDuration,
     lessonEnded: serverLessonEnded, error: lessonError, sendText,
     submitExerciseAnswer, endLesson, interruptTutor, stopAudio,
     playPending, setUserSpeaking,
@@ -158,6 +158,7 @@ export function LessonScreen({ token }: LessonScreenProps) {
         messages={messages}
         isThinking={status === "thinking"}
         isSpeaking={isPlaying || status === "speaking"}
+        isStreaming={isStreaming}
         audioDuration={audioDuration}
         currentExercise={currentExercise}
         onSubmitExercise={submitExerciseAnswer}

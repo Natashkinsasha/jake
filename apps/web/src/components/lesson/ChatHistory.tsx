@@ -9,6 +9,7 @@ interface ChatHistoryProps {
   messages: ChatMessage[];
   isThinking: boolean;
   isSpeaking: boolean;
+  isStreaming: boolean;
   audioDuration: number | null;
   currentExercise: LessonExercise | null;
   onSubmitExercise: (exerciseId: string, answer: string) => void;
@@ -21,7 +22,7 @@ function formatTime(timestamp: number): string {
 
 const DEFAULT_TICK_MS = 150;
 
-function StreamingText({ text, isActive, audioDuration }: { text: string; isActive: boolean; audioDuration: number | null }) {
+function StreamingText({ text, isActive, audioDuration, isStreaming }: { text: string; isActive: boolean; audioDuration: number | null; isStreaming?: boolean }) {
   const words = text.split(" ");
   const tickMs = audioDuration != null && audioDuration > 0 && words.length > 0
     ? Math.max(50, Math.min(500, (audioDuration * 1000) / words.length))
@@ -31,7 +32,7 @@ function StreamingText({ text, isActive, audioDuration }: { text: string; isActi
   const wasActiveRef = useRef(false);
   const [frozen, setFrozen] = useState(false);
 
-  if (isActive) wasActiveRef.current = true;
+  if (isActive && !isStreaming) wasActiveRef.current = true;
 
   useEffect(() => {
     if (wasActiveRef.current && !isActive && count < words.length) {
@@ -40,11 +41,13 @@ function StreamingText({ text, isActive, audioDuration }: { text: string; isActi
   }, [isActive, count, words.length]);
 
   useEffect(() => {
-    if (frozen || !isActive || count >= words.length) return;
+    if (isStreaming === true || frozen || !isActive || count >= words.length) return;
     const timer = setTimeout(() => { setCount((c) => Math.min(c + 1, words.length)); }, tickMs);
     return () => { clearTimeout(timer); };
-  }, [count, words.length, frozen, isActive, tickMs]);
+  }, [count, words.length, frozen, isActive, tickMs, isStreaming]);
 
+  // When streaming from server, text grows progressively — no timer needed
+  if (isStreaming) return <>{text}</>;
   if (!wasActiveRef.current) return <>{text}</>;
   if (frozen) return <>{words.slice(0, count).join(" ")}...</>;
   return <>{words.slice(0, count).join(" ")}</>;
@@ -54,6 +57,7 @@ export function ChatHistory({
   messages,
   isThinking,
   isSpeaking,
+  isStreaming,
   audioDuration,
   currentExercise,
   onSubmitExercise,
@@ -87,7 +91,7 @@ export function ChatHistory({
               >
                 <p className="text-sm leading-relaxed">
                   {msg.role === "assistant" && i === lastAssistantIdx && isLastAssistantNew ? (
-                    <StreamingText text={msg.text} isActive={isSpeaking} audioDuration={audioDuration} />
+                    <StreamingText text={msg.text} isActive={isSpeaking} audioDuration={audioDuration} isStreaming={isStreaming} />
                   ) : (
                     msg.text
                   )}

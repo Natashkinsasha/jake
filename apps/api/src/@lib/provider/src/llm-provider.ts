@@ -11,11 +11,23 @@ export interface LlmResponse {
   outputTokens: number;
 }
 
+export interface LlmStreamCallbacks {
+  onText(delta: string): void;
+  onDone(response: LlmResponse): void;
+}
+
 export abstract class LlmProvider {
   abstract generate(
     systemPrompt: string,
     messages: LlmMessage[],
     maxTokens?: number,
+  ): Promise<LlmResponse>;
+
+  abstract generateStream(
+    systemPrompt: string,
+    messages: LlmMessage[],
+    callbacks: LlmStreamCallbacks,
+    options?: { maxTokens?: number; signal?: AbortSignal },
   ): Promise<LlmResponse>;
 
   abstract generateJson<T>(

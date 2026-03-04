@@ -1,12 +1,51 @@
 import type { LessonExercise } from "@/types";
 
+/**
+ * Maps backend Exercise (from @jake/shared) to frontend LessonExercise format.
+ * Backend stores exercise-specific data in `content: Record<string, unknown>`,
+ * while frontend components expect flat structures (e.g. `sentence`, `options`).
+ */
+function mapExercise(raw: unknown): LessonExercise | null {
+  if (raw === null || raw === undefined || typeof raw !== "object") return null;
+
+  const ex = raw as Record<string, unknown>;
+  const exType = ex["type"];
+  const exId = ex["id"];
+  if (exType === undefined || exType === null || exId === undefined || exId === null) return null;
+
+  // If it already has flat fields (frontend format), return as-is
+  if ("sentence" in ex || "question" in ex || "words" in ex) {
+    return ex as unknown as LessonExercise;
+  }
+
+  const content = (ex["content"] ?? {}) as Record<string, unknown>;
+  const hints = ex["hints"] as string[] | undefined;
+  const hint = hints?.[0];
+  const id = exId as string;
+
+  switch (exType) {
+    case "fill_the_gap":
+      return { id, type: "fill_the_gap", sentence: String(content["sentence"] ?? ""), hint };
+    case "multiple_choice":
+      return { id, type: "multiple_choice", question: String(content["question"] ?? ""), options: Array.isArray(content["options"]) ? content["options"] as string[] : [], hint };
+    case "sentence_builder":
+      return { id, type: "sentence_builder", words: Array.isArray(content["words"]) ? content["words"] as string[] : [], hint };
+    case "error_correction":
+      return { id, type: "error_correction", sentence: String(content["sentence"] ?? ""), hint };
+    default:
+      return null;
+  }
+}
+
 export interface LessonEventData {
   lessonId?: string;
   text?: string;
   audio?: string;
-  exercise?: LessonExercise | null;
+  exercise?: unknown;
   state?: string;
   message?: string;
+  chunkIndex?: number;
+  fullText?: string;
 }
 
 interface EventContext {
@@ -24,6 +63,8 @@ export type LessonAction =
   | { type: "set_state"; patch: Record<string, unknown> }
   | { type: "play_audio"; audio: string; pending: PendingMessage }
   | { type: "show_message"; text: string; exercise: LessonExercise | null; status: string }
+  | { type: "stream_chunk"; chunkIndex: number; text: string; audio: string }
+  | { type: "stream_end"; fullText: string; exercise: LessonExercise | null }
   | { type: "discard" };
 
 export function handleLessonEvent(
@@ -46,14 +87,14 @@ export function handleLessonEvent(
           pending: {
             text: data.text ?? "",
             audio: data.audio,
-            exercise: data.exercise ?? null,
+            exercise: mapExercise(data.exercise),
           },
         };
       }
       return {
         type: "show_message",
         text: data.text ?? "",
-        exercise: data.exercise ?? null,
+        exercise: mapExercise(data.exercise),
         status: "idle",
       };
     }
@@ -84,6 +125,23 @@ export function handleLessonEvent(
         status: "idle",
       };
     }
+
+    case "tutor_chunk": {
+      if (ctx.userSpeaking) return { type: "discard" };
+      return {
+        type: "stream_chunk",
+        chunkIndex: data.chunkIndex ?? 0,
+        text: data.text ?? "",
+        audio: data.audio ?? "",
+      };
+    }
+
+    case "tutor_stream_end":
+      return {
+        type: "stream_end",
+        fullText: data.fullText ?? "",
+        exercise: mapExercise(data.exercise),
+      };
 
     case "status":
       return {

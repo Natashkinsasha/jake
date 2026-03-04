@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef } from "react";
 import { useWebSocket } from "./useWebSocket";
 import { useAudioPlayer } from "./useAudioPlayer";
+import { useAudioQueue } from "./useAudioQueue";
 import { handleLessonEvent, type LessonEventData } from "./lesson/handleLessonEvent";
 import { WS_URL } from "@/lib/config";
 import type { ChatMessage, LessonExercise, LessonStatus } from "@/types";
@@ -35,6 +36,7 @@ export function useLessonState(token?: string | null) {
   const pendingRef = useRef<PendingTutorMessage | null>(null);
   const userSpeakingRef = useRef(false);
   const pendingTurnsRef = useRef(0);
+  const streamingTextRef = useRef("");
 
   const showPendingMessage = useCallback((pending: PendingTutorMessage) => {
     setState((prev) => ({
@@ -63,6 +65,15 @@ export function useLessonState(token?: string | null) {
       }
     },
     onEnd: () => {
+      setState((prev) => ({
+        ...prev,
+        status: prev.status === "speaking" ? "idle" : prev.status,
+      }));
+    },
+  });
+
+  const audioQueue = useAudioQueue({
+    onAllDone: () => {
       setState((prev) => ({
         ...prev,
         status: prev.status === "speaking" ? "idle" : prev.status,
@@ -127,6 +138,52 @@ export function useLessonState(token?: string | null) {
         }
         break;
 
+      case "stream_chunk": {
+        streamingTextRef.current += (streamingTextRef.current ? " " : "") + action.text;
+        const accumulatedText = streamingTextRef.current;
+
+        setState((prev) => {
+          const messages = [...prev.messages];
+          const last = messages[messages.length - 1];
+          if (last?.role === "assistant" && prev.status === "speaking") {
+            messages[messages.length - 1] = { ...last, text: accumulatedText };
+          } else {
+            messages.push({
+              role: "assistant",
+              text: accumulatedText,
+              timestamp: Date.now(),
+            });
+          }
+          return { ...prev, messages, status: "speaking" };
+        });
+
+        if (action.audio) {
+          audioQueue.enqueue({ chunkIndex: action.chunkIndex, audio: action.audio });
+        }
+        break;
+      }
+
+      case "stream_end": {
+        streamingTextRef.current = "";
+        setState((prev) => {
+          const messages = [...prev.messages];
+          const last = messages[messages.length - 1];
+          if (last?.role === "assistant") {
+            messages[messages.length - 1] = {
+              ...last,
+              text: action.fullText,
+              exercise: action.exercise,
+            };
+          }
+          return {
+            ...prev,
+            messages,
+            currentExercise: action.exercise,
+          };
+        });
+        break;
+      }
+
       case "discard":
         if (event === "tutor_message" || event === "exercise_feedback") {
           console.log("[Lesson] discarding", event, "—", userSpeakingRef.current ? "user is speaking" : "newer message pending", `(pendingTurns=${pendingTurnsRef.current})`);
@@ -185,7 +242,10 @@ export function useLessonState(token?: string | null) {
 
   const interruptTutor = useCallback(() => {
     pendingRef.current = null;
+    streamingTextRef.current = "";
     const progress = audioPlayer.stop();
+    audioQueue.stop();
+    emit("interrupt", {});
     setState((prev) => {
       const messages = [...prev.messages];
       const last = messages[messages.length - 1];
@@ -204,7 +264,7 @@ export function useLessonState(token?: string | null) {
         status: prev.status === "speaking" ? "idle" : prev.status,
       };
     });
-  }, [audioPlayer]);
+  }, [audioPlayer, audioQueue, emit]);
 
   const setUserSpeaking = useCallback((speaking: boolean) => {
     userSpeakingRef.current = speaking;
@@ -221,7 +281,8 @@ export function useLessonState(token?: string | null) {
   return {
     ...state,
     connected,
-    isPlaying: audioPlayer.isPlaying,
+    isPlaying: audioPlayer.isPlaying || audioQueue.isPlaying,
+    isStreaming: audioQueue.isPlaying,
     audioDuration: audioPlayer.duration,
     sendText,
     submitExerciseAnswer,

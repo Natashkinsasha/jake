@@ -33,6 +33,7 @@ const wsSetSpeedSchema = z.object({
 @UseGuards(WsAuthGuard)
 export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(LessonGateway.name);
+  private abortControllers = new Map<string, AbortController>();
 
   @WebSocketServer()
   server!: Server;
@@ -94,6 +95,9 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   async handleDisconnect(client: Socket) {
+    this.abortControllers.get(client.id)?.abort();
+    this.abortControllers.delete(client.id);
+
     const session = await this.sessionService.get(client.id);
     if (session) {
       await this.lessonMaintainer.endLesson(session.lessonId, session.history);
@@ -161,32 +165,55 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const session = await this.sessionService.get(client.id);
     if (!session) return;
 
-    try {
-      client.emit("status", { state: "thinking" });
+    // Cancel any in-flight generation
+    this.abortControllers.get(client.id)?.abort();
+    const abortController = new AbortController();
+    this.abortControllers.set(client.id, abortController);
 
-      const result = await this.lessonMaintainer.processTextMessage(
-        session.lessonId,
-        (client.data as SocketData).userId,
-        parsed.data.text,
-        session.systemPrompt,
-        session.history,
-        session.voiceId,
-        session.speechSpeed,
-      );
+    client.emit("status", { state: "thinking" });
 
-      await this.sessionService.appendHistory(
-        client.id,
-        { role: "user", content: parsed.data.text },
-        { role: "assistant", content: result.tutorText },
-      );
+    await this.lessonMaintainer.processTextMessageStreaming(
+      session.lessonId,
+      (client.data as SocketData).userId,
+      parsed.data.text,
+      session.systemPrompt,
+      session.history,
+      session.voiceId,
+      {
+        onChunk: (chunk) => {
+          client.emit("tutor_chunk", chunk);
+        },
+        onEnd: (result) => {
+          this.abortControllers.delete(client.id);
 
-      client.emit("tutor_message", {
-        text: result.tutorText,
-        audio: result.tutorAudio,
-        exercise: result.exercise,
-      });
-    } catch {
-      client.emit("error", { message: "Something went wrong, mate!" });
+          void this.sessionService.appendHistory(
+            client.id,
+            { role: "user", content: parsed.data.text },
+            { role: "assistant", content: result.fullText },
+          ).then(() => {
+            client.emit("tutor_stream_end", {
+              fullText: result.fullText,
+              exercise: result.exercise,
+            });
+          });
+        },
+        onError: (error) => {
+          this.abortControllers.delete(client.id);
+          this.logger.error(`Streaming failed: ${error.message}`);
+          client.emit("error", { message: "Something went wrong, mate!" });
+        },
+      },
+      { speechSpeed: session.speechSpeed, signal: abortController.signal },
+    );
+  }
+
+  @SubscribeMessage("interrupt")
+  handleInterrupt(@ConnectedSocket() client: Socket) {
+    const controller = this.abortControllers.get(client.id);
+    if (controller) {
+      controller.abort();
+      this.abortControllers.delete(client.id);
+      this.logger.debug(`Interrupted streaming for ${client.id}`);
     }
   }
 

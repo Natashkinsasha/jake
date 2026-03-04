@@ -32,6 +32,7 @@ export function useWebSocket({ url, token, onEvent }: UseWebSocketOptions) {
     const events = [
       "lesson_started", "tutor_message", "transcript",
       "exercise_feedback", "lesson_ended", "status", "error",
+      "tutor_chunk", "tutor_stream_end",
     ];
     events.forEach((event) => socket.on(event, (data: LessonEventData) => { onEventRef.current(event, data); }));
 

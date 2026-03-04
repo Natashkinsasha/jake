@@ -46,6 +46,7 @@ export class MemoryEmbeddingRepository {
         ORDER BY similarity DESC
         LIMIT ${limit}`
     );
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- raw SQL query returns untyped result
     return ("rows" in results ? results.rows : results) as unknown as EmbeddingSimilarityResult[];
   }
 }

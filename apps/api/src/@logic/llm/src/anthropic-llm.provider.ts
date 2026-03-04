@@ -3,7 +3,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { ZodSchema } from "zod";
 import { ANTHROPIC_CLIENT } from "../../../@lib/anthropic/src";
 import { LlmProvider } from "../../../@lib/provider/src";
-import type { LlmMessage, LlmResponse } from "../../../@lib/provider/src";
+import type { LlmMessage, LlmResponse, LlmStreamCallbacks } from "../../../@lib/provider/src";
 
 @Injectable()
 export class AnthropicLlmProvider extends LlmProvider {
@@ -42,6 +42,64 @@ export class AnthropicLlmProvider extends LlmProvider {
       };
     } catch (error) {
       this.logger.error(`LLM request failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    }
+  }
+
+  async generateStream(
+    systemPrompt: string,
+    messages: LlmMessage[],
+    callbacks: LlmStreamCallbacks,
+    options?: { maxTokens?: number; signal?: AbortSignal },
+  ): Promise<LlmResponse> {
+    const maxTokens = options?.maxTokens ?? 1024;
+    this.logger.debug(`LLM stream request: model=claude-sonnet-4-20250514, maxTokens=${maxTokens}, messages=${messages.length}`);
+
+    try {
+      const stream = await this.client.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: maxTokens,
+        system: systemPrompt,
+        messages,
+        stream: true,
+      });
+
+      let fullText = "";
+      let inputTokens = 0;
+      let outputTokens = 0;
+
+      for await (const event of stream) {
+        if (options?.signal?.aborted) {
+          break;
+        }
+
+        if (event.type === "message_start") {
+          inputTokens = event.message.usage.input_tokens;
+          outputTokens = event.message.usage.output_tokens;
+        } else if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+          fullText += event.delta.text;
+          callbacks.onText(event.delta.text);
+        } else if (event.type === "message_delta") {
+          outputTokens = event.usage.output_tokens;
+        }
+      }
+
+      const result: LlmResponse = {
+        text: fullText,
+        inputTokens,
+        outputTokens,
+      };
+
+      this.logger.debug(`LLM stream done: inputTokens=${result.inputTokens}, outputTokens=${result.outputTokens}`);
+      callbacks.onDone(result);
+
+      return result;
+    } catch (error) {
+      if (options?.signal?.aborted) {
+        this.logger.debug("LLM stream aborted");
+        throw error;
+      }
+      this.logger.error(`LLM stream failed: ${error instanceof Error ? error.message : String(error)}`);
       throw error;
     }
   }
