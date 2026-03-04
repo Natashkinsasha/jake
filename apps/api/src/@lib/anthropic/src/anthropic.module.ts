@@ -5,8 +5,10 @@ import Anthropic from "@anthropic-ai/sdk";
 export const ANTHROPIC_CLIENT = Symbol("ANTHROPIC_CLIENT");
 
 export interface AnthropicModuleAsyncOptions {
-  imports?: any[];
+  imports?: DynamicModule["imports"];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   inject?: any[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   useFactory: (...args: any[]) => Anthropic | Promise<Anthropic>;
 }
 

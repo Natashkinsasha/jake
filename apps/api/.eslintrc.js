@@ -13,7 +13,7 @@ module.exports = {
   env: {
     node: true,
   },
-  ignorePatterns: [".eslintrc.js", "dist/"],
+  ignorePatterns: [".eslintrc.js", "dist/", "test/"],
   rules: {
     "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
     "@typescript-eslint/no-extraneous-class": "off",
