@@ -2,8 +2,8 @@ import { Logger } from "@nestjs/common";
 import { Processor, WorkerHost } from "@nestjs/bullmq";
 import { Job } from "bullmq";
 import { Transaction } from "../../../../@shared/shared-cls/transaction";
-import { LlmService } from "../../../llm/src/llm.service";
-import { EmbeddingService } from "../../../embedding/src/embedding.service";
+import { AnthropicLlmProvider } from "../../../llm/src/anthropic-llm.provider";
+import { OpenAiEmbeddingProvider } from "../../../embedding/src/openai-embedding.provider";
 import { LessonRepository } from "../repository/lesson.repository";
 import { AuthContract } from "../../../auth/contract/auth.contract";
 import { VocabularyContract } from "../../../vocabulary/contract/vocabulary.contract";
@@ -29,8 +29,8 @@ export class PostLessonBullHandler extends WorkerHost {
   private readonly logger = new Logger(PostLessonBullHandler.name);
 
   constructor(
-    private llm: LlmService,
-    private embeddingService: EmbeddingService,
+    private llm: AnthropicLlmProvider,
+    private embeddingProvider: OpenAiEmbeddingProvider,
     private lessonRepository: LessonRepository,
     private authContract: AuthContract,
     private vocabularyContract: VocabularyContract,
@@ -87,7 +87,7 @@ export class PostLessonBullHandler extends WorkerHost {
     }
 
     if (summary.emotionalSummary) {
-      const embedding = await this.embeddingService.embed(summary.emotionalSummary);
+      const embedding = await this.embeddingProvider.embed(summary.emotionalSummary);
       await this.memoryContract.createEmbedding({
         userId: lesson.userId,
         lessonId,

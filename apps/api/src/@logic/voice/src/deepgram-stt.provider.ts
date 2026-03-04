@@ -4,8 +4,8 @@ import type { DeepgramClient } from "@deepgram/sdk";
 import { DEEPGRAM_CLIENT } from "../../../@lib/deepgram/src";
 
 @Injectable()
-export class SttService {
-  private readonly logger = new Logger(SttService.name);
+export class DeepgramSttProvider {
+  private readonly logger = new Logger(DeepgramSttProvider.name);
 
   constructor(@Inject(DEEPGRAM_CLIENT) private deepgram: DeepgramClient) {}
 

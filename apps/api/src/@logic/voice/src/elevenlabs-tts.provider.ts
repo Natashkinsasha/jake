@@ -3,8 +3,8 @@ import { withSpan } from "../../llm/src/llm-tracing";
 import { EnvService } from "../../../@shared/shared-config/env.service";
 
 @Injectable()
-export class TtsService {
-  private readonly logger = new Logger(TtsService.name);
+export class ElevenLabsTtsProvider {
+  private readonly logger = new Logger(ElevenLabsTtsProvider.name);
 
   constructor(private env: EnvService) {}
 

@@ -1,12 +1,12 @@
 import { Module } from "@nestjs/common";
-import { SttService } from "./stt.service";
-import { TtsService } from "./tts.service";
+import { DeepgramSttProvider } from "./deepgram-stt.provider";
+import { ElevenLabsTtsProvider } from "./elevenlabs-tts.provider";
 import { SharedConfigModule } from "../../../@shared/shared-config/shared-config.module";
 import { SharedDeepgramModule } from "../../../@shared/shared-deepgram/shared-deepgram.module";
 
 @Module({
   imports: [SharedConfigModule, SharedDeepgramModule],
-  providers: [SttService, TtsService],
-  exports: [SttService, TtsService],
+  providers: [DeepgramSttProvider, ElevenLabsTtsProvider],
+  exports: [DeepgramSttProvider, ElevenLabsTtsProvider],
 })
 export class VoiceModule {}

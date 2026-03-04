@@ -1,14 +1,14 @@
 import { Injectable } from "@nestjs/common";
 import { MemoryFactRepository } from "../../infrastructure/repository/memory-fact.repository";
 import { MemoryEmbeddingRepository } from "../../infrastructure/repository/memory-embedding.repository";
-import { EmbeddingService } from "../../../embedding/src/embedding.service";
+import { OpenAiEmbeddingProvider } from "../../../embedding/src/openai-embedding.provider";
 
 @Injectable()
 export class MemoryRetrievalService {
   constructor(
     private factRepository: MemoryFactRepository,
     private embeddingRepository: MemoryEmbeddingRepository,
-    private embeddingService: EmbeddingService,
+    private embeddingProvider: OpenAiEmbeddingProvider,
   ) {}
 
   async retrieve(userId: string, query: string) {
@@ -22,7 +22,7 @@ export class MemoryRetrievalService {
 
   private async retrieveSimilarMemories(userId: string, query: string) {
     try {
-      const queryEmbedding = await this.embeddingService.embed(query);
+      const queryEmbedding = await this.embeddingProvider.embed(query);
       return this.embeddingRepository.findSimilar(userId, queryEmbedding, 5, 0.3);
     } catch {
       return [];

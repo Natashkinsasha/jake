@@ -3,8 +3,8 @@ import OpenAI from "openai";
 import { OPENAI_CLIENT } from "../../../@lib/openai/src";
 
 @Injectable()
-export class EmbeddingService {
-  private readonly logger = new Logger(EmbeddingService.name);
+export class OpenAiEmbeddingProvider {
+  private readonly logger = new Logger(OpenAiEmbeddingProvider.name);
 
   constructor(@Inject(OPENAI_CLIENT) private client: OpenAI) {}
 

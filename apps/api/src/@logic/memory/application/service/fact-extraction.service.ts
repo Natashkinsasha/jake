@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { LlmService, LlmMessage } from "../../../llm/src/llm.service";
+import { AnthropicLlmProvider, LlmMessage } from "../../../llm/src/anthropic-llm.provider";
 import { MemoryFactRepository } from "../../infrastructure/repository/memory-fact.repository";
 import { FactExtractionResultSchema, type FactExtractionResult } from "@jake/shared";
 
@@ -19,7 +19,7 @@ Return ONLY valid JSON:
 @Injectable()
 export class FactExtractionService {
   constructor(
-    private llm: LlmService,
+    private llm: AnthropicLlmProvider,
     private factRepository: MemoryFactRepository,
   ) {}
 

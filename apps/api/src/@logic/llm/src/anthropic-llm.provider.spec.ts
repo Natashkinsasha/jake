@@ -1,8 +1,8 @@
-import { LlmService, type LlmMessage } from "./llm.service";
+import { AnthropicLlmProvider, type LlmMessage } from "./anthropic-llm.provider";
 import Anthropic from "@anthropic-ai/sdk";
 
-describe("LlmService", () => {
-  let service: LlmService;
+describe("AnthropicLlmProvider", () => {
+  let provider: AnthropicLlmProvider;
   let mockCreate: jest.Mock;
   let mockClient: Anthropic;
 
@@ -12,7 +12,7 @@ describe("LlmService", () => {
     mockCreate = jest.fn();
     mockClient = { messages: { create: mockCreate } } as unknown as Anthropic;
 
-    service = new LlmService(mockClient);
+    provider = new AnthropicLlmProvider(mockClient);
   });
 
   describe("generate", () => {
@@ -24,7 +24,7 @@ describe("LlmService", () => {
       mockCreate.mockResolvedValue(mockResponse);
 
       const messages: LlmMessage[] = [{ role: "user", content: "Hi Jake" }];
-      const result = await service.generate("System prompt", messages);
+      const result = await provider.generate("System prompt", messages);
 
       expect(mockCreate).toHaveBeenCalledWith({
         model: "claude-sonnet-4-20250514",
@@ -47,7 +47,7 @@ describe("LlmService", () => {
       };
       mockCreate.mockResolvedValue(mockResponse);
 
-      await service.generate("System", [{ role: "user", content: "test" }], 2048);
+      await provider.generate("System", [{ role: "user", content: "test" }], 2048);
 
       expect(mockCreate).toHaveBeenCalledWith(
         expect.objectContaining({ max_tokens: 2048 }),
@@ -64,7 +64,7 @@ describe("LlmService", () => {
       };
       mockCreate.mockResolvedValue(mockResponse);
 
-      const result = await service.generate("System", [{ role: "user", content: "test" }]);
+      const result = await provider.generate("System", [{ role: "user", content: "test" }]);
       expect(result.text).toBe("Part 1 Part 2");
     });
 
@@ -78,7 +78,7 @@ describe("LlmService", () => {
       };
       mockCreate.mockResolvedValue(mockResponse);
 
-      const result = await service.generate("System", [{ role: "user", content: "test" }]);
+      const result = await provider.generate("System", [{ role: "user", content: "test" }]);
       expect(result.text).toBe("Hello");
     });
 
@@ -86,7 +86,7 @@ describe("LlmService", () => {
       mockCreate.mockRejectedValue(new Error("API rate limit exceeded"));
 
       await expect(
-        service.generate("System", [{ role: "user", content: "test" }]),
+        provider.generate("System", [{ role: "user", content: "test" }]),
       ).rejects.toThrow("API rate limit exceeded");
     });
 
@@ -97,7 +97,7 @@ describe("LlmService", () => {
       };
       mockCreate.mockResolvedValue(mockResponse);
 
-      const result = await service.generate("System", [{ role: "user", content: "test" }]);
+      const result = await provider.generate("System", [{ role: "user", content: "test" }]);
       expect(result.text).toBe("");
     });
   });
@@ -110,7 +110,7 @@ describe("LlmService", () => {
       };
       mockCreate.mockResolvedValue(mockResponse);
 
-      const result = await service.generateJson<{ name: string; level: string }>(
+      const result = await provider.generateJson<{ name: string; level: string }>(
         "System",
         [{ role: "user", content: "test" }],
       );
@@ -125,7 +125,7 @@ describe("LlmService", () => {
       };
       mockCreate.mockResolvedValue(mockResponse);
 
-      const result = await service.generateJson<{ key: string }>(
+      const result = await provider.generateJson<{ key: string }>(
         "System",
         [{ role: "user", content: "test" }],
       );
@@ -140,7 +140,7 @@ describe("LlmService", () => {
       };
       mockCreate.mockResolvedValue(mockResponse);
 
-      await service.generateJson("System", [{ role: "user", content: "test" }]);
+      await provider.generateJson("System", [{ role: "user", content: "test" }]);
 
       expect(mockCreate).toHaveBeenCalledWith(
         expect.objectContaining({ max_tokens: 2048 }),
@@ -155,7 +155,7 @@ describe("LlmService", () => {
       mockCreate.mockResolvedValue(mockResponse);
 
       await expect(
-        service.generateJson("System", [{ role: "user", content: "test" }]),
+        provider.generateJson("System", [{ role: "user", content: "test" }]),
       ).rejects.toThrow();
     });
   });

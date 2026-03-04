@@ -1,10 +1,10 @@
 import { Module } from "@nestjs/common";
-import { EmbeddingService } from "./embedding.service";
+import { OpenAiEmbeddingProvider } from "./openai-embedding.provider";
 import { SharedOpenaiModule } from "../../../@shared/shared-openai/shared-openai.module";
 
 @Module({
   imports: [SharedOpenaiModule],
-  providers: [EmbeddingService],
-  exports: [EmbeddingService],
+  providers: [OpenAiEmbeddingProvider],
+  exports: [OpenAiEmbeddingProvider],
 })
 export class EmbeddingModule {}

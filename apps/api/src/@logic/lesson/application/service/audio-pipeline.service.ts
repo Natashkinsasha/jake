@@ -1,16 +1,16 @@
 import { BadRequestException, Injectable, Logger } from "@nestjs/common";
-import { SttService } from "../../../voice/src/stt.service";
-import { TtsService } from "../../../voice/src/tts.service";
+import { DeepgramSttProvider } from "../../../voice/src/deepgram-stt.provider";
+import { ElevenLabsTtsProvider } from "../../../voice/src/elevenlabs-tts.provider";
 import { LessonResponseService } from "./lesson-response.service";
-import { LlmMessage } from "../../../llm/src/llm.service";
+import { LlmMessage } from "../../../llm/src/anthropic-llm.provider";
 
 @Injectable()
 export class AudioPipelineService {
   private readonly logger = new Logger(AudioPipelineService.name);
 
   constructor(
-    private stt: SttService,
-    private tts: TtsService,
+    private stt: DeepgramSttProvider,
+    private tts: ElevenLabsTtsProvider,
     private lessonResponse: LessonResponseService,
   ) {}
 

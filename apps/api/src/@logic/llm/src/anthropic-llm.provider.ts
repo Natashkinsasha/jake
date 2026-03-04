@@ -15,8 +15,8 @@ export interface LlmResponse {
 }
 
 @Injectable()
-export class LlmService {
-  private readonly logger = new Logger(LlmService.name);
+export class AnthropicLlmProvider {
+  private readonly logger = new Logger(AnthropicLlmProvider.name);
 
   constructor(@Inject(ANTHROPIC_CLIENT) private client: Anthropic) {}
 
