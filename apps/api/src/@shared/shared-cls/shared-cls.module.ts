@@ -3,7 +3,16 @@ import { ClsModule } from 'nestjs-cls';
 
 @Module({
   imports: [
-    ClsModule.forRoot(),
+    ClsModule.forRoot({
+      global: true,
+      middleware: {
+        mount: true,
+        resolveProxyProviders: false,
+      },
+      interceptor: {
+        resolveProxyProviders: true,
+      },
+    }),
   ],
   exports: [ClsModule],
 })
