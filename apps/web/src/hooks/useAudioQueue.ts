@@ -8,6 +8,7 @@ interface QueueItem {
 
 interface UseAudioQueueOptions {
   onPlayStart?: () => void;
+  onChunkStart?: (chunkIndex: number) => void;
   onAllDone?: () => void;
 }
 
@@ -21,6 +22,8 @@ export function useAudioQueue(options?: UseAudioQueueOptions) {
   const [isPlaying, setIsPlaying] = useState(false);
   const optionsRef = useCallbackRef(options);
   const startedRef = useRef(false);
+  const totalEnqueuedRef = useRef(0);
+  const playedCountRef = useRef(0);
 
   const cleanup = useCallback(() => {
     if (audioRef.current) {
@@ -35,11 +38,18 @@ export function useAudioQueue(options?: UseAudioQueueOptions) {
     }
   }, []);
 
+  const reset = useCallback(() => {
+    queueRef.current = [];
+    playingRef.current = false;
+    startedRef.current = false;
+    totalEnqueuedRef.current = 0;
+    playedCountRef.current = 0;
+    setIsPlaying(false);
+  }, []);
+
   const playNext = useCallback(() => {
     if (queueRef.current.length === 0) {
-      playingRef.current = false;
-      setIsPlaying(false);
-      startedRef.current = false;
+      reset();
       log("queue empty, all done");
       optionsRef.current?.onAllDone?.();
       return;
@@ -51,6 +61,8 @@ export function useAudioQueue(options?: UseAudioQueueOptions) {
     if (!item) return;
 
     if (!item.audio) {
+      playedCountRef.current++;
+      optionsRef.current?.onChunkStart?.(item.chunkIndex);
       log(`chunk ${item.chunkIndex}: no audio, skipping`);
       playNext();
       return;
@@ -72,16 +84,19 @@ export function useAudioQueue(options?: UseAudioQueueOptions) {
       audioRef.current = audio;
 
       audio.onended = () => {
+        playedCountRef.current++;
         log(`chunk ${item.chunkIndex}: ended`);
         cleanup();
         playNext();
       };
       audio.onerror = () => {
+        playedCountRef.current++;
         log(`chunk ${item.chunkIndex}: error`);
         cleanup();
         playNext();
       };
 
+      optionsRef.current?.onChunkStart?.(item.chunkIndex);
       log(`chunk ${item.chunkIndex}: playing (${blob.size} bytes)`);
       audio.play().catch(() => {
         log(`chunk ${item.chunkIndex}: play() rejected`);
@@ -93,10 +108,11 @@ export function useAudioQueue(options?: UseAudioQueueOptions) {
       playNext();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- optionsRef is stable
-  }, [cleanup]);
+  }, [cleanup, reset]);
 
   const enqueue = useCallback((item: QueueItem) => {
     queueRef.current.push(item);
+    totalEnqueuedRef.current++;
     log(`enqueued chunk ${item.chunkIndex}, queue size: ${queueRef.current.length}`);
 
     if (!startedRef.current) {
@@ -113,21 +129,23 @@ export function useAudioQueue(options?: UseAudioQueueOptions) {
   }, [playNext]);
 
   const stop = useCallback((): number => {
-    let progress = 1;
+    const total = totalEnqueuedRef.current;
+    if (total === 0) { reset(); cleanup(); return 1; }
+
+    let chunkProgress = 0;
     if (audioRef.current) {
       const { currentTime, duration } = audioRef.current;
       if (duration > 0 && Number.isFinite(duration)) {
-        progress = currentTime / duration;
+        chunkProgress = currentTime / duration;
       }
     }
-    queueRef.current = [];
-    playingRef.current = false;
-    startedRef.current = false;
-    setIsPlaying(false);
+
+    const progress = Math.min((playedCountRef.current + chunkProgress) / total, 1);
+    reset();
     cleanup();
-    log("stopped");
+    log("stopped, overall progress:", progress.toFixed(2));
     return progress;
-  }, [cleanup]);
+  }, [cleanup, reset]);
 
   const clear = useCallback(() => {
     queueRef.current = [];

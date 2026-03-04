@@ -40,23 +40,38 @@ export class StreamingPipelineService {
     callbacks: StreamCallbacks,
     options?: { speechSpeed?: number; signal?: AbortSignal },
   ): Promise<void> {
-    const buffer = new SentenceBuffer();
+    const sentenceBuffer = new SentenceBuffer();
     const ttsPromises: Promise<void>[] = [];
     let chunkIndex = 0;
+
+    // Ordered emission: TTS runs in parallel but chunks are sent to the client
+    // in strict sentence order. Without this, shorter sentences finish TTS first
+    // and arrive out of order on the client.
+    const ready = new Map<number, StreamChunk>();
+    let nextToEmit = 0;
+
+    const emitInOrder = () => {
+      while (ready.has(nextToEmit)) {
+        const chunk = ready.get(nextToEmit)!;
+        ready.delete(nextToEmit);
+        if (!options?.signal?.aborted) {
+          callbacks.onChunk(chunk);
+        }
+        nextToEmit++;
+      }
+    };
 
     const synthesizeAndEmit = (text: string, idx: number) => {
       const promise = this.tts
         .synthesize(text, voiceId, options?.speechSpeed)
         .then((audio) => {
-          if (!options?.signal?.aborted) {
-            callbacks.onChunk({ chunkIndex: idx, text, audio });
-          }
+          ready.set(idx, { chunkIndex: idx, text, audio });
+          emitInOrder();
         })
         .catch((error: unknown) => {
           this.logger.warn(`TTS failed for chunk ${idx}, sending text-only: ${error instanceof Error ? error.message : String(error)}`);
-          if (!options?.signal?.aborted) {
-            callbacks.onChunk({ chunkIndex: idx, text, audio: "" });
-          }
+          ready.set(idx, { chunkIndex: idx, text, audio: "" });
+          emitInOrder();
         });
       ttsPromises.push(promise);
     };
@@ -67,13 +82,13 @@ export class StreamingPipelineService {
         history,
         {
           onText: (delta) => {
-            const sentences = buffer.push(delta);
+            const sentences = sentenceBuffer.push(delta);
             for (const sentence of sentences) {
               synthesizeAndEmit(sentence, chunkIndex++);
             }
           },
           onDone: () => {
-            const remaining = buffer.flush();
+            const remaining = sentenceBuffer.flush();
             if (remaining) {
               synthesizeAndEmit(remaining, chunkIndex++);
             }

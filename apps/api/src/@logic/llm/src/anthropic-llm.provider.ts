@@ -1,6 +1,7 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import Anthropic from "@anthropic-ai/sdk";
 import type { ZodSchema } from "zod";
+import { zodToJsonSchema } from "zod-to-json-schema";
 import { ANTHROPIC_CLIENT } from "../../../@lib/anthropic/src";
 import { LlmProvider } from "../../../@lib/provider/src";
 import type { LlmMessage, LlmResponse, LlmStreamCallbacks } from "../../../@lib/provider/src";
@@ -110,29 +111,75 @@ export class AnthropicLlmProvider extends LlmProvider {
     maxTokens?: number,
     schema?: ZodSchema<T>,
   ): Promise<T> {
-    const response = await this.generate(systemPrompt, messages, maxTokens ?? 2048);
-    const cleaned = response.text.replace(/```json\n?|```/g, "").trim();
+    // With schema: use tool use for guaranteed valid JSON
+    if (schema) {
+      return this.generateJsonWithTool(systemPrompt, messages, maxTokens ?? 2048, schema);
+    }
 
-    let parsed: unknown;
+    // Without schema: text-based with JSON extraction
+    const response = await this.generate(systemPrompt, messages, maxTokens ?? 2048);
+    const stripped = response.text.replace(/```json\n?|```/g, "").trim();
+    const jsonMatch = stripped.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      this.logger.error(`No JSON object found in LLM response: ${stripped.substring(0, 300)}`);
+      throw new Error("No JSON object found in LLM response");
+    }
+
     try {
-      parsed = JSON.parse(cleaned);
+      return JSON.parse(jsonMatch[0]) as T;
     } catch (error) {
-      this.logger.error(`Failed to parse LLM JSON response: ${cleaned.substring(0, 200)}`);
+      this.logger.error(`Failed to parse LLM JSON (${error instanceof Error ? error.message : "unknown"}): ${jsonMatch[0].substring(0, 500)}`);
       throw error;
     }
+  }
 
-    if (!schema) {
-      return parsed as T;
-    }
+  private async generateJsonWithTool<T>(
+    systemPrompt: string,
+    messages: LlmMessage[],
+    maxTokens: number,
+    schema: ZodSchema<T>,
+  ): Promise<T> {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const jsonSchema = zodToJsonSchema(schema as any, { target: "openApi3" });
+    this.logger.debug(`LLM tool_use request: model=claude-sonnet-4-20250514, maxTokens=${maxTokens}`);
 
-    const result = schema.safeParse(parsed);
-    if (!result.success) {
-      this.logger.error(
-        `LLM JSON validation failed: ${JSON.stringify(result.error.issues)}. Raw: ${cleaned.substring(0, 200)}`,
+    try {
+      const response = await this.client.messages.create({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: maxTokens,
+        system: systemPrompt,
+        messages,
+        tools: [
+          {
+            name: "output",
+            description: "Return the structured result",
+            input_schema: jsonSchema as Anthropic.Tool.InputSchema,
+          },
+        ],
+        tool_choice: { type: "tool", name: "output" },
+      });
+
+      const toolBlock = response.content.find(
+        (block): block is Anthropic.ToolUseBlock => block.type === "tool_use",
       );
-      throw new Error(`LLM response validation failed: ${result.error.issues.map((i) => i.message).join(", ")}`);
-    }
+      if (!toolBlock) {
+        throw new Error("No tool_use block in LLM response");
+      }
 
-    return result.data;
+      this.logger.debug(`LLM tool_use response: inputTokens=${response.usage.input_tokens}, outputTokens=${response.usage.output_tokens}`);
+
+      const result = schema.safeParse(toolBlock.input);
+      if (!result.success) {
+        this.logger.error(
+          `LLM tool_use validation failed: ${JSON.stringify(result.error.issues)}`,
+        );
+        throw new Error(`LLM response validation failed: ${result.error.issues.map((i) => i.message).join(", ")}`);
+      }
+
+      return result.data;
+    } catch (error) {
+      this.logger.error(`LLM tool_use failed: ${error instanceof Error ? error.message : String(error)}`);
+      throw error;
+    }
   }
 }

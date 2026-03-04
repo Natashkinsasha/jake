@@ -1,16 +1,9 @@
 import { useState, useCallback, useRef } from "react";
 import { useWebSocket } from "./useWebSocket";
-import { useAudioPlayer } from "./useAudioPlayer";
 import { useAudioQueue } from "./useAudioQueue";
 import { handleLessonEvent, type LessonEventData } from "./lesson/handleLessonEvent";
 import { WS_URL } from "@/lib/config";
 import type { ChatMessage, LessonExercise, LessonStatus } from "@/types";
-
-interface PendingTutorMessage {
-  text: string;
-  audio?: string;
-  exercise?: LessonExercise | null;
-}
 
 interface LessonState {
   lessonId: string | null;
@@ -33,51 +26,63 @@ export function useLessonState(token?: string | null) {
     error: null,
   });
 
-  const pendingRef = useRef<PendingTutorMessage | null>(null);
+  const pendingAudioRef = useRef<string | null>(null);
   const userSpeakingRef = useRef(false);
   const pendingTurnsRef = useRef(0);
-  const streamingTextRef = useRef("");
+  const revealedWordsRef = useRef<number>(Infinity);
 
-  const showPendingMessage = useCallback((pending: PendingTutorMessage) => {
-    setState((prev) => ({
-      ...prev,
-      messages: [
-        ...prev.messages,
-        {
-          role: "assistant",
-          text: pending.text,
-          timestamp: Date.now(),
-          exercise: pending.exercise ?? null,
-        },
-      ],
-      currentExercise: pending.exercise ?? null,
-      status: "speaking",
-    }));
-  }, []);
-
-  const audioPlayer = useAudioPlayer({
-    onPlay: () => {
-      const pending = pendingRef.current;
-      if (pending) {
-        pendingRef.current = null;
-        setState((prev) => ({ ...prev, hasPending: false }));
-        showPendingMessage(pending);
-      }
-    },
-    onEnd: () => {
-      setState((prev) => ({
-        ...prev,
-        status: prev.status === "speaking" ? "idle" : prev.status,
-      }));
-    },
-  });
+  // Streaming: buffer text chunks, reveal in sync with audio playback.
+  // stream_end data is saved to a ref and applied only when all audio finishes.
+  const streamChunksRef = useRef<string[]>([]);
+  const streamEndRef = useRef<{ fullText: string; exercise: LessonExercise | null } | null>(null);
+  const audioDoneRef = useRef(true);
 
   const audioQueue = useAudioQueue({
+    onChunkStart: (chunkIndex) => {
+      const chunks = streamChunksRef.current;
+      if (chunks.length === 0) return;
+      const visibleText = chunks.slice(0, chunkIndex + 1).join(" ");
+      setState((prev) => {
+        const messages = [...prev.messages];
+        const last = messages[messages.length - 1];
+        if (last?.role === "assistant" && prev.status === "speaking") {
+          messages[messages.length - 1] = { ...last, text: visibleText };
+        }
+        return { ...prev, messages };
+      });
+    },
     onAllDone: () => {
-      setState((prev) => ({
-        ...prev,
-        status: prev.status === "speaking" ? "idle" : prev.status,
-      }));
+      audioDoneRef.current = true;
+      const endData = streamEndRef.current;
+      streamEndRef.current = null;
+      streamChunksRef.current = [];
+
+      if (endData) {
+        // stream_end already arrived — apply final text + exercise
+        setState((prev) => {
+          const messages = [...prev.messages];
+          const last = messages[messages.length - 1];
+          if (last?.role === "assistant") {
+            messages[messages.length - 1] = {
+              ...last,
+              text: endData.fullText,
+              exercise: endData.exercise,
+            };
+          }
+          return {
+            ...prev,
+            messages,
+            currentExercise: endData.exercise,
+            status: "idle",
+          };
+        });
+      } else {
+        // stream_end hasn't arrived yet (will apply when it does)
+        setState((prev) => ({
+          ...prev,
+          status: prev.status === "speaking" ? "idle" : prev.status,
+        }));
+      }
     },
   });
 
@@ -89,7 +94,6 @@ export function useLessonState(token?: string | null) {
       pendingTurns: pendingTurnsRef.current,
     });
 
-    // Decrement pending turns for response events
     if (event === "tutor_message" || event === "exercise_feedback") {
       pendingTurnsRef.current = Math.max(0, pendingTurnsRef.current - 1);
     }
@@ -98,7 +102,6 @@ export function useLessonState(token?: string | null) {
       case "set_state":
         setState((prev) => {
           const patch = action.patch;
-          // For status event, only update if the patch has a defined status
           if (event === "status" && patch["status"] === undefined) return prev;
           return { ...prev, ...patch } as LessonState;
         });
@@ -106,9 +109,29 @@ export function useLessonState(token?: string | null) {
         break;
 
       case "play_audio":
-        pendingRef.current = action.pending;
-        setState((prev) => ({ ...prev, hasPending: true }));
-        audioPlayer.play(action.audio);
+        pendingAudioRef.current = action.audio;
+        // Buffer text — will be revealed by onChunkStart when audio plays
+        streamChunksRef.current = [action.pending.text];
+        audioDoneRef.current = false;
+        streamEndRef.current = {
+          fullText: action.pending.text,
+          exercise: action.pending.exercise ?? null,
+        };
+        setState((prev) => ({
+          ...prev,
+          messages: [
+            ...prev.messages,
+            {
+              role: "assistant",
+              text: "",
+              timestamp: Date.now(),
+              exercise: action.pending.exercise ?? null,
+            },
+          ],
+          currentExercise: action.pending.exercise ?? null,
+          hasPending: true,
+          status: "speaking",
+        }));
         break;
 
       case "show_message":
@@ -139,18 +162,17 @@ export function useLessonState(token?: string | null) {
         break;
 
       case "stream_chunk": {
-        streamingTextRef.current += (streamingTextRef.current ? " " : "") + action.text;
-        const accumulatedText = streamingTextRef.current;
+        streamChunksRef.current.push(action.text);
+        audioDoneRef.current = false;
 
+        // Create a placeholder message on the first chunk
         setState((prev) => {
           const messages = [...prev.messages];
           const last = messages[messages.length - 1];
-          if (last?.role === "assistant" && prev.status === "speaking") {
-            messages[messages.length - 1] = { ...last, text: accumulatedText };
-          } else {
+          if (!(last?.role === "assistant" && prev.status === "speaking")) {
             messages.push({
               role: "assistant",
-              text: accumulatedText,
+              text: "",
               timestamp: Date.now(),
             });
           }
@@ -159,39 +181,55 @@ export function useLessonState(token?: string | null) {
 
         if (action.audio) {
           audioQueue.enqueue({ chunkIndex: action.chunkIndex, audio: action.audio });
+        } else {
+          // No audio (TTS failed) — show text immediately
+          const visibleText = streamChunksRef.current.join(" ");
+          setState((prev) => {
+            const messages = [...prev.messages];
+            const last = messages[messages.length - 1];
+            if (last?.role === "assistant") {
+              messages[messages.length - 1] = { ...last, text: visibleText };
+            }
+            return { ...prev, messages };
+          });
         }
         break;
       }
 
       case "stream_end": {
-        streamingTextRef.current = "";
-        setState((prev) => {
-          const messages = [...prev.messages];
-          const last = messages[messages.length - 1];
-          if (last?.role === "assistant") {
-            messages[messages.length - 1] = {
-              ...last,
-              text: action.fullText,
-              exercise: action.exercise,
-            };
-          }
-          return {
-            ...prev,
-            messages,
-            currentExercise: action.exercise,
-          };
-        });
+        const endData = { fullText: action.fullText, exercise: action.exercise };
+
+        if (audioDoneRef.current) {
+          // Audio already finished (short response) — apply immediately
+          streamChunksRef.current = [];
+          streamEndRef.current = null;
+          setState((prev) => {
+            const messages = [...prev.messages];
+            const last = messages[messages.length - 1];
+            if (last?.role === "assistant") {
+              messages[messages.length - 1] = {
+                ...last,
+                text: action.fullText,
+                exercise: action.exercise,
+              };
+            }
+            return { ...prev, messages, currentExercise: action.exercise, status: "idle" };
+          });
+        } else {
+          // Audio still playing — save for onAllDone
+          streamEndRef.current = endData;
+        }
         break;
       }
 
       case "discard":
-        if (event === "tutor_message" || event === "exercise_feedback") {
+        if (event === "tutor_message" || event === "exercise_feedback" || event === "tutor_chunk") {
           console.log("[Lesson] discarding", event, "—", userSpeakingRef.current ? "user is speaking" : "newer message pending", `(pendingTurns=${pendingTurnsRef.current})`);
         }
         break;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- showPendingMessage is a stable useCallback
-  }, [audioPlayer, showPendingMessage]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- audioQueue.enqueue is stable
+  }, []);
 
   const { emit, connected } = useWebSocket({
     url: WS_URL,
@@ -241,21 +279,23 @@ export function useLessonState(token?: string | null) {
   }, [emit]);
 
   const interruptTutor = useCallback(() => {
-    pendingRef.current = null;
-    streamingTextRef.current = "";
-    const progress = audioPlayer.stop();
+    pendingAudioRef.current = null;
     audioQueue.stop();
     emit("interrupt", {});
+
+    const visibleWords = revealedWordsRef.current;
+
     setState((prev) => {
       const messages = [...prev.messages];
       const last = messages[messages.length - 1];
-      if (last?.role === "assistant" && progress < 0.95) {
-        const cutAt = Math.max(1, Math.floor(last.text.length * progress));
-        const truncated = last.text.substring(0, cutAt).replace(/\s+\S*$/, "");
-        messages[messages.length - 1] = {
-          ...last,
-          text: (truncated || last.text.substring(0, cutAt)) + "...",
-        };
+      if (last?.role === "assistant" && visibleWords < Infinity) {
+        const words = last.text.split(" ");
+        if (visibleWords < words.length) {
+          messages[messages.length - 1] = {
+            ...last,
+            text: words.slice(0, visibleWords).join(" ") + "...",
+          };
+        }
       }
       return {
         ...prev,
@@ -264,32 +304,41 @@ export function useLessonState(token?: string | null) {
         status: prev.status === "speaking" ? "idle" : prev.status,
       };
     });
-  }, [audioPlayer, audioQueue, emit]);
+
+    streamChunksRef.current = [];
+    streamEndRef.current = null;
+    audioDoneRef.current = true;
+    revealedWordsRef.current = Infinity;
+  }, [audioQueue, emit]);
 
   const setUserSpeaking = useCallback((speaking: boolean) => {
     userSpeakingRef.current = speaking;
   }, []);
 
-  // Retry playing the pending first message (called after mic permission grants user gesture)
+  const setRevealedWords = useCallback((count: number) => {
+    revealedWordsRef.current = count;
+  }, []);
+
   const playPending = useCallback(() => {
-    const pending = pendingRef.current;
-    if (pending?.audio) {
-      audioPlayer.play(pending.audio);
+    const audio = pendingAudioRef.current;
+    if (audio) {
+      pendingAudioRef.current = null;
+      setState((prev) => ({ ...prev, hasPending: false }));
+      audioQueue.enqueue({ chunkIndex: 0, audio });
     }
-  }, [audioPlayer]);
+  }, [audioQueue]);
 
   return {
     ...state,
     connected,
-    isPlaying: audioPlayer.isPlaying || audioQueue.isPlaying,
-    isStreaming: audioQueue.isPlaying,
-    audioDuration: audioPlayer.duration,
+    isPlaying: audioQueue.isPlaying,
     sendText,
     submitExerciseAnswer,
     endLesson,
     interruptTutor,
-    stopAudio: audioPlayer.stop,
+    stopAllAudio: useCallback(() => { audioQueue.stop(); }, [audioQueue]),
     playPending: state.hasPending ? playPending : null,
     setUserSpeaking,
+    setRevealedWords,
   };
 }

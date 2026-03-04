@@ -21,23 +21,19 @@ interface LessonScreenProps {
 export function LessonScreen({ token }: LessonScreenProps) {
   const router = useRouter();
   const {
-    messages, currentExercise, status, connected, isPlaying, isStreaming, audioDuration,
+    messages, currentExercise, status, connected, isPlaying,
     lessonEnded: serverLessonEnded, error: lessonError, sendText,
-    submitExerciseAnswer, endLesson, interruptTutor, stopAudio,
-    playPending, setUserSpeaking,
+    submitExerciseAnswer, endLesson, interruptTutor, stopAllAudio,
+    playPending, setUserSpeaking, setRevealedWords,
   } = useLessonState(token);
 
   const [isMuted, setIsMuted] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [liveTranscript, setLiveTranscript] = useState("");
   const micReadyRef = useRef(false);
-  const isPlayingRef = useRef(false);
-
-  if (isPlaying) {
-    isPlayingRef.current = true;
-  } else if (isPlayingRef.current) {
-    isPlayingRef.current = false;
-  }
+  const isTutorActive = isPlaying || status === "speaking";
+  const isTutorActiveRef = useRef(false);
+  isTutorActiveRef.current = isTutorActive;
 
   const hasReceivedFirstMessage = messages.some((msg) => msg.role === "assistant");
   const elapsed = useElapsedTimer(hasReceivedFirstMessage);
@@ -51,15 +47,16 @@ export function LessonScreen({ token }: LessonScreenProps) {
   });
 
   const stt = useStudentStt({
+    onSpeechEnd: () => {
+      setUserSpeaking(false);
+    },
     onSegment: (text: string) => {
-      setUserSpeaking(true);
-
-      if (isPlayingRef.current) {
+      if (isTutorActiveRef.current) {
+        setUserSpeaking(true);
         interruptTutor();
         speechBuffer.clear();
         setLiveTranscript("");
       }
-
       speechBuffer.push(text);
       setLiveTranscript(speechBuffer.getText());
     },
@@ -83,7 +80,7 @@ export function LessonScreen({ token }: LessonScreenProps) {
   }, [stt.isEnabled, playPending]);
 
   // Pause audio when tab loses focus
-  useTabFocus({ onBlur: () => stopAudio() });
+  useTabFocus({ onBlur: () => { stopAllAudio(); } });
 
   // Show interim transcript
   useEffect(() => {
@@ -99,12 +96,12 @@ export function LessonScreen({ token }: LessonScreenProps) {
       if (!isMuted) stt.enable();
     } else {
       setIsPaused(true);
-      stopAudio();
+      interruptTutor();
       stt.disable();
       speechBuffer.clear();
       setLiveTranscript("");
     }
-  }, [isPaused, isMuted, stt, stopAudio, speechBuffer]);
+  }, [isPaused, isMuted, stt, interruptTutor, speechBuffer]);
 
   const handleToggleMute = useCallback(() => {
     if (isMuted) {
@@ -118,29 +115,29 @@ export function LessonScreen({ token }: LessonScreenProps) {
 
   const handleEndLesson = useCallback(() => {
     stt.disable();
-    stopAudio();
+    stopAllAudio();
     speechBuffer.flush();
     endLesson();
     router.push("/dashboard");
-  }, [endLesson, stt, speechBuffer, router, stopAudio]);
+  }, [endLesson, stt, speechBuffer, router, stopAllAudio]);
 
   // Server ended the lesson
   useEffect(() => {
     if (serverLessonEnded) {
       stt.disable();
-      stopAudio();
+      stopAllAudio();
       router.push("/dashboard");
     }
-  }, [serverLessonEnded, stt, router, stopAudio]);
+  }, [serverLessonEnded, stt, router, stopAllAudio]);
 
-  // Error starting/during lesson — go back to dashboard
+  // Error — go back to dashboard
   useEffect(() => {
     if (lessonError) {
       stt.disable();
-      stopAudio();
+      stopAllAudio();
       router.push("/dashboard");
     }
-  }, [lessonError, stt, stopAudio, router]);
+  }, [lessonError, stt, stopAllAudio, router]);
 
   if (!connected) return <LessonConnecting />;
   if (!hasReceivedFirstMessage) return <LessonWaiting />;
@@ -150,18 +147,17 @@ export function LessonScreen({ token }: LessonScreenProps) {
       <LessonHeader elapsed={elapsed} onEndLesson={handleEndLesson} />
 
       <div className="flex-shrink-0 flex flex-col items-center py-4">
-        <TutorAvatar isSpeaking={status === "speaking"} />
+        <TutorAvatar isSpeaking={isTutorActive} />
         <p className="text-white/80 text-sm mt-2 font-medium">Jake</p>
       </div>
 
       <ChatHistory
         messages={messages}
         isThinking={status === "thinking"}
-        isSpeaking={isPlaying || status === "speaking"}
-        isStreaming={isStreaming}
-        audioDuration={audioDuration}
+        isSpeaking={isTutorActive}
         currentExercise={currentExercise}
         onSubmitExercise={submitExerciseAnswer}
+        onRevealedWords={setRevealedWords}
       />
 
       {liveTranscript && (
