@@ -1,8 +1,8 @@
 import { BadRequestException, Injectable, Logger } from "@nestjs/common";
-import { SttService } from "../../../../@lib/voice/src/stt.service";
-import { TtsService } from "../../../../@lib/voice/src/tts.service";
+import { SttService } from "../../../voice/src/stt.service";
+import { TtsService } from "../../../voice/src/tts.service";
 import { LessonResponseService } from "./lesson-response.service";
-import { LlmMessage } from "../../../../@lib/llm/src/llm.service";
+import { LlmMessage } from "../../../llm/src/llm.service";
 
 @Injectable()
 export class AudioPipelineService {

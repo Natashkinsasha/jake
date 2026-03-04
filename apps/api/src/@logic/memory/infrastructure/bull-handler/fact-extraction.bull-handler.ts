@@ -3,7 +3,7 @@ import { Processor, WorkerHost } from "@nestjs/bullmq";
 import { Job } from "bullmq";
 import { FactExtractionService } from "../../application/service/fact-extraction.service";
 import { QUEUE_NAMES } from "../../../../@shared/shared-job/queue-names";
-import type { LlmMessage } from "../../../../@lib/llm/src/llm.service";
+import type { LlmMessage } from "../../../llm/src/llm.service";
 
 @Processor(QUEUE_NAMES.FACT_EXTRACTION)
 export class FactExtractionBullHandler extends WorkerHost {

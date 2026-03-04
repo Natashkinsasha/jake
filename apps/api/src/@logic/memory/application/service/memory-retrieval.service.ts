@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { MemoryFactRepository } from "../../infrastructure/repository/memory-fact.repository";
 import { MemoryEmbeddingRepository } from "../../infrastructure/repository/memory-embedding.repository";
-import { EmbeddingService } from "../../../../@lib/embedding/src/embedding.service";
+import { EmbeddingService } from "../../../embedding/src/embedding.service";
 
 @Injectable()
 export class MemoryRetrievalService {

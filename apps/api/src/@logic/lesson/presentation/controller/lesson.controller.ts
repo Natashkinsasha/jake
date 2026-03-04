@@ -4,7 +4,7 @@ import { JwtAuthGuard } from "../../../../@shared/shared-auth/jwt-auth.guard";
 import { CurrentUserId } from "../../../../@shared/shared-auth/current-user.decorator";
 import { EndLessonBody } from "../dto/body/end-lesson.body";
 import { SttMetricsBody } from "../dto/body/stt-metrics.body";
-import { withSpan } from "../../../../@lib/llm/src/llm-tracing";
+import { withSpan } from "../../../llm/src/llm-tracing";
 
 @Controller("lessons")
 @UseGuards(JwtAuthGuard)

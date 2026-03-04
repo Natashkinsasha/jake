@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { LlmService, LlmMessage } from "../../../../@lib/llm/src/llm.service";
+import { LlmService, LlmMessage } from "../../../llm/src/llm.service";
 import { ExerciseParserService } from "./exercise-parser.service";
 
 @Injectable()

@@ -7,8 +7,8 @@ import { MemoryFactRepository } from "./infrastructure/repository/memory-fact.re
 import { MemoryEmbeddingRepository } from "./infrastructure/repository/memory-embedding.repository";
 import { FactExtractionBullHandler } from "./infrastructure/bull-handler/fact-extraction.bull-handler";
 import { MemoryContract } from "./contract/memory.contract";
-import { LlmModule } from "../../@lib/llm/src/llm.module";
-import { EmbeddingModule } from "../../@lib/embedding/src/embedding.module";
+import { LlmModule } from "../llm/src/llm.module";
+import { EmbeddingModule } from "../embedding/src/embedding.module";
 import { SharedDrizzlePgModule } from "../../@shared/shared-drizzle-pg/shared-drizzle-pg.module";
 import { JobModule } from "../../@lib/job/src";
 import { QUEUE_NAMES } from "../../@shared/shared-job/queue-names";
