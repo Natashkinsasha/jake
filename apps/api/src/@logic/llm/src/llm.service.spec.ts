@@ -1,38 +1,18 @@
 import { LlmService, type LlmMessage } from "./llm.service";
-import { type EnvService } from "../../../@shared/shared-config/env.service";
-
-// Mock the Anthropic SDK
-jest.mock("@anthropic-ai/sdk", () => {
-  const mockCreate = jest.fn();
-  return {
-    __esModule: true,
-    default: jest.fn().mockImplementation(() => ({
-      messages: { create: mockCreate },
-    })),
-    _mockCreate: mockCreate,
-  };
-});
-
-// Access the mock create function
-function getMockCreate(): jest.Mock {
-  const sdk: unknown = jest.requireMock("@anthropic-ai/sdk");
-  return (sdk as { _mockCreate: jest.Mock })._mockCreate;
-}
+import Anthropic from "@anthropic-ai/sdk";
 
 describe("LlmService", () => {
   let service: LlmService;
-  let envService: EnvService;
   let mockCreate: jest.Mock;
+  let mockClient: Anthropic;
 
   beforeEach(() => {
     jest.clearAllMocks();
 
-    envService = {
-      get: jest.fn().mockReturnValue("test-api-key"),
-    } as any;
+    mockCreate = jest.fn();
+    mockClient = { messages: { create: mockCreate } } as unknown as Anthropic;
 
-    service = new LlmService(envService);
-    mockCreate = getMockCreate();
+    service = new LlmService(mockClient);
   });
 
   describe("generate", () => {

@@ -1,16 +1,13 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { withSpan } from "../../llm/src/llm-tracing";
-import { createClient, type DeepgramClient } from "@deepgram/sdk";
-import { EnvService } from "../../../@shared/shared-config/env.service";
+import type { DeepgramClient } from "@deepgram/sdk";
+import { DEEPGRAM_CLIENT } from "../../../@lib/deepgram/src";
 
 @Injectable()
 export class SttService {
   private readonly logger = new Logger(SttService.name);
-  private deepgram: DeepgramClient;
 
-  constructor(private env: EnvService) {
-    this.deepgram = createClient(env.get("DEEPGRAM_API_KEY"));
-  }
+  constructor(@Inject(DEEPGRAM_CLIENT) private deepgram: DeepgramClient) {}
 
   async transcribe(audioBase64: string): Promise<string> {
     const audioBuffer = Buffer.from(audioBase64, "base64");

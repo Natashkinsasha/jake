@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
 import { EmbeddingService } from "./embedding.service";
-import { SharedConfigModule } from "../../../@shared/shared-config/shared-config.module";
+import { SharedOpenaiModule } from "../../../@shared/shared-openai/shared-openai.module";
 
 @Module({
-  imports: [SharedConfigModule],
+  imports: [SharedOpenaiModule],
   providers: [EmbeddingService],
   exports: [EmbeddingService],
 })

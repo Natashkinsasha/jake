@@ -1,15 +1,12 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import OpenAI from "openai";
-import { EnvService } from "../../../@shared/shared-config/env.service";
+import { OPENAI_CLIENT } from "../../../@lib/openai/src";
 
 @Injectable()
 export class EmbeddingService {
   private readonly logger = new Logger(EmbeddingService.name);
-  private client: OpenAI;
 
-  constructor(private env: EnvService) {
-    this.client = new OpenAI({ apiKey: env.get("OPENAI_API_KEY") });
-  }
+  constructor(@Inject(OPENAI_CLIENT) private client: OpenAI) {}
 
   async embed(text: string): Promise<number[]> {
     try {

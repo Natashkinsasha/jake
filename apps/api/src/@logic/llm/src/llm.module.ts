@@ -1,9 +1,9 @@
 import { Module } from "@nestjs/common";
 import { LlmService } from "./llm.service";
-import { SharedConfigModule } from "../../../@shared/shared-config/shared-config.module";
+import { SharedAnthropicModule } from "../../../@shared/shared-anthropic/shared-anthropic.module";
 
 @Module({
-  imports: [SharedConfigModule],
+  imports: [SharedAnthropicModule],
   providers: [LlmService],
   exports: [LlmService],
 })
