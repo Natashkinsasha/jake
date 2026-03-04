@@ -6,8 +6,8 @@ import { LlmProvider } from "../../../@lib/provider/src";
 
 @Module({
   imports: [
-    SharedAnthropicModule,
     ClsModule.forFeatureAsync({
+      imports: [SharedAnthropicModule],
       provide: LlmProvider,
       inject: [AnthropicLlmProvider],
       useFactory: (anthropic: AnthropicLlmProvider) => anthropic,

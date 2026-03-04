@@ -8,14 +8,14 @@ import { SttProvider, TtsProvider } from "../../../@lib/provider/src";
 
 @Module({
   imports: [
-    SharedConfigModule,
-    SharedDeepgramModule,
     ClsModule.forFeatureAsync({
+      imports: [SharedDeepgramModule],
       provide: SttProvider,
       inject: [DeepgramSttProvider],
       useFactory: (deepgram: DeepgramSttProvider) => deepgram,
     }),
     ClsModule.forFeatureAsync({
+      imports: [SharedConfigModule],
       provide: TtsProvider,
       inject: [ElevenLabsTtsProvider],
       useFactory: (elevenlabs: ElevenLabsTtsProvider) => elevenlabs,

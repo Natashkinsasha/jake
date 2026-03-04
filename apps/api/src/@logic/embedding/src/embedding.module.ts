@@ -6,8 +6,8 @@ import { EmbeddingProvider } from "../../../@lib/provider/src";
 
 @Module({
   imports: [
-    SharedOpenaiModule,
     ClsModule.forFeatureAsync({
+      imports: [SharedOpenaiModule],
       provide: EmbeddingProvider,
       inject: [OpenAiEmbeddingProvider],
       useFactory: (openai: OpenAiEmbeddingProvider) => openai,
