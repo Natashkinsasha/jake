@@ -51,8 +51,8 @@ export class StreamingPipelineService {
     let nextToEmit = 0;
 
     const emitInOrder = () => {
-      while (ready.has(nextToEmit)) {
-        const chunk = ready.get(nextToEmit)!;
+      let chunk: StreamChunk | undefined;
+      while ((chunk = ready.get(nextToEmit)) !== undefined) {
         ready.delete(nextToEmit);
         if (!options?.signal?.aborted) {
           callbacks.onChunk(chunk);

@@ -33,7 +33,7 @@ export abstract class LlmProvider {
   abstract generateJson<T>(
     systemPrompt: string,
     messages: LlmMessage[],
+    schema: ZodSchema<T>,
     maxTokens?: number,
-    schema?: ZodSchema<T>,
   ): Promise<T>;
 }

@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { AnthropicLlmProvider } from "./anthropic-llm.provider";
 import type { LlmMessage } from "../../../@lib/provider/src";
 import type Anthropic from "@anthropic-ai/sdk";
@@ -104,60 +105,62 @@ describe("AnthropicLlmProvider", () => {
   });
 
   describe("generateJson", () => {
-    it("should parse JSON from response text", async () => {
+    const schema = z.object({ name: z.string() });
+
+    it("should use tool_use and return parsed result", async () => {
       const mockResponse = {
-        content: [{ type: "text", text: '{"name": "Jake", "level": "B1"}' }],
+        content: [{ type: "tool_use", id: "t1", name: "output", input: { name: "Jake" } }],
         usage: { input_tokens: 50, output_tokens: 20 },
       };
       mockCreate.mockResolvedValue(mockResponse);
 
-      const result = await provider.generateJson<{ name: string; level: string }>(
-        "System",
-        [{ role: "user", content: "test" }],
-      );
+      const result = await provider.generateJson("System", [{ role: "user", content: "test" }], schema);
 
-      expect(result).toEqual({ name: "Jake", level: "B1" });
+      expect(mockCreate).toHaveBeenCalledWith(
+        expect.objectContaining({
+          tools: expect.arrayContaining([expect.objectContaining({ name: "output" })]),
+          tool_choice: { type: "tool", name: "output" },
+        }),
+      );
+      expect(result).toEqual({ name: "Jake" });
     });
 
-    it("should strip markdown code fences from JSON response", async () => {
+    it("should use default maxTokens of 2048", async () => {
       const mockResponse = {
-        content: [{ type: "text", text: '```json\n{"key": "value"}\n```' }],
-        usage: { input_tokens: 50, output_tokens: 20 },
-      };
-      mockCreate.mockResolvedValue(mockResponse);
-
-      const result = await provider.generateJson<{ key: string }>(
-        "System",
-        [{ role: "user", content: "test" }],
-      );
-
-      expect(result).toEqual({ key: "value" });
-    });
-
-    it("should use custom maxTokens (default 2048)", async () => {
-      const mockResponse = {
-        content: [{ type: "text", text: '{"ok": true}' }],
+        content: [{ type: "tool_use", id: "t1", name: "output", input: { name: "Jake" } }],
         usage: { input_tokens: 10, output_tokens: 5 },
       };
       mockCreate.mockResolvedValue(mockResponse);
 
-      await provider.generateJson("System", [{ role: "user", content: "test" }]);
+      await provider.generateJson("System", [{ role: "user", content: "test" }], schema);
 
       expect(mockCreate).toHaveBeenCalledWith(
         expect.objectContaining({ max_tokens: 2048 }),
       );
     });
 
-    it("should throw on invalid JSON response", async () => {
+    it("should throw when no tool_use block in response", async () => {
       const mockResponse = {
-        content: [{ type: "text", text: "not valid json at all" }],
+        content: [{ type: "text", text: "no tool use" }],
         usage: { input_tokens: 50, output_tokens: 20 },
       };
       mockCreate.mockResolvedValue(mockResponse);
 
       await expect(
-        provider.generateJson("System", [{ role: "user", content: "test" }]),
-      ).rejects.toThrow();
+        provider.generateJson("System", [{ role: "user", content: "test" }], schema),
+      ).rejects.toThrow("No tool_use block");
+    });
+
+    it("should throw when schema validation fails", async () => {
+      const mockResponse = {
+        content: [{ type: "tool_use", id: "t1", name: "output", input: { bad: "data" } }],
+        usage: { input_tokens: 50, output_tokens: 20 },
+      };
+      mockCreate.mockResolvedValue(mockResponse);
+
+      await expect(
+        provider.generateJson("System", [{ role: "user", content: "test" }], schema),
+      ).rejects.toThrow("validation failed");
     });
   });
 });

@@ -108,38 +108,10 @@ export class AnthropicLlmProvider extends LlmProvider {
   async generateJson<T>(
     systemPrompt: string,
     messages: LlmMessage[],
-    maxTokens?: number,
-    schema?: ZodSchema<T>,
-  ): Promise<T> {
-    // With schema: use tool use for guaranteed valid JSON
-    if (schema) {
-      return this.generateJsonWithTool(systemPrompt, messages, maxTokens ?? 2048, schema);
-    }
-
-    // Without schema: text-based with JSON extraction
-    const response = await this.generate(systemPrompt, messages, maxTokens ?? 2048);
-    const stripped = response.text.replace(/```json\n?|```/g, "").trim();
-    const jsonMatch = stripped.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      this.logger.error(`No JSON object found in LLM response: ${stripped.substring(0, 300)}`);
-      throw new Error("No JSON object found in LLM response");
-    }
-
-    try {
-      return JSON.parse(jsonMatch[0]) as T;
-    } catch (error) {
-      this.logger.error(`Failed to parse LLM JSON (${error instanceof Error ? error.message : "unknown"}): ${jsonMatch[0].substring(0, 500)}`);
-      throw error;
-    }
-  }
-
-  private async generateJsonWithTool<T>(
-    systemPrompt: string,
-    messages: LlmMessage[],
-    maxTokens: number,
     schema: ZodSchema<T>,
+    maxTokens = 2048,
   ): Promise<T> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
     const jsonSchema = zodToJsonSchema(schema as any, { target: "openApi3" });
     this.logger.debug(`LLM tool_use request: model=claude-sonnet-4-20250514, maxTokens=${maxTokens}`);
 

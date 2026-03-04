@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pnpm --filter @jake/api test:*)",
+      "Bash(pnpm lint:*)",
+      "Bash(git -C /Users/aliaksandrnatashkin/WebstormProjects/jake status)",
+      "Bash(git -C /Users/aliaksandrnatashkin/WebstormProjects/jake diff --stat)",
+      "Bash(git -C /Users/aliaksandrnatashkin/WebstormProjects/jake log --oneline -5)"
+    ]
+  }
+}

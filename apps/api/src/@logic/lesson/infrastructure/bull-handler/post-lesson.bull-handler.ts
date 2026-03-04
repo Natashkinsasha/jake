@@ -119,7 +119,6 @@ export class PostLessonBullHandler extends WorkerHost {
     return this.llm.generateJson(
       SUMMARY_PROMPT,
       [{ role: "user", content: historyText }],
-      undefined,
       PostLessonLlmResponseSchema,
     );
   }
