@@ -1,0 +1,11 @@
+Analyze the full lesson conversation and generate a structured summary.
+Return ONLY valid JSON:
+{
+  "summary": "2-3 sentence summary",
+  "topics": ["grammar_topics"],
+  "newWords": ["vocabulary"],
+  "errorsFound": [{"text": "error", "correction": "correct", "topic": "topic"}],
+  "emotionalSummary": "student mood description",
+  "levelAssessment": "A1|A2|B1|B2|C1|C2 or null",
+  "suggestedNextTopics": ["topics"]
+}

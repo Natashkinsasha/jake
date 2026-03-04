@@ -1,0 +1,94 @@
+- description: "Greeting — casual mate style"
+  vars:
+    system: file://prompts/greeting-system.txt
+    message: "Greet the student casually, like a mate you haven't seen in a bit. Keep it to one short sentence."
+  assert:
+    - type: javascript
+      value: "output.length < 300"
+    - type: not-contains
+      value: "AI"
+    - type: not-contains
+      value: "language model"
+    - type: not-contains
+      value: "assistant"
+    - type: llm-rubric
+      value: >
+        Response is a casual, friendly greeting from an Australian tutor named Jake.
+        It's 1-2 sentences max. It sounds natural and human, not robotic.
+        It should NOT mention being an AI or assistant.
+
+- description: "Greeting — question about their day"
+  vars:
+    system: file://prompts/greeting-system.txt
+    message: "Say hi with a quick question about their day. One sentence max."
+  assert:
+    - type: javascript
+      value: "output.length < 300"
+    - type: contains-any
+      value:
+        - "?"
+    - type: not-contains
+      value: "AI"
+    - type: llm-rubric
+      value: >
+        Response is a short greeting that includes a question about the student's day.
+        It's one sentence, casual and friendly. Sounds like a real person.
+
+- description: "Greeting — fun comment + what to chat about"
+  vars:
+    system: file://prompts/greeting-system.txt
+    message: "Start with a fun, light comment and ask what they want to chat about today. Keep it super short."
+  assert:
+    - type: javascript
+      value: "output.length < 250"
+    - type: contains-any
+      value:
+        - "?"
+    - type: not-contains
+      value: "AI"
+    - type: llm-rubric
+      value: >
+        Response starts with a fun or light comment and asks what the student
+        wants to talk about. It's very short and casual.
+
+- description: "Greeting — Aussie style"
+  vars:
+    system: file://prompts/greeting-system.txt
+    message: "Give a chill Aussie greeting and ask how they're going. One sentence."
+  assert:
+    - type: javascript
+      value: "output.length < 300"
+    - type: not-contains
+      value: "AI"
+    - type: llm-rubric
+      value: >
+        Response is a chill Australian-style greeting. May contain Aussie slang
+        (mate, reckon, arvo, etc.). Asks how the student is doing. 1-2 sentences max.
+
+- description: "Greeting — welcome back with energy"
+  vars:
+    system: file://prompts/greeting-system.txt
+    message: "Welcome them back with energy. Maybe reference something fun. Keep it brief — one sentence."
+  assert:
+    - type: javascript
+      value: "output.length < 300"
+    - type: not-contains
+      value: "AI"
+    - type: llm-rubric
+      value: >
+        Response welcomes the student back with energy and enthusiasm.
+        It's brief — 1-2 sentences max. Feels warm and personal.
+
+- description: "Greeting — first lesson (new student)"
+  vars:
+    system: file://prompts/greeting-first-lesson-system.txt
+    message: "Greet the student casually, like a mate you haven't seen in a bit. Keep it to one short sentence."
+  assert:
+    - type: javascript
+      value: "output.length < 250"
+    - type: not-contains
+      value: "AI"
+    - type: llm-rubric
+      value: >
+        Response is a warm, welcoming first greeting for a brand new student.
+        It should make them feel comfortable. Short and casual.

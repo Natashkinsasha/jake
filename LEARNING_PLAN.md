@@ -146,164 +146,171 @@ export class LlmStatsController {
 
 ---
 
-### День 3-4: Model Routing Abstraction
+### День 3-4: Provider Abstraction Layer (DONE)
 
-**Цель:** Абстракция провайдера LLM с dynamic routing и fallback.
+**Цель:** Dependency Inversion для всех внешних AI-провайдеров (LLM, Embedding, STT, TTS).
 
-#### Шаг 1: Интерфейс `LlmProvider`
+**Статус:** Реализовано. Коммиты: `2b063c8`, `5e1b922`, `c22f6ae`, `da0770d`.
 
-Создать `apps/api/src/@lib/llm/src/llm-provider.interface.ts`:
+#### Что сделано
+
+Реализован **Strategy Pattern** через абстрактные классы + **Dependency Inversion Principle (DIP)** из SOLID: потребители зависят от абстракций (`LlmProvider`, `EmbeddingProvider`, `SttProvider`, `TtsProvider`), а не от конкретных реализаций (`AnthropicLlmProvider`, `OpenAiEmbeddingProvider`).
+
+Для per-request резолва провайдеров используются **CLS Proxy Providers** из `nestjs-cls` — паттерн **Scoped Value Resolution** поверх `AsyncLocalStorage` (Continuation-Local Storage). Каждый провайдер регистрируется через `ClsModule.forFeatureAsync()` и резолвится заново на каждый HTTP/WebSocket запрос, что открывает дорогу к A/B-тестированию и runtime routing.
+
+#### Архитектура
+
+```
+@lib/provider/src/           — Abstract provider contracts (DIP abstractions)
+  ├── llm-provider.ts        — LlmProvider + LlmMessage/LlmResponse
+  ├── embedding-provider.ts  — EmbeddingProvider
+  ├── stt-provider.ts        — SttProvider
+  ├── tts-provider.ts        — TtsProvider
+  └── index.ts               — Barrel re-exports
+
+@logic/llm/                  — AnthropicLlmProvider extends LlmProvider
+@logic/embedding/            — OpenAiEmbeddingProvider extends EmbeddingProvider
+@logic/voice/                — DeepgramSttProvider extends SttProvider
+                               ElevenLabsTtsProvider extends TtsProvider
+```
+
+#### Как работает CLS Proxy
+
+**CLS (Continuation-Local Storage)** — это request-scoped хранилище, работающее через `AsyncLocalStorage` (Node.js). Библиотека `nestjs-cls` строит поверх него **Proxy Providers** — специальные NestJS провайдеры, которые инжектятся как синглтоны, но при каждом обращении к методу прокси делегирует вызов экземпляру, привязанному к текущему запросу.
+
+Жизненный цикл запроса:
+
+```
+Incoming Request
+  │
+  ├─ 1. Middleware (mount: true) ─── создаёт CLS-контекст (AsyncLocalStorage.enterWith)
+  │     Максимально рано: до guards, pipes, interceptors.
+  │     Это гарантирует, что CLS доступен на всех этапах обработки запроса.
+  │
+  ├─ 2. Guards ──────────────────── аутентификация, JWT validation
+  │     К этому моменту CLS-контекст уже существует, но прокси ещё не резолвлены.
+  │     Можно записать userId/experiment в CLS для последующего использования.
+  │
+  ├─ 3. Interceptor (resolveProxyProviders: true) ─── резолвит proxy providers
+  │     Вызывает useFactory для каждого forFeatureAsync-провайдера.
+  │     Factory получает concrete provider и привязывает его к текущему CLS-контексту.
+  │     Почему здесь, а не в middleware: после guards уже известен user →
+  │     factory может выбирать реализацию на основе user/experiment/feature flags.
+  │
+  ├─ 4. Controller / Gateway ───── бизнес-логика
+  │     Сервисы получают abstract providers через DI (e.g. LlmProvider).
+  │     Каждый вызов метода прокси → proxy.get() → CLS lookup → concrete provider.
+  │
+  └─ 5. Response
+```
+
+#### CLS конфигурация
 
 ```typescript
-export interface LlmMessage {
-  role: 'user' | 'assistant';
-  content: string;
-}
+// @shared/shared-cls/shared-cls.module.ts
+ClsModule.forRoot({
+  global: true,
+  middleware: {
+    mount: true,                    // CLS context создаётся в middleware (рано)
+    resolveProxyProviders: false,   // НЕ резолвить прокси в middleware
+  },
+  interceptor: {
+    resolveProxyProviders: true,    // Резолвить прокси в interceptor (поздно, после guards)
+  },
+})
+```
 
-export interface LlmResult {
-  text: string;
-  inputTokens: number;
-  outputTokens: number;
-}
+- **`mount: true` в middleware** — CLS контекст создаётся максимально рано (до guards/interceptors). Это нужно, чтобы другие middleware и guards могли писать данные в CLS.
+- **`resolveProxyProviders: true` в interceptor** — прокси-провайдеры резолвятся поздно, после прохождения guards. К этому моменту аутентификация завершена, `userId` известен, и factory может принимать решения на основе данных пользователя.
 
-export interface LlmProvider {
-  readonly name: string;      // 'anthropic' | 'openai' | 'ollama'
-  readonly model: string;     // 'claude-sonnet-4-20250514'
+#### Регистрация провайдеров через `forFeatureAsync`
 
-  generate(systemPrompt: string, messages: LlmMessage[], maxTokens?: number): Promise<LlmResult>;
-  generateJson<T>(systemPrompt: string, messages: LlmMessage[], maxTokens?: number, schema?: ZodSchema<T>): Promise<T>;
+```typescript
+// @logic/llm/src/llm.module.ts
+@Module({
+  imports: [
+    ClsModule.forFeatureAsync({
+      imports: [SharedAnthropicModule],     // зависимости factory
+      provide: LlmProvider,                 // DI-токен = абстрактный класс
+      inject: [AnthropicLlmProvider],       // что инжектить в factory
+      useFactory: (anthropic: AnthropicLlmProvider) => anthropic,
+    }),
+  ],
+  providers: [AnthropicLlmProvider],
+  exports: [LlmProvider],
+})
+```
+
+**Ключевые детали:**
+- `provide: LlmProvider` — DI-токеном выступает сам абстрактный класс. Потребители инжектят `LlmProvider`, не зная какая реализация стоит за ним.
+- `imports` внутри `forFeatureAsync` — зависимости (e.g. `SharedAnthropicModule` с `ANTHROPIC_CLIENT`) доступны только внутри factory scope. Это **Encapsulation** — модуль не "протекает" своими зависимостями наружу.
+- `useFactory` — сейчас просто возвращает concrete provider, но в будущем может содержать routing-логику:
+
+```typescript
+// Будущее: A/B routing по user experiment
+useFactory: (anthropic: AnthropicLlmProvider, openai: OpenAiLlmProvider, cls: ClsService) => {
+  const experiment = cls.get('experiment.llm');
+  return experiment === 'openai' ? openai : anthropic;
 }
 ```
 
-#### Шаг 2: `AnthropicProvider`
+#### Абстрактные классы провайдеров
 
-Перенести текущую логику из `LlmService` в класс `AnthropicProvider implements LlmProvider`. Файл: `apps/api/src/@lib/llm/src/providers/anthropic.provider.ts`.
+Каждый абстрактный класс — это **contract** (контракт), определяющий public API для данного типа провайдера:
 
-Ключевые моменты:
-- Конструктор принимает `apiKey` и `model` (из `EnvService`)
-- `generate()` — текущий код `LlmService.generate()` один-в-один
-- `generateJson()` — текущий код `LlmService.generateJson()` один-в-один
+| Класс | Контракт | Текущая реализация |
+|-------|----------|-------------------|
+| `LlmProvider` | `generate()`, `generateJson<T>()` | `AnthropicLlmProvider` (Claude Sonnet 4) |
+| `EmbeddingProvider` | `embed()` | `OpenAiEmbeddingProvider` (text-embedding-3-small) |
+| `SttProvider` | `transcribe()` | `DeepgramSttProvider` (nova-3) |
+| `TtsProvider` | `synthesize()` | `ElevenLabsTtsProvider` (eleven_turbo_v2_5) |
 
-#### Шаг 3: `OpenAiProvider`
+#### Потребители
 
-`apps/api/src/@lib/llm/src/providers/openai.provider.ts`:
-
-```typescript
-import OpenAI from 'openai';
-
-export class OpenAiProvider implements LlmProvider {
-  readonly name = 'openai';
-  private client: OpenAI;
-
-  constructor(apiKey: string, readonly model: string) {
-    this.client = new OpenAI({ apiKey });
-  }
-
-  async generate(systemPrompt, messages, maxTokens = 2048): Promise<LlmResult> {
-    const response = await this.client.chat.completions.create({
-      model: this.model,
-      max_tokens: maxTokens,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        ...messages,
-      ],
-    });
-    return {
-      text: response.choices[0].message.content ?? '',
-      inputTokens: response.usage?.prompt_tokens ?? 0,
-      outputTokens: response.usage?.completion_tokens ?? 0,
-    };
-  }
-}
-```
-
-#### Шаг 4: Model Router
-
-`apps/api/src/@lib/llm/src/llm-router.service.ts`:
+Все сервисы инжектят **абстракции**, а не конкретные классы:
 
 ```typescript
-export enum LlmPurpose {
-  CONVERSATION = 'conversation',     // Sonnet — основной диалог
-  SUMMARY = 'summary',              // Haiku — summary, fact extraction
-  EVALUATION = 'evaluation',         // Haiku — judge
-  MODERATION = 'moderation',        // Haiku — safety check
-}
+// До: tight coupling
+constructor(private llm: AnthropicLlmProvider) {}
 
-@Injectable()
-export class LlmRouterService {
-  private providers: Map<string, LlmProvider>;
-  private routing: Map<LlmPurpose, string>;  // purpose → provider name
-
-  constructor(private env: EnvService) {
-    // Регистрируем провайдеров
-    this.providers = new Map();
-    this.providers.set('anthropic-sonnet', new AnthropicProvider(env.get('ANTHROPIC_API_KEY'), 'claude-sonnet-4-20250514'));
-    this.providers.set('anthropic-haiku', new AnthropicProvider(env.get('ANTHROPIC_API_KEY'), 'claude-haiku-4-5-20251001'));
-
-    if (env.get('OPENAI_API_KEY')) {
-      this.providers.set('openai-gpt4o-mini', new OpenAiProvider(env.get('OPENAI_API_KEY'), 'gpt-4o-mini'));
-    }
-
-    // Маршрутизация
-    this.routing = new Map([
-      [LlmPurpose.CONVERSATION, 'anthropic-sonnet'],
-      [LlmPurpose.SUMMARY, 'anthropic-haiku'],
-      [LlmPurpose.EVALUATION, 'anthropic-haiku'],
-      [LlmPurpose.MODERATION, 'anthropic-haiku'],
-    ]);
-  }
-
-  getProvider(purpose: LlmPurpose): LlmProvider {
-    const key = this.routing.get(purpose)!;
-    return this.providers.get(key)!;
-  }
-}
+// После: dependency inversion
+constructor(private llm: LlmProvider) {}
 ```
 
-#### Шаг 5: Fallback
+| Потребитель | Провайдеры |
+|-------------|-----------|
+| `LessonResponseService` | `LlmProvider` |
+| `AudioPipelineService` | `SttProvider`, `TtsProvider` |
+| `LessonMaintainer` | `TtsProvider` |
+| `PostLessonBullHandler` | `LlmProvider`, `EmbeddingProvider` |
+| `FactExtractionService` | `LlmProvider` |
+| `MemoryRetrievalService` | `EmbeddingProvider` |
 
-Обернуть вызовы в `LlmRouterService`:
+#### Применённые паттерны и принципы
 
-```typescript
-async generate(purpose: LlmPurpose, systemPrompt, messages, maxTokens?): Promise<LlmResult> {
-  const primary = this.getProvider(purpose);
-  try {
-    return await primary.generate(systemPrompt, messages, maxTokens);
-  } catch (err) {
-    if (err.status >= 500) {
-      this.logger.warn(`${primary.name} failed, trying fallback`);
-      const fallback = this.getFallback(purpose);
-      if (fallback) return fallback.generate(systemPrompt, messages, maxTokens);
-    }
-    throw err;
-  }
-}
-```
+| Паттерн / Принцип | Где применяется |
+|---|---|
+| **Strategy Pattern** | Абстрактный класс = strategy interface, concrete providers = concrete strategies |
+| **Dependency Inversion Principle (DIP)** | Модули верхнего уровня (`@logic/lesson`) зависят от абстракций (`@lib/provider`), а не от конкретных реализаций (`@logic/llm`) |
+| **Open/Closed Principle (OCP)** | Для добавления нового провайдера (e.g. `OpenAiLlmProvider`) не нужно менять потребителей — только создать класс и обновить factory |
+| **Proxy Pattern** | `nestjs-cls` proxy providers — прозрачная индирекция между потребителем и реальным провайдером |
+| **Inversion of Control (IoC)** | NestJS DI container управляет жизненным циклом; `ClsModule.forFeatureAsync` управляет per-request resolution |
+| **Continuation-Local Storage** | `AsyncLocalStorage` для хранения request-scoped данных без явной передачи через call stack |
 
-#### Шаг 6: Обновить env schema
+#### Что это даёт в будущем
 
-В `env.schema.ts` добавить:
-
-```typescript
-LLM_CONVERSATION_PROVIDER: z.string().default('anthropic-sonnet'),
-LLM_SUMMARY_PROVIDER: z.string().default('anthropic-haiku'),
-```
-
-#### Шаг 7: Обновить потребителей
-
-Заменить прямые вызовы `LlmService` на `LlmRouterService`:
-
-| Место вызова | Было | Стало |
-|---|---|---|
-| `LessonResponseService.generate()` | `llmService.generate()` | `router.generate(CONVERSATION, ...)` |
-| `FactExtractionService.extractAndSave()` | `llmService.generateJson()` | `router.generateJson(SUMMARY, ...)` |
-| `PostLessonBullHandler.process()` | `llmService.generateJson()` | `router.generateJson(SUMMARY, ...)` |
+1. **A/B Testing** — в `useFactory` проверять experiment group пользователя (из CLS) и возвращать разные реализации
+2. **Fallback / Circuit Breaker** — factory может оборачивать провайдер в retry/fallback логику
+3. **Per-request Metrics** — CLS хранит метаданные запроса (userId, lessonId), которые доступны провайдеру для логирования без явного прокидывания
+4. **Multi-provider Routing** — разные задачи (conversation, summary, evaluation) могут использовать разные модели
+5. **Feature Flags** — включать/выключать провайдеров per-user через feature flag в CLS
 
 #### Что почитать
 
-- [Strategy pattern](https://refactoring.guru/design-patterns/strategy) — это именно он
-- [Anthropic SDK Node.js](https://docs.anthropic.com/en/api/client-sdks) — инициализация, ошибки
-- [OpenAI SDK Node.js](https://github.com/openai/openai-node) — для OpenAI provider
+- [nestjs-cls Proxy Providers](https://papooch.github.io/nestjs-cls/features-and-use-cases/proxy-providers) — документация по `forFeatureAsync`
+- [Strategy Pattern](https://refactoring.guru/design-patterns/strategy) — паттерн, лежащий в основе
+- [SOLID: Dependency Inversion](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html) — DIP в контексте Clean Architecture
+- [AsyncLocalStorage (Node.js)](https://nodejs.org/api/async_context.html) — low-level API, на котором построен CLS
 
 ---
 
@@ -1456,7 +1463,8 @@ export class AnalyticsController {
 
 | Фаза | Дни | Что в резюме |
 |------|-----|-------------|
-| Observability + Cost | 1-4 | LLM observability, token accounting, cost optimization |
+| Observability + Cost | 1-2 | LLM observability, token accounting, cost optimization |
+| **Provider Abstraction** | **3-4** | **DONE — Strategy Pattern, DIP, CLS Proxy Providers, per-request resolution** |
 | Evaluation + Safety | 5-8 | LLM evaluation pipeline, AI safety guardrails |
 | Hybrid Retrieval | 9-10 | Hybrid search (BM25 + vector), RAG optimization |
 | Streaming | 11-13 | Real-time streaming AI pipeline, voice latency optimization |

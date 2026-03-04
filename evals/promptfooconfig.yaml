@@ -1,0 +1,25 @@
+description: "Jake English Tutor — LLM Evaluation Suite"
+
+prompts:
+  - label: chat
+    raw: |
+      [
+        {"role": "system", "content": "{{system}}"},
+        {"role": "user", "content": "{{message}}"}
+      ]
+
+providers:
+  - id: anthropic:messages:claude-sonnet-4-20250514
+    config:
+      max_tokens: 1024
+
+defaultTest:
+  options:
+    provider: anthropic:messages:claude-sonnet-4-20250514
+    # Strip markdown code blocks from JSON responses
+    transform: "output.replace(/^```(?:json)?\\n?/gm, '').replace(/^```$/gm, '').trim()"
+
+tests:
+  - file://datasets/greeting-cases.yaml
+  - file://datasets/post-lesson-cases.yaml
+  - file://datasets/fact-extraction-cases.yaml

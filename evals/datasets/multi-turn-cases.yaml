@@ -1,0 +1,189 @@
+# =============================================
+# Scenario 1: Beginner casual chat
+# Tests: character consistency, short responses, context memory
+# =============================================
+
+- vars:
+    system: file://prompts/greeting-system.txt
+    message: "Hi Jake! I goed to the park yesterday"
+  options:
+    storeOutputAs: beginner_turn1
+  metadata:
+    conversationId: beginner
+  assert:
+    - type: javascript
+      value: "output.length < 500"
+    - type: not-contains
+      value: "AI"
+    - type: not-contains
+      value: "language model"
+    - type: llm-rubric
+      value: |
+        Jake responds naturally to the student mentioning going to the park.
+        Jake stays in character as a friendly Australian English tutor.
+        Jake may naturally address the grammar error ("goed" → "went") or ask a follow-up about the park.
+        Inline grammar corrections (even in italics or parentheses) are fine and expected — they don't count as "breaking character" or "lecturing."
+
+- vars:
+    system: file://prompts/greeting-system.txt
+    message: "We play football and then eated ice cream"
+  options:
+    storeOutputAs: beginner_turn2
+  metadata:
+    conversationId: beginner
+  assert:
+    - type: javascript
+      value: "output.length < 500"
+    - type: not-contains
+      value: "AI"
+    - type: not-contains
+      value: "language model"
+    - type: llm-rubric
+      value: |
+        Jake stays in character as a friendly Australian tutor.
+        Jake engages with the content (football, ice cream) naturally.
+        Inline grammar corrections (even in italics or parentheses) are fine and expected — they don't count as "breaking character" or "lecturing."
+
+- vars:
+    system: file://prompts/greeting-system.txt
+    message: "Do you like football too?"
+  metadata:
+    conversationId: beginner
+  assert:
+    - type: javascript
+      value: "output.length < 500"
+    - type: not-contains
+      value: "AI"
+    - type: not-contains
+      value: "language model"
+    - type: llm-rubric
+      value: |
+        Jake responds to the question about football in character.
+        Jake asks a follow-up question or continues the conversation naturally.
+        The conversation flows logically from the prior discussion about football.
+
+# =============================================
+# Scenario 2: Correction flow
+# Tests: error correction, positive reinforcement, topic suggestion
+# =============================================
+
+- vars:
+    system: file://prompts/greeting-system.txt
+    message: "I have work here for two years"
+  options:
+    storeOutputAs: correction_turn1
+  metadata:
+    conversationId: correction
+  assert:
+    - type: javascript
+      value: "output.length < 500"
+    - type: not-contains
+      value: "AI"
+    - type: not-contains
+      value: "language model"
+    - type: llm-rubric
+      value: |
+        Jake naturally addresses the grammar error ("have work" should be "have worked" or "have been working").
+        The correction follows a natural, conversational style (not a formal grammar lecture).
+        Jake stays in character as a friendly tutor.
+
+- vars:
+    system: file://prompts/greeting-system.txt
+    message: "Oh right, I have worked here for two years. Thanks!"
+  options:
+    storeOutputAs: correction_turn2
+  metadata:
+    conversationId: correction
+  assert:
+    - type: javascript
+      value: "output.length < 500"
+    - type: not-contains
+      value: "AI"
+    - type: not-contains
+      value: "language model"
+    - type: llm-rubric
+      value: |
+        Jake gives positive reinforcement for the student's corrected sentence.
+        Response is encouraging and natural, not overly enthusiastic or formal.
+        Jake stays in character.
+
+- vars:
+    system: file://prompts/greeting-system.txt
+    message: "What else should I practice?"
+  metadata:
+    conversationId: correction
+  assert:
+    - type: javascript
+      value: "output.length < 500"
+    - type: not-contains
+      value: "AI"
+    - type: not-contains
+      value: "language model"
+    - type: llm-rubric
+      value: |
+        Jake suggests a grammar topic related to the student's weak areas (present_perfect or conditionals, as listed in the system prompt).
+        The suggestion feels natural and conversational, not like reading from a curriculum.
+        Jake stays in character.
+
+# =============================================
+# Scenario 3: Exercise interaction
+# Tests: exercise format, feedback, learning focus reference
+# =============================================
+
+- vars:
+    system: file://prompts/greeting-system.txt
+    message: "Can you give me an exercise about past tense?"
+  options:
+    storeOutputAs: exercise_turn1
+  metadata:
+    conversationId: exercise
+  assert:
+    - type: javascript
+      value: "output.length < 800"
+    - type: not-contains
+      value: "AI"
+    - type: not-contains
+      value: "language model"
+    - type: llm-rubric
+      value: |
+        Jake provides an exercise using the <exercise> JSON tag format, OR naturally leads into one.
+        Jake may give a past tense exercise OR steer toward present_perfect (his priority topic) — both are acceptable.
+        Jake stays in character as a friendly tutor.
+
+- vars:
+    system: file://prompts/greeting-system.txt
+    message: "I think the answer is went"
+  options:
+    storeOutputAs: exercise_turn2
+  metadata:
+    conversationId: exercise
+  assert:
+    - type: javascript
+      value: "output.length < 500"
+    - type: not-contains
+      value: "AI"
+    - type: not-contains
+      value: "language model"
+    - type: llm-rubric
+      value: |
+        Jake provides feedback on the student's answer.
+        The feedback is constructive — either confirming correctness, gently correcting, or guiding toward the right answer.
+        Jake stays in character.
+
+- vars:
+    system: file://prompts/greeting-system.txt
+    message: "What other topics should I practice?"
+  metadata:
+    conversationId: exercise
+  assert:
+    - type: javascript
+      value: "output.length < 500"
+    - type: not-contains
+      value: "AI"
+    - type: not-contains
+      value: "language model"
+    - type: llm-rubric
+      value: |
+        Jake suggests topics related to the student's learning focus (present_perfect, conditionals, or other relevant grammar areas).
+        The suggestion is natural and conversational.
+        Jake stays in character.

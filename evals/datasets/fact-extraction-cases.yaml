@@ -1,0 +1,171 @@
+- description: "Fact extraction — personal and work facts"
+  vars:
+    system: file://prompts/fact-extraction-system.txt
+    message: |
+      Context conversation:
+      tutor: So what do you do for work, mate?
+      user: I work as a software developer at a startup in Berlin. I've been there for about two years now.
+  assert:
+    - type: is-json
+    - type: javascript
+      value: |
+        const json = JSON.parse(output);
+        return json.facts.length >= 2;
+    - type: javascript
+      value: |
+        const json = JSON.parse(output);
+        const categories = json.facts.map(f => f.category);
+        return categories.includes('work') || categories.includes('personal');
+    - type: javascript
+      value: |
+        const json = JSON.parse(output);
+        const validCategories = ['personal','work','hobby','family','travel','education','other'];
+        return json.facts.every(f => validCategories.includes(f.category));
+    - type: javascript
+      value: |
+        const json = JSON.parse(output);
+        const validMoods = ['happy','excited','neutral','tired','sad','frustrated','anxious'];
+        return validMoods.includes(json.mood);
+    - type: llm-rubric
+      value: >
+        Facts extracted should include: works as a software developer, works at a startup
+        in Berlin, has been there for about two years. Categories should be "work" or "personal".
+        No hallucinated facts. Mood should be neutral or positive.
+
+- description: "Fact extraction — no facts, just agreement"
+  vars:
+    system: file://prompts/fact-extraction-system.txt
+    message: |
+      Context conversation:
+      tutor: So present perfect is used when the action connects to now.
+      user: Yeah, sounds good. I think I understand.
+  assert:
+    - type: is-json
+    - type: javascript
+      value: |
+        const json = JSON.parse(output);
+        return json.facts.length === 0;
+    - type: javascript
+      value: |
+        const json = JSON.parse(output);
+        return json.errors.length === 0;
+    - type: llm-rubric
+      value: >
+        The message "Yeah, sounds good. I think I understand" contains no personal facts
+        and no grammar errors. Facts array should be empty. Errors array should be empty.
+
+- description: "Fact extraction — grammar errors detected"
+  vars:
+    system: file://prompts/fact-extraction-system.txt
+    message: |
+      Context conversation:
+      tutor: What did you do last weekend?
+      user: I goed to the store and buyed some food. Then I cooket dinner for my family.
+  assert:
+    - type: is-json
+    - type: javascript
+      value: |
+        const json = JSON.parse(output);
+        return json.errors.length >= 2;
+    - type: javascript
+      value: |
+        const json = JSON.parse(output);
+        return json.errors.every(e => e.text && e.correction && e.topic);
+    - type: llm-rubric
+      value: >
+        Errors should include: "goed"→"went", "buyed"→"bought", "cooket"→"cooked".
+        Each error should have the original text, correction, and grammar topic
+        (e.g., past_simple, irregular_verbs). Facts about cooking for family may be extracted.
+
+- description: "Fact extraction — hobby and travel facts"
+  vars:
+    system: file://prompts/fact-extraction-system.txt
+    message: |
+      Context conversation:
+      tutor: Do you have any hobbies?
+      user: I love playing guitar! I've been learning for three years. Also, I traveled to Japan last summer and it was incredible.
+  assert:
+    - type: is-json
+    - type: javascript
+      value: |
+        const json = JSON.parse(output);
+        return json.facts.length >= 2;
+    - type: javascript
+      value: |
+        const json = JSON.parse(output);
+        const categories = json.facts.map(f => f.category);
+        return categories.includes('hobby') || categories.includes('travel');
+    - type: llm-rubric
+      value: >
+        Should extract facts about: plays guitar, has been learning for three years,
+        traveled to Japan last summer. Categories should include "hobby" and "travel".
+        Mood should be happy or excited.
+
+- description: "Fact extraction — emotional state (frustrated)"
+  vars:
+    system: file://prompts/fact-extraction-system.txt
+    message: |
+      Context conversation:
+      tutor: How are you feeling about your English progress?
+      user: Honestly, I'm really frustrated. I study every day but I still make the same mistakes. I feel like I'm not improving at all.
+  assert:
+    - type: is-json
+    - type: javascript
+      value: |
+        const json = JSON.parse(output);
+        return json.mood === 'frustrated' || json.mood === 'sad';
+    - type: javascript
+      value: |
+        const json = JSON.parse(output);
+        return json.facts.some(f => f.category === 'education' || f.category === 'personal');
+    - type: llm-rubric
+      value: >
+        Mood should be "frustrated". Should extract facts about: studies English every day,
+        feels they make the same mistakes. No hallucinated facts.
+
+- description: "Fact extraction — family facts"
+  vars:
+    system: file://prompts/fact-extraction-system.txt
+    message: |
+      Context conversation:
+      tutor: Tell me about your family, mate!
+      user: I have two kids, a boy and a girl. My son is 5 and my daughter just turned 3. My wife is a teacher.
+  assert:
+    - type: is-json
+    - type: javascript
+      value: |
+        const json = JSON.parse(output);
+        return json.facts.length >= 2;
+    - type: javascript
+      value: |
+        const json = JSON.parse(output);
+        return json.facts.some(f => f.category === 'family');
+    - type: llm-rubric
+      value: >
+        Should extract family facts: has two kids (boy and girl), son is 5,
+        daughter is 3, wife is a teacher. All should be category "family".
+        No hallucinated facts.
+
+- description: "Fact extraction — mixed facts with errors"
+  vars:
+    system: file://prompts/fact-extraction-system.txt
+    message: |
+      Context conversation:
+      tutor: What are your plans for the weekend?
+      user: I will to go to the cinema with my girlfriend. She is from Spain and she don't speak English very well, so we will watch movie in Spanish.
+  assert:
+    - type: is-json
+    - type: javascript
+      value: |
+        const json = JSON.parse(output);
+        return json.facts.length >= 1 && json.errors.length >= 1;
+    - type: javascript
+      value: |
+        const json = JSON.parse(output);
+        const validCategories = ['personal','work','hobby','family','travel','education','other'];
+        return json.facts.every(f => validCategories.includes(f.category));
+    - type: llm-rubric
+      value: >
+        Should extract facts: has a girlfriend, girlfriend is from Spain.
+        Errors should include: "will to go"→"will go", "she don't"→"she doesn't",
+        "watch movie"→"watch a movie". Both facts and errors should be present.
