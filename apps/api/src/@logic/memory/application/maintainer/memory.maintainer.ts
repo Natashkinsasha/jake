@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { FactExtractionService } from "../service/fact-extraction.service";
 import { MemoryRetrievalService } from "../service/memory-retrieval.service";
-import { LlmMessage } from "../../../llm/src/anthropic-llm.provider";
+import type { LlmMessage } from "../../../../@lib/provider/src";
 
 @Injectable()
 export class MemoryMaintainer {

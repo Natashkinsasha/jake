@@ -2,11 +2,15 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import OpenAI from "openai";
 import { OPENAI_CLIENT } from "../../../@lib/openai/src";
 
+import { EmbeddingProvider } from "../../../@lib/provider/src";
+
 @Injectable()
-export class OpenAiEmbeddingProvider {
+export class OpenAiEmbeddingProvider extends EmbeddingProvider {
   private readonly logger = new Logger(OpenAiEmbeddingProvider.name);
 
-  constructor(@Inject(OPENAI_CLIENT) private client: OpenAI) {}
+  constructor(@Inject(OPENAI_CLIENT) private client: OpenAI) {
+    super();
+  }
 
   async embed(text: string): Promise<number[]> {
     try {

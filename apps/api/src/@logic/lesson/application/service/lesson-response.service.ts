@@ -1,11 +1,12 @@
 import { Injectable } from "@nestjs/common";
-import { AnthropicLlmProvider, LlmMessage } from "../../../llm/src/anthropic-llm.provider";
+import { LlmProvider } from "../../../../@lib/provider/src";
+import type { LlmMessage } from "../../../../@lib/provider/src";
 import { ExerciseParserService } from "./exercise-parser.service";
 
 @Injectable()
 export class LessonResponseService {
   constructor(
-    private llm: AnthropicLlmProvider,
+    private llm: LlmProvider,
     private exerciseParser: ExerciseParserService,
   ) {}
 

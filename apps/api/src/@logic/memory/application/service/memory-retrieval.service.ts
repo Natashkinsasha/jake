@@ -1,14 +1,14 @@
 import { Injectable } from "@nestjs/common";
 import { MemoryFactRepository } from "../../infrastructure/repository/memory-fact.repository";
 import { MemoryEmbeddingRepository } from "../../infrastructure/repository/memory-embedding.repository";
-import { OpenAiEmbeddingProvider } from "../../../embedding/src/openai-embedding.provider";
+import { EmbeddingProvider } from "../../../../@lib/provider/src";
 
 @Injectable()
 export class MemoryRetrievalService {
   constructor(
     private factRepository: MemoryFactRepository,
     private embeddingRepository: MemoryEmbeddingRepository,
-    private embeddingProvider: OpenAiEmbeddingProvider,
+    private embeddingProvider: EmbeddingProvider,
   ) {}
 
   async retrieve(userId: string, query: string) {

@@ -4,8 +4,8 @@ import { LessonMessageRepository } from "../../infrastructure/repository/lesson-
 import { LessonContextService } from "../service/lesson-context.service";
 import { LessonResponseService } from "../service/lesson-response.service";
 import { AudioPipelineService } from "../service/audio-pipeline.service";
-import { LlmMessage } from "../../../llm/src/anthropic-llm.provider";
-import { ElevenLabsTtsProvider } from "../../../voice/src/elevenlabs-tts.provider";
+import { TtsProvider } from "../../../../@lib/provider/src";
+import type { LlmMessage } from "../../../../@lib/provider/src";
 import { Queue } from "bullmq";
 import { InjectQueue } from "@nestjs/bullmq";
 import { buildFullSystemPrompt } from "../service/prompt-builder";
@@ -41,7 +41,7 @@ export class LessonMaintainer {
     private contextService: LessonContextService,
     private responseService: LessonResponseService,
     private audioPipeline: AudioPipelineService,
-    private tts: ElevenLabsTtsProvider,
+    private tts: TtsProvider,
     @InjectQueue(QUEUE_NAMES.POST_LESSON) private postLessonQueue: Queue,
     @InjectQueue(QUEUE_NAMES.FACT_EXTRACTION) private factQueue: Queue,
   ) {}

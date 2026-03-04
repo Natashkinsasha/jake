@@ -1,5 +1,6 @@
-import { AnthropicLlmProvider, type LlmMessage } from "./anthropic-llm.provider";
-import Anthropic from "@anthropic-ai/sdk";
+import { AnthropicLlmProvider } from "./anthropic-llm.provider";
+import type { LlmMessage } from "../../../@lib/provider/src";
+import type Anthropic from "@anthropic-ai/sdk";
 
 describe("AnthropicLlmProvider", () => {
   let provider: AnthropicLlmProvider;

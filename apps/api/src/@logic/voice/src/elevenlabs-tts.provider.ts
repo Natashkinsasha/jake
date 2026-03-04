@@ -2,11 +2,15 @@ import { Injectable, Logger } from "@nestjs/common";
 import { withSpan } from "../../llm/src/llm-tracing";
 import { EnvService } from "../../../@shared/shared-config/env.service";
 
+import { TtsProvider } from "../../../@lib/provider/src";
+
 @Injectable()
-export class ElevenLabsTtsProvider {
+export class ElevenLabsTtsProvider extends TtsProvider {
   private readonly logger = new Logger(ElevenLabsTtsProvider.name);
 
-  constructor(private env: EnvService) {}
+  constructor(private env: EnvService) {
+    super();
+  }
 
   async synthesize(text: string, voiceId: string, speed?: number): Promise<string> {
     const apiKey = this.env.get("ELEVENLABS_API_KEY");

@@ -3,11 +3,15 @@ import { withSpan } from "../../llm/src/llm-tracing";
 import type { DeepgramClient } from "@deepgram/sdk";
 import { DEEPGRAM_CLIENT } from "../../../@lib/deepgram/src";
 
+import { SttProvider } from "../../../@lib/provider/src";
+
 @Injectable()
-export class DeepgramSttProvider {
+export class DeepgramSttProvider extends SttProvider {
   private readonly logger = new Logger(DeepgramSttProvider.name);
 
-  constructor(@Inject(DEEPGRAM_CLIENT) private deepgram: DeepgramClient) {}
+  constructor(@Inject(DEEPGRAM_CLIENT) private deepgram: DeepgramClient) {
+    super();
+  }
 
   async transcribe(audioBase64: string): Promise<string> {
     const audioBuffer = Buffer.from(audioBase64, "base64");

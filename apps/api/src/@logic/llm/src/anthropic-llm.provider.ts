@@ -1,24 +1,17 @@
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import Anthropic from "@anthropic-ai/sdk";
-import { ZodSchema } from "zod";
+import type { ZodSchema } from "zod";
 import { ANTHROPIC_CLIENT } from "../../../@lib/anthropic/src";
-
-export interface LlmMessage {
-  role: "user" | "assistant";
-  content: string;
-}
-
-export interface LlmResponse {
-  text: string;
-  inputTokens: number;
-  outputTokens: number;
-}
+import { LlmProvider } from "../../../@lib/provider/src";
+import type { LlmMessage, LlmResponse } from "../../../@lib/provider/src";
 
 @Injectable()
-export class AnthropicLlmProvider {
+export class AnthropicLlmProvider extends LlmProvider {
   private readonly logger = new Logger(AnthropicLlmProvider.name);
 
-  constructor(@Inject(ANTHROPIC_CLIENT) private client: Anthropic) {}
+  constructor(@Inject(ANTHROPIC_CLIENT) private client: Anthropic) {
+    super();
+  }
 
   async generate(
     systemPrompt: string,

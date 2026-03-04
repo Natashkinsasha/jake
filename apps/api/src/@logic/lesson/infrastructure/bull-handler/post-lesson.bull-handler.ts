@@ -2,8 +2,7 @@ import { Logger } from "@nestjs/common";
 import { Processor, WorkerHost } from "@nestjs/bullmq";
 import { Job } from "bullmq";
 import { Transaction } from "../../../../@shared/shared-cls/transaction";
-import { AnthropicLlmProvider } from "../../../llm/src/anthropic-llm.provider";
-import { OpenAiEmbeddingProvider } from "../../../embedding/src/openai-embedding.provider";
+import { LlmProvider, EmbeddingProvider } from "../../../../@lib/provider/src";
 import { LessonRepository } from "../repository/lesson.repository";
 import { AuthContract } from "../../../auth/contract/auth.contract";
 import { VocabularyContract } from "../../../vocabulary/contract/vocabulary.contract";
@@ -29,8 +28,8 @@ export class PostLessonBullHandler extends WorkerHost {
   private readonly logger = new Logger(PostLessonBullHandler.name);
 
   constructor(
-    private llm: AnthropicLlmProvider,
-    private embeddingProvider: OpenAiEmbeddingProvider,
+    private llm: LlmProvider,
+    private embeddingProvider: EmbeddingProvider,
     private lessonRepository: LessonRepository,
     private authContract: AuthContract,
     private vocabularyContract: VocabularyContract,

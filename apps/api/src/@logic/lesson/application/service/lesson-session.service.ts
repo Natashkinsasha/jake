@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { RedisService } from "@liaoliaots/nestjs-redis";
 import type Redis from "ioredis";
-import { LlmMessage } from "../../../llm/src/anthropic-llm.provider";
+import type { LlmMessage } from "../../../../@lib/provider/src";
 
 export interface LessonSession {
   lessonId: string;
