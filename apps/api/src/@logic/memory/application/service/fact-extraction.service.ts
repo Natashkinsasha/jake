@@ -33,12 +33,10 @@ export class FactExtractionService {
     const result = await this.llm.generateJson<FactExtractionResult>(
       FACT_EXTRACTION_PROMPT,
       [...history, { role: "user", content: userMessage }],
+      FactExtractionResultSchema,
     );
 
-    const parsed = FactExtractionResultSchema.safeParse(result);
-    if (!parsed.success) return null;
-
-    for (const fact of parsed.data.facts) {
+    for (const fact of result.facts) {
       await this.factRepository.create({
         userId,
         category: fact.category,
@@ -47,6 +45,6 @@ export class FactExtractionService {
       });
     }
 
-    return parsed.data;
+    return result;
   }
 }
