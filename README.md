@@ -146,6 +146,9 @@ pnpm --filter @jake/api db:generate   # Generate new migration
 pnpm --filter @jake/api start:worker  # Start BullMQ worker
 pnpm --filter @jake/api test          # API tests
 pnpm --filter @jake/web test          # Web tests
+pnpm eval                             # LLM evals (single-turn)
+pnpm eval:multi                       # LLM evals (multi-turn)
+pnpm --filter @jake/evals generate-prompts  # Regenerate eval prompts from code
 ```
 
 ## How It Works
@@ -195,6 +198,41 @@ BullMQ job runs asynchronously after each lesson:
 
 All steps run in a DB transaction with 3 retries + exponential backoff.
 
+### Provider Abstraction Layer
+
+All external AI services are abstracted behind **abstract provider classes** using the **Strategy Pattern** and **Dependency Inversion Principle (DIP)**. Consumers depend on abstractions, not on vendor-specific implementations.
+
+| Abstract class | Contract | Implementation |
+|---------------|----------|----------------|
+| `LlmProvider` | `generate()`, `generateJson<T>()` | `AnthropicLlmProvider` (Claude Sonnet 4) |
+| `EmbeddingProvider` | `embed()` | `OpenAiEmbeddingProvider` (text-embedding-3-small) |
+| `SttProvider` | `transcribe()` | `DeepgramSttProvider` (Nova-3) |
+| `TtsProvider` | `synthesize()` | `ElevenLabsTtsProvider` (eleven_turbo_v2_5) |
+
+Abstractions live in `@lib/provider/src/`, implementations in `@logic/` domain modules.
+
+**Per-request resolution via CLS Proxy Providers**: Providers are registered through `ClsModule.forFeatureAsync()` from [nestjs-cls](https://papooch.github.io/nestjs-cls/). Under the hood, NestJS injects a **Proxy object** as a singleton, but every method call on this proxy is delegated to an instance bound to the current request's **CLS (Continuation-Local Storage)** context — an `AsyncLocalStorage`-backed request-scoped store.
+
+```
+Request lifecycle:
+  1. Middleware (mount)    → Creates CLS context (AsyncLocalStorage.enterWith)
+  2. Guards               → JWT auth, userId written to CLS
+  3. Interceptor (resolve) → Resolves proxy providers via useFactory per-request
+  4. Controller/Gateway    → Service calls llm.generate() → proxy → CLS lookup → concrete provider
+```
+
+CLS context is mounted **as early as possible** (middleware) and proxy providers are resolved **as late as possible** (interceptor, after guards). This means the factory has access to authenticated user data and can route to different implementations based on user experiments, feature flags, or A/B test groups.
+
+```typescript
+// Example: how a module registers a provider
+ClsModule.forFeatureAsync({
+  imports: [SharedAnthropicModule],
+  provide: LlmProvider,                                    // DI token = abstract class
+  inject: [AnthropicLlmProvider],
+  useFactory: (anthropic: AnthropicLlmProvider) => anthropic, // can add routing logic here
+})
+```
+
 ## Deployment
 
 ### Infrastructure
@@ -213,8 +251,9 @@ Triggered on push to `main` or manual `workflow_dispatch`:
 
 1. **checks** — lint + type-check
 2. **test-api** / **test-web** — Jest tests (parallel)
-3. **build-api** / **build-web** — Docker build + push to ghcr.io
-4. **deploy** — SSH to server → pull images → migrate → `up -d` → health check → rollback on failure
+3. **evals** — LLM prompt evals via promptfoo (runs only when `evals/` or `prompt-builder.ts` changed)
+4. **build-api** / **build-web** — Docker build + push to ghcr.io
+5. **deploy** — SSH to server → pull images → migrate → `up -d` → health check → rollback on failure
 
 ### Production Services (`docker-compose.prod.yml`)
 

@@ -1,0 +1,15 @@
+{
+  "name": "@jake/evals",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "generate-prompts": "tsx scripts/generate-prompts.ts",
+    "eval": "tsx scripts/generate-prompts.ts && promptfoo eval --env-file ../.env",
+    "eval:multi": "tsx scripts/generate-prompts.ts && promptfoo eval -c multi-turn.yaml --env-file ../.env",
+    "eval:view": "promptfoo view"
+  },
+  "devDependencies": {
+    "promptfoo": "^0.120.26",
+    "tsx": "^4.19.4"
+  }
+}
