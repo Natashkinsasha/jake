@@ -154,7 +154,6 @@ export function LessonScreen({ token }: LessonScreenProps) {
       <ChatHistory
         messages={messages}
         isThinking={status === "thinking"}
-        isSpeaking={isTutorActive}
         currentExercise={currentExercise}
         onSubmitExercise={submitExerciseAnswer}
       />

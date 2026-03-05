@@ -8,7 +8,6 @@ import type { ChatMessage, LessonExercise } from "@/types";
 interface ChatHistoryProps {
   messages: ChatMessage[];
   isThinking: boolean;
-  isSpeaking: boolean;
   currentExercise: LessonExercise | null;
   onSubmitExercise: (exerciseId: string, answer: string) => void;
 }
@@ -16,7 +15,6 @@ interface ChatHistoryProps {
 export function ChatHistory({
   messages,
   isThinking,
-  isSpeaking,
   currentExercise,
   onSubmitExercise,
 }: ChatHistoryProps) {
