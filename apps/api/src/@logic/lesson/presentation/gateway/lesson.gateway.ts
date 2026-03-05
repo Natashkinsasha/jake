@@ -80,6 +80,8 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       client.emit("lesson_started", {
         lessonId: result.lessonId,
+        voiceId: result.voiceId,
+        speechSpeed: result.speechSpeed,
       });
 
       client.emit("tutor_message", {
