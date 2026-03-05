@@ -143,22 +143,38 @@ export function useLessonState(token?: string | null) {
         break;
 
       case "show_message":
-        setState((prev) => ({
-          ...prev,
-          messages: [
-            ...prev.messages,
-            {
-              role: "assistant",
-              text: action.text,
-              timestamp: Date.now(),
-              exercise: action.exercise,
-            },
-          ],
-          currentExercise: action.exercise,
-          status: "idle",
-        }));
         if (action.text && voiceIdRef.current) {
+          // Typewriter reveal synced with audio
+          isStreamingModeRef.current = true;
+          pendingSentencesRef.current = [action.text];
+          streamFullTextRef.current = action.text;
+          streamExerciseRef.current = action.exercise;
+
+          setState((prev) => ({
+            ...prev,
+            messages: [
+              ...prev.messages,
+              { role: "assistant", text: "", timestamp: Date.now() },
+            ],
+            status: "speaking",
+          }));
+
           ttsRef.current.speak(action.text, voiceIdRef.current, speechSpeedRef.current);
+        } else {
+          setState((prev) => ({
+            ...prev,
+            messages: [
+              ...prev.messages,
+              {
+                role: "assistant",
+                text: action.text,
+                timestamp: Date.now(),
+                exercise: action.exercise,
+              },
+            ],
+            currentExercise: action.exercise,
+            status: "idle",
+          }));
         }
         break;
 
