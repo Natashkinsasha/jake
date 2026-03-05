@@ -1,0 +1,27 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "filepath=\"$CLAUDE_FILE_PATH\"; if [[ \"$filepath\" == */apps/api/* && \"$filepath\" == *.ts ]]; then cd /Users/aliaksandrnatashkin/WebstormProjects/jake/apps/api && npx eslint --fix \"$filepath\" 2>/dev/null; elif [[ \"$filepath\" == */apps/web/* && \"$filepath\" == *.ts* ]]; then cd /Users/aliaksandrnatashkin/WebstormProjects/jake/apps/web && npx eslint --fix \"$filepath\" 2>/dev/null; fi; exit 0",
+            "timeout": 10000
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$CLAUDE_FILE_PATH\" | grep -qE '\\.env($|\\.)'; then echo 'BLOCK: .env files should not be edited by Claude. Edit manually.' && exit 2; fi"
+          }
+        ]
+      }
+    ]
+  }
+}

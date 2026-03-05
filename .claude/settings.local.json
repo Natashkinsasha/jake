@@ -1,14 +1,18 @@
 {
   "permissions": {
     "allow": [
-      "Bash(pnpm --filter @jake/api test:*)",
-      "Bash(pnpm lint:*)",
-      "Bash(git -C /Users/aliaksandrnatashkin/WebstormProjects/jake status)",
-      "Bash(git -C /Users/aliaksandrnatashkin/WebstormProjects/jake diff --stat)",
-      "Bash(git -C /Users/aliaksandrnatashkin/WebstormProjects/jake log --oneline -5)",
-      "Bash(git -C /Users/aliaksandrnatashkin/WebstormProjects/jake diff)",
-      "Bash(git -C /Users/aliaksandrnatashkin/WebstormProjects/jake diff apps/api/src/@lib/provider/src/llm-provider.ts)",
-      "Bash(git -C /Users/aliaksandrnatashkin/WebstormProjects/jake diff HEAD -- apps/api/src/@lib/provider/src/llm-provider.ts apps/api/src/@logic/llm/src/anthropic-llm.provider.ts apps/api/src/@logic/llm/src/anthropic-llm.provider.spec.ts apps/api/src/@logic/lesson/application/service/streaming-pipeline.service.ts apps/api/src/@logic/lesson/infrastructure/bull-handler/post-lesson.bull-handler.ts)"
+      "Bash(pnpm --filter @jake/api test*)",
+      "Bash(pnpm --filter @jake/web test*)",
+      "Bash(pnpm lint*)",
+      "Bash(pnpm type-check*)",
+      "Bash(pnpm build*)",
+      "Bash(pnpm dev*)",
+      "Bash(pnpm db:*)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git branch*)",
+      "Bash(docker compose*)"
     ]
   }
 }
