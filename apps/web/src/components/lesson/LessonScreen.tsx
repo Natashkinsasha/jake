@@ -31,7 +31,7 @@ export function LessonScreen({ token }: LessonScreenProps) {
   const [isPaused, setIsPaused] = useState(false);
   const [liveTranscript, setLiveTranscript] = useState("");
   const micReadyRef = useRef(false);
-  const isTutorActive = isPlaying || status === "speaking";
+  const isTutorActive = isPlaying || status === "speaking" || status === "thinking";
   const isTutorActiveRef = useRef(false);
   isTutorActiveRef.current = isTutorActive;
 

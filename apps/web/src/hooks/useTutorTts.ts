@@ -7,6 +7,7 @@ import { TTS_CONFIG } from "@/lib/config";
 
 interface UseTutorTtsOptions {
   onPlayStart?: () => void;
+  onAudioPlay?: (duration: number) => void;
   onAllDone?: () => void;
 }
 
@@ -40,6 +41,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   const cleanupAudio = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause();
+      audioRef.current.onloadedmetadata = null;
       audioRef.current.onended = null;
       audioRef.current.onerror = null;
       audioRef.current = null;
@@ -68,6 +70,12 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
 
     const audio = new Audio(url);
     audioRef.current = audio;
+
+    audio.onloadedmetadata = () => {
+      if (Number.isFinite(audio.duration)) {
+        optionsRef.current?.onAudioPlay?.(audio.duration);
+      }
+    };
 
     audio.onended = () => {
       cleanupAudio();
@@ -158,7 +166,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
           for (let i = 0; i < binary.length; i++) {
             bytes[i] = binary.charCodeAt(i);
           }
-          return bytes.buffer as ArrayBuffer;
+          return bytes.buffer;
         };
 
         const flushAudio = () => {

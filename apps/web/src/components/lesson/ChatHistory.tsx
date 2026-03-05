@@ -36,13 +36,19 @@ export function ChatHistory({
                 {msg.text}
               </p>
             </div>
-          ) : (
+          ) : msg.text ? (
             <p className={cn(
               "text-white text-[15px] leading-relaxed max-w-[85%]",
               i === lastAssistantIdx && isLastAssistantNew ? "" : "opacity-70",
             )}>
               {msg.text}
             </p>
+          ) : (
+            <div className="flex gap-1.5 py-1">
+              <div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+              <div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+              <div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+            </div>
           )}
 
           {msg.exercise && (
