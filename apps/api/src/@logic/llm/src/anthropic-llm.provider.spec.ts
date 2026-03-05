@@ -31,7 +31,7 @@ describe("AnthropicLlmProvider", () => {
       expect(mockCreate).toHaveBeenCalledWith({
         model: "claude-sonnet-4-20250514",
         max_tokens: 1024,
-        system: "System prompt",
+        system: [{ type: "text", text: "System prompt", cache_control: { type: "ephemeral" } }],
         messages,
       });
 

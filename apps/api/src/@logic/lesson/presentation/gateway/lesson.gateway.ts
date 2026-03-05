@@ -147,7 +147,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
         onError: (error) => {
           this.abortControllers.delete(client.id);
           this.logger.error(`Streaming failed: ${error.message}`);
-          client.emit("error", { message: "Something went wrong, mate!" });
+          client.emit("error", { message: "Something went wrong!" });
         },
         onDiscard: (safetyText) => {
           this.abortControllers.delete(client.id);

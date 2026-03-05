@@ -2,15 +2,15 @@
   vars:
     system: file://prompts/post-lesson-system.txt
     message: |
-      tutor: Hey Alex! How's it going today, mate?
+      tutor: Hey Alex! How's it going today?
       user: Hi Jake! I good, thanks. Yesterday I goed to the park with my friend.
-      tutor: Nice one! So you went to the park — sounds like a good arvo. What did you guys get up to?
+      tutor: Nice one! So you went to the park — sounds like a good afternoon. What did you guys get up to?
       user: We play football and then we eated ice cream. It was very fun!
       tutor: Haha, love it! So you played football and ate ice cream — perfect combo.
       user: Yes! I like football very much. I play every weekend.
-      tutor: That's awesome, mate. Do you play on a team or just with mates?
+      tutor: That's awesome. Do you play on a team or just with friends?
       user: Just with friends. We don't have team. Maybe one day.
-      tutor: Reckon you should go for it! Right, let's wrap up — today we chatted about your weekend and worked on past tense. You're getting heaps better!
+      tutor: You should go for it! Right, let's wrap up — today we chatted about your weekend and worked on past tense. You're getting so much better!
   assert:
     - type: is-json
     - type: javascript
@@ -43,11 +43,11 @@
   vars:
     system: file://prompts/post-lesson-system.txt
     message: |
-      tutor: G'day Alex! What's on your mind today?
+      tutor: Hey Alex! What's on your mind today?
       user: Hey Jake! I've been thinking about artificial intelligence lately. Do you think it will replace most jobs?
-      tutor: Ooh, big question! I reckon it'll change heaps of jobs but not replace everything. What do you think?
+      tutor: Ooh, big question! I think it'll change a lot of jobs but not replace everything. What do you think?
       user: I believe that AI will augment human capabilities rather than replace them entirely. However, there's a significant risk for routine tasks.
-      tutor: Well said, mate! Your English is really solid there. "Augment" — great word choice. Any particular industry you're worried about?
+      tutor: Well said! Your English is really solid there. "Augment" — great word choice. Any particular industry you're worried about?
       user: Transportation, I think. Self-driving trucks could eliminate millions of jobs. Nevertheless, new roles will emerge.
       tutor: Spot on. You used "nevertheless" perfectly there. Alright, great chat today — your English is seriously impressive!
   assert:
@@ -74,17 +74,17 @@
   vars:
     system: file://prompts/post-lesson-system.txt
     message: |
-      tutor: Hey mate! Ready to work on present perfect today?
+      tutor: Hey Alex! Ready to work on present perfect today?
       user: Yes, I think so. I never really understand this tense.
-      tutor: No worries! So present perfect is for things that started in the past and connect to now. Like "I have lived in Berlin for 3 years." Try making a sentence?
+      tutor: No problem! So present perfect is for things that started in the past and connect to now. Like "I have lived in Berlin for 3 years." Try making a sentence?
       user: I have work at my company for two years.
       tutor: Almost! "I have worked at my company for two years." You need the past participle — worked, not work.
       user: Ah, I have worked at my company for two years. Got it!
-      tutor: Perfect! Now here's a quick exercise for ya.
+      tutor: Perfect! Now here's a quick exercise for you.
       user: I have visited Japan last year.
       tutor: Careful — "last year" is a specific time, so we use past simple: "I visited Japan last year." Present perfect is for unspecified time: "I have visited Japan."
       user: Oh right! So "I have been to Japan" is correct but "I have been to Japan last year" is wrong?
-      tutor: Exactly, mate! You're getting it. Great progress today!
+      tutor: Exactly! You're getting it. Great progress today!
   assert:
     - type: is-json
     - type: javascript
@@ -107,13 +107,13 @@
     message: |
       tutor: Hey Alex! How's things?
       user: Good! I just want to chat today, nothing serious.
-      tutor: Sounds good to me, mate! What's new?
+      tutor: Sounds good! What's new?
       user: I watched a new movie yesterday. It was about time travel.
       tutor: Oh nice! Which one?
       user: Interstellar. Have you seen it?
       tutor: Classic! Love that one. What did you think?
       user: It was amazing but very confusing sometimes. The science is hard to understand.
-      tutor: Yeah fair enough! Alright, good chat mate — catch ya next time!
+      tutor: Yeah, fair enough! Alright, good chat — see you next time!
   assert:
     - type: is-json
     - type: javascript

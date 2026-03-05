@@ -3,7 +3,7 @@
     system: file://prompts/fact-extraction-system.txt
     message: |
       Context conversation:
-      tutor: So what do you do for work, mate?
+      tutor: So what do you do for work?
       user: I work as a software developer at a startup in Berlin. I've been there for about two years now.
   assert:
     - type: is-json

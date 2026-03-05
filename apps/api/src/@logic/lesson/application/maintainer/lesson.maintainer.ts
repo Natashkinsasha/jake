@@ -22,10 +22,10 @@ export function toSpeechSpeed(pref: string): number {
 }
 
 const GREETING_PROMPTS = [
-  "Greet the student casually, like a mate you haven't seen in a bit. Keep it to one short sentence.",
+  "Greet the student casually, like a friend you haven't seen in a bit. Keep it to one short sentence.",
   "Say hi with a quick question about their day. One sentence max.",
   "Start with a fun, light comment and ask what they want to chat about today. Keep it super short.",
-  "Give a chill Aussie greeting and ask how they're going. One sentence.",
+  "Give a friendly greeting and ask how they're doing. One sentence.",
   "Welcome them back with energy. Maybe reference something fun. Keep it brief — one sentence.",
 ];
 

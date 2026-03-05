@@ -29,7 +29,7 @@ export class AnthropicLlmProvider extends LlmProvider {
         const response = await this.client.messages.create({
           model: this.MODEL,
           max_tokens: maxTokens,
-          system: systemPrompt,
+          system: [{ type: "text" as const, text: systemPrompt, cache_control: { type: "ephemeral" as const } }],
           messages,
         });
 
@@ -75,7 +75,7 @@ export class AnthropicLlmProvider extends LlmProvider {
         const stream = await this.client.messages.create({
           model: this.MODEL,
           max_tokens: maxTokens,
-          system: systemPrompt,
+          system: [{ type: "text" as const, text: systemPrompt, cache_control: { type: "ephemeral" as const } }],
           messages,
           stream: true,
         });
@@ -146,7 +146,7 @@ export class AnthropicLlmProvider extends LlmProvider {
         const response = await this.client.messages.create({
           model: this.MODEL,
           max_tokens: maxTokens,
-          system: systemPrompt,
+          system: [{ type: "text" as const, text: systemPrompt, cache_control: { type: "ephemeral" as const } }],
           messages,
           tools: [
             {
