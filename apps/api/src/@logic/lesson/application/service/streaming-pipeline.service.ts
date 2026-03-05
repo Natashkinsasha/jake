@@ -1,5 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { LlmProvider, TtsProvider } from "../../../../@lib/provider/src";
+import { LlmProvider } from "../../../../@lib/provider/src";
 import type { LlmMessage, LlmResponse } from "../../../../@lib/provider/src";
 import { ExerciseParserService } from "./exercise-parser.service";
 import { SentenceBuffer } from "./sentence-buffer";
@@ -8,7 +8,6 @@ import type { Exercise } from "@jake/shared";
 export interface StreamChunk {
   chunkIndex: number;
   text: string;
-  audio: string;
 }
 
 export interface StreamResult {
@@ -29,52 +28,17 @@ export class StreamingPipelineService {
 
   constructor(
     private llm: LlmProvider,
-    private tts: TtsProvider,
     private exerciseParser: ExerciseParserService,
   ) {}
 
   async stream(
     systemPrompt: string,
     history: LlmMessage[],
-    voiceId: string,
     callbacks: StreamCallbacks,
-    options?: { speechSpeed?: number; signal?: AbortSignal },
+    options?: { signal?: AbortSignal },
   ): Promise<void> {
     const sentenceBuffer = new SentenceBuffer();
-    const ttsPromises: Promise<void>[] = [];
     let chunkIndex = 0;
-
-    // Ordered emission: TTS runs in parallel but chunks are sent to the client
-    // in strict sentence order. Without this, shorter sentences finish TTS first
-    // and arrive out of order on the client.
-    const ready = new Map<number, StreamChunk>();
-    let nextToEmit = 0;
-
-    const emitInOrder = () => {
-      let chunk: StreamChunk | undefined;
-      while ((chunk = ready.get(nextToEmit)) !== undefined) {
-        ready.delete(nextToEmit);
-        if (!options?.signal?.aborted) {
-          callbacks.onChunk(chunk);
-        }
-        nextToEmit++;
-      }
-    };
-
-    const synthesizeAndEmit = (text: string, idx: number) => {
-      const promise = this.tts
-        .synthesize(text, voiceId, options?.speechSpeed)
-        .then((audio) => {
-          ready.set(idx, { chunkIndex: idx, text, audio });
-          emitInOrder();
-        })
-        .catch((error: unknown) => {
-          this.logger.warn(`TTS failed for chunk ${idx}, sending text-only: ${error instanceof Error ? error.message : String(error)}`);
-          ready.set(idx, { chunkIndex: idx, text, audio: "" });
-          emitInOrder();
-        });
-      ttsPromises.push(promise);
-    };
 
     try {
       const llmResponse = await this.llm.generateStream(
@@ -84,22 +48,20 @@ export class StreamingPipelineService {
           onText: (delta) => {
             const sentences = sentenceBuffer.push(delta);
             for (const sentence of sentences) {
-              synthesizeAndEmit(sentence, chunkIndex++);
+              if (!options?.signal?.aborted) {
+                callbacks.onChunk({ chunkIndex: chunkIndex++, text: sentence });
+              }
             }
           },
           onDone: () => {
             const remaining = sentenceBuffer.flush();
-            if (remaining) {
-              synthesizeAndEmit(remaining, chunkIndex++);
+            if (remaining && !options?.signal?.aborted) {
+              callbacks.onChunk({ chunkIndex: chunkIndex++, text: remaining });
             }
           },
         },
         { signal: options?.signal, spanName: "lesson.stream" },
       );
-
-      if (options?.signal?.aborted) return;
-
-      await Promise.all(ttsPromises);
 
       if (options?.signal?.aborted) return;
 

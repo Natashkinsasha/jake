@@ -86,7 +86,6 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       client.emit("tutor_message", {
         text: result.greeting.text,
-        audio: result.greeting.audio,
         exercise: result.greeting.exercise,
       });
     } catch (error: unknown) {
@@ -194,8 +193,6 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
       userId,
       updatedSession.systemPrompt,
       updatedSession.history,
-      updatedSession.voiceId,
-      updatedSession.speechSpeed,
     );
 
     await this.sessionService.appendHistory(client.id, {
@@ -205,7 +202,6 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     client.emit("exercise_feedback", {
       text: result.tutorText,
-      audio: result.tutorAudio,
     });
   }
 
