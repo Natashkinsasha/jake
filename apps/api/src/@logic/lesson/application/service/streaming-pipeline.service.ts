@@ -1,9 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { LlmProvider } from "../../../../@lib/provider/src";
 import type { LlmMessage, LlmResponse } from "../../../../@lib/provider/src";
-import { ExerciseParserService } from "./exercise-parser.service";
 import { SentenceBuffer } from "./sentence-buffer";
-import type { Exercise } from "@jake/shared";
 
 export interface StreamChunk {
   chunkIndex: number;
@@ -12,7 +10,6 @@ export interface StreamChunk {
 
 export interface StreamResult {
   fullText: string;
-  exercise: Exercise | null;
   tokens: LlmResponse;
 }
 
@@ -21,6 +18,7 @@ export interface StreamCallbacks {
   onEnd(result: StreamResult): void;
   onError(error: Error): void;
   onDiscard?(safetyText: string): void;
+  onSpeedChange?(speed: string): void;
 }
 
 const MAX_BUFFER_AGE_MS = 300;
@@ -29,10 +27,7 @@ const MAX_BUFFER_AGE_MS = 300;
 export class StreamingPipelineService {
   private readonly logger = new Logger(StreamingPipelineService.name);
 
-  constructor(
-    private llm: LlmProvider,
-    private exerciseParser: ExerciseParserService,
-  ) {}
+  constructor(private llm: LlmProvider) {}
 
   async stream(
     systemPrompt: string,
@@ -94,12 +89,8 @@ export class StreamingPipelineService {
 
       if (options?.signal?.aborted) return;
 
-      const exercise = this.exerciseParser.extract(llmResponse.text);
-      const cleanText = this.exerciseParser.removeExerciseTags(llmResponse.text);
-
       callbacks.onEnd({
-        fullText: cleanText,
-        exercise,
+        fullText: llmResponse.text,
         tokens: llmResponse,
       });
     } catch (error) {

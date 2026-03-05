@@ -9,6 +9,7 @@
     "eval:view": "promptfoo view"
   },
   "devDependencies": {
+    "@types/node": "^25.3.3",
     "promptfoo": "^0.120.26",
     "tsx": "^4.19.4"
   }

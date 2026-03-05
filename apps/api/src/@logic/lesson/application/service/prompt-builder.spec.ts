@@ -54,7 +54,7 @@ describe("buildFullSystemPrompt", () => {
     expect(result).toContain("=== PREFERENCES ===");
     expect(result).toContain("Correction: immediate");
     expect(result).toContain("Grammar explanations: yes");
-    expect(result).toContain("Speed: normal");
+    expect(result).toContain("Speed: normal (scale: very_slow → slow → natural → fast → very_fast)");
     expect(result).toContain("Use native language: no");
     expect(result).toContain("Favorite exercises: fill_the_gap, multiple_choice");
     expect(result).toContain("Interests: travel, cooking");

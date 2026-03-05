@@ -8,7 +8,7 @@ export const userPreferenceTable = pgTable("user_preferences", {
   userId: uuid("user_id").references(() => userTable.id, { onDelete: "cascade" }).notNull().unique(),
   correctionStyle: varchar("correction_style", { length: 50 }).default("immediate"),
   explainGrammar: boolean("explain_grammar").default(true),
-  speakingSpeed: varchar("speaking_speed", { length: 20 }).default("natural"),
+  speakingSpeed: varchar("speaking_speed", { length: 20 }).default("very_slow"),
   useNativeLanguage: boolean("use_native_language").default(false),
   preferredExerciseTypes: jsonb("preferred_exercise_types").$type<string[]>().default([]),
   interests: jsonb("interests").$type<string[]>().default([]),

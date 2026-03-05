@@ -4,7 +4,6 @@ import { LessonGateway } from "./presentation/gateway/lesson.gateway";
 import { LessonMaintainer } from "./application/maintainer/lesson.maintainer";
 import { LessonContextService } from "./application/service/lesson-context.service";
 import { LessonResponseService } from "./application/service/lesson-response.service";
-import { ExerciseParserService } from "./application/service/exercise-parser.service";
 import { StreamingPipelineService } from "./application/service/streaming-pipeline.service";
 import { LessonSessionService } from "./application/service/lesson-session.service";
 import { LessonMapper } from "./application/mapper/lesson.mapper";
@@ -51,7 +50,6 @@ import { SharedConfigModule } from "../../@shared/shared-config/shared-config.mo
     LessonMaintainer,
     LessonContextService,
     LessonResponseService,
-    ExerciseParserService,
     StreamingPipelineService,
     LessonSessionService,
     LessonMapper,

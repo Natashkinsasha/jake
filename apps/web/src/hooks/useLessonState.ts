@@ -3,12 +3,11 @@ import { useWebSocket } from "./useWebSocket";
 import { useTutorTts } from "./useTutorTts";
 import { handleLessonEvent, type LessonEventData } from "./lesson/handleLessonEvent";
 import { WS_URL } from "@/lib/config";
-import type { ChatMessage, LessonExercise, LessonStatus } from "@/types";
+import type { ChatMessage, LessonStatus } from "@/types";
 
 interface LessonState {
   lessonId: string | null;
   messages: ChatMessage[];
-  currentExercise: LessonExercise | null;
   status: LessonStatus;
   lessonEnded: boolean;
   error: string | null;
@@ -18,7 +17,6 @@ export function useLessonState(token?: string | null) {
   const [state, setState] = useState<LessonState>({
     lessonId: null,
     messages: [],
-    currentExercise: null,
     status: "connecting",
     lessonEnded: false,
     error: null,
@@ -34,7 +32,6 @@ export function useLessonState(token?: string | null) {
   const pendingSentencesRef = useRef<string[]>([]);
   const revealTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const streamFullTextRef = useRef<string>("");
-  const streamExerciseRef = useRef<LessonExercise | null>(null);
   const isStreamingModeRef = useRef(false);
 
   const scheduleReveals = useCallback((duration: number) => {
@@ -75,7 +72,6 @@ export function useLessonState(token?: string | null) {
     // the updater, and refs are cleared synchronously after setState call
     const fullText = streamFullTextRef.current
       || pendingSentencesRef.current.join(" ");
-    const exercise = streamExerciseRef.current;
 
     setState((prev) => {
       const messages = [...prev.messages];
@@ -84,13 +80,11 @@ export function useLessonState(token?: string | null) {
         messages[messages.length - 1] = {
           ...last,
           text: fullText,
-          exercise,
         };
       }
       return {
         ...prev,
         messages,
-        currentExercise: exercise,
         status: "idle",
       };
     });
@@ -98,7 +92,6 @@ export function useLessonState(token?: string | null) {
     isStreamingModeRef.current = false;
     pendingSentencesRef.current = [];
     streamFullTextRef.current = "";
-    streamExerciseRef.current = null;
   }, []);
 
   const tts = useTutorTts({
@@ -121,6 +114,16 @@ export function useLessonState(token?: string | null) {
       const d = data as LessonEventData & { voiceId?: string; speechSpeed?: number };
       if (d.voiceId) voiceIdRef.current = d.voiceId;
       if (d.speechSpeed != null) speechSpeedRef.current = d.speechSpeed;
+    }
+
+    if (event === "speed_updated") {
+      const speedMap: Record<string, number> = { very_slow: 0.7, slow: 0.85, normal: 1.0, natural: 1.0, fast: 1.15, very_fast: 1.3 };
+      const d = data as LessonEventData & { speed?: string };
+      if (d.speed && speedMap[d.speed] != null) {
+        speechSpeedRef.current = speedMap[d.speed]!;
+        console.log("[Lesson] speed updated to:", d.speed, speechSpeedRef.current);
+      }
+      return;
     }
 
     const action = handleLessonEvent(event, data, {
@@ -148,7 +151,6 @@ export function useLessonState(token?: string | null) {
           isStreamingModeRef.current = true;
           pendingSentencesRef.current = [action.text];
           streamFullTextRef.current = action.text;
-          streamExerciseRef.current = action.exercise;
 
           setState((prev) => ({
             ...prev,
@@ -169,10 +171,8 @@ export function useLessonState(token?: string | null) {
                 role: "assistant",
                 text: action.text,
                 timestamp: Date.now(),
-                exercise: action.exercise,
               },
             ],
-            currentExercise: action.exercise,
             status: "idle",
           }));
         }
@@ -225,7 +225,6 @@ export function useLessonState(token?: string | null) {
 
         // Save for later reveal (when audio finishes)
         streamFullTextRef.current = action.fullText;
-        streamExerciseRef.current = action.exercise;
         break;
       }
 
@@ -244,7 +243,6 @@ export function useLessonState(token?: string | null) {
         isStreamingModeRef.current = false;
         pendingSentencesRef.current = [];
         streamFullTextRef.current = "";
-        streamExerciseRef.current = null;
 
         setState((prev) => {
           const messages = [...prev.messages];
@@ -297,13 +295,6 @@ export function useLessonState(token?: string | null) {
     [emit],
   );
 
-  const submitExerciseAnswer = useCallback(
-    (exerciseId: string, answer: string) => {
-      emit("exercise_answer", { exerciseId, answer });
-    },
-    [emit],
-  );
-
   const endLesson = useCallback(() => {
     emit("end_lesson", {});
   }, [emit]);
@@ -322,7 +313,6 @@ export function useLessonState(token?: string | null) {
       isStreamingModeRef.current = false;
       pendingSentencesRef.current = [];
       streamFullTextRef.current = "";
-      streamExerciseRef.current = null;
 
       // Keep only already-revealed text; remove placeholder if nothing shown yet
       setState((prev) => {
@@ -358,7 +348,6 @@ export function useLessonState(token?: string | null) {
     connected,
     isPlaying: tts.isSpeaking,
     sendText,
-    submitExerciseAnswer,
     endLesson,
     interruptTutor,
     stopAllAudio: useCallback(() => { tts.stop(); }, [tts]),

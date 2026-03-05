@@ -13,10 +13,20 @@ import { QUEUE_NAMES } from "../../../../@shared/shared-job/queue-names";
 import { ModerationService, SAFETY_RESPONSE } from "../../../llm/src/moderation/moderation.service";
 import { LessonSessionService } from "../service/lesson-session.service";
 
+const SET_SPEED_RE = /<set_speed>(very_slow|slow|natural|fast|very_fast)<\/set_speed>/g;
+
+function stripSpeedTags(text: string): { cleanText: string; speed: string | null } {
+  let speed: string | null = null;
+  const cleanText = text.replace(SET_SPEED_RE, (_, s: string) => { speed = s; return ""; }).trim();
+  return { cleanText, speed };
+}
+
 export function toSpeechSpeed(pref: string): number {
   switch (pref) {
+    case "very_slow": return 0.7;
     case "slow": return 0.85;
-    case "fast": return 1.2;
+    case "fast": return 1.15;
+    case "very_fast": return 1.3;
     default: return 1.0;
   }
 }
@@ -107,28 +117,8 @@ export class LessonMaintainer {
       systemPrompt,
       voiceId: context.tutorVoiceId,
       speechSpeed,
-      greeting: { text: greeting.text, exercise: greeting.exercise },
+      greeting: { text: greeting.text },
     };
-  }
-
-  async processExerciseAnswer(
-    lessonId: string,
-    userId: string,
-    systemPrompt: string,
-    history: LlmMessage[],
-  ) {
-    const response = await this.responseService.generate(systemPrompt, history);
-
-    await this.messageRepository.create({ lessonId, role: "tutor", content: response.text });
-
-    await this.factQueue.add("extract", {
-      userId,
-      lessonId,
-      userMessage: history[history.length - 1]?.content ?? "",
-      history,
-    });
-
-    return { tutorText: response.text };
   }
 
   async processTextMessageStreaming(
@@ -168,7 +158,12 @@ export class LessonMaintainer {
       session.systemPrompt,
       updatedHistory,
       {
-        onChunk: (chunk) => { callbacks.onChunk(chunk); },
+        onChunk: (chunk) => {
+          const { cleanText } = stripSpeedTags(chunk.text);
+          if (cleanText) {
+            callbacks.onChunk({ ...chunk, text: cleanText });
+          }
+        },
         onEnd: (result) => {
           void (async () => {
             const modResult = await moderationPromise;
@@ -181,8 +176,16 @@ export class LessonMaintainer {
               return;
             }
 
+            const { cleanText, speed } = stripSpeedTags(result.fullText);
+
+            if (speed) {
+              const numericSpeed = toSpeechSpeed(speed);
+              await this.sessionService.updateSpeechSpeed(socketId, numericSpeed);
+              callbacks.onSpeedChange?.(speed);
+            }
+
             await this.messageRepository.create({ lessonId: session.lessonId, role: "user", content: text });
-            await this.messageRepository.create({ lessonId: session.lessonId, role: "tutor", content: result.fullText });
+            await this.messageRepository.create({ lessonId: session.lessonId, role: "tutor", content: cleanText });
 
             await this.factQueue.add("extract", {
               userId,
@@ -194,10 +197,10 @@ export class LessonMaintainer {
             await this.sessionService.appendHistory(
               socketId,
               { role: "user", content: text },
-              { role: "assistant", content: result.fullText },
+              { role: "assistant", content: cleanText },
             );
 
-            callbacks.onEnd(result);
+            callbacks.onEnd({ ...result, fullText: cleanText });
           })();
         },
         onError: (error) => {
@@ -210,7 +213,7 @@ export class LessonMaintainer {
 
   private emitSafetyResponse(callbacks: StreamCallbacks) {
     callbacks.onChunk({ chunkIndex: 0, text: SAFETY_RESPONSE });
-    callbacks.onEnd({ fullText: SAFETY_RESPONSE, exercise: null, tokens: { text: "", inputTokens: 0, outputTokens: 0 } });
+    callbacks.onEnd({ fullText: SAFETY_RESPONSE, tokens: { text: "", inputTokens: 0, outputTokens: 0 } });
   }
 
   async endLesson(lessonId: string, history: LlmMessage[]) {

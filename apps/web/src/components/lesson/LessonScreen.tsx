@@ -21,9 +21,9 @@ interface LessonScreenProps {
 export function LessonScreen({ token }: LessonScreenProps) {
   const router = useRouter();
   const {
-    messages, currentExercise, status, connected, isPlaying,
+    messages, status, connected, isPlaying,
     lessonEnded: serverLessonEnded, error: lessonError, sendText,
-    submitExerciseAnswer, endLesson, interruptTutor, stopAllAudio,
+    endLesson, interruptTutor, stopAllAudio,
     setUserSpeaking,
   } = useLessonState(token);
 
@@ -145,8 +145,6 @@ export function LessonScreen({ token }: LessonScreenProps) {
       <ChatHistory
         messages={messages}
         isThinking={status === "thinking"}
-        currentExercise={currentExercise}
-        onSubmitExercise={submitExerciseAnswer}
       />
 
       {liveTranscript && (

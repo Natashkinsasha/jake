@@ -14,7 +14,6 @@ import { z } from "zod";
 import { WsAuthGuard } from "../../../../@shared/shared-ws/ws-auth.guard";
 import { LessonMaintainer, toSpeechSpeed } from "../../application/maintainer/lesson.maintainer";
 import { LessonSessionService } from "../../application/service/lesson-session.service";
-import { wsExerciseAnswerSchema } from "../dto/ws/ws-exercise-answer";
 
 interface SocketData {
   userId: string;
@@ -26,7 +25,7 @@ const wsTextMessageSchema = z.object({
 });
 
 const wsSetSpeedSchema = z.object({
-  speed: z.enum(["slow", "normal", "fast"]),
+  speed: z.enum(["very_slow", "slow", "normal", "fast", "very_fast"]),
 });
 
 @WebSocketGateway({ namespace: "/ws/lesson", cors: true })
@@ -86,7 +85,6 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       client.emit("tutor_message", {
         text: result.greeting.text,
-        exercise: result.greeting.exercise,
       });
     } catch (error: unknown) {
       this.logger.error(`Failed to start lesson: ${error instanceof Error ? error.message : String(error)}`);
@@ -140,7 +138,6 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
           this.abortControllers.delete(client.id);
           client.emit("tutor_stream_end", {
             fullText: result.fullText,
-            exercise: result.exercise,
             messageId,
           });
         },
@@ -153,6 +150,9 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
           this.abortControllers.delete(client.id);
           client.emit("tutor_stream_end", { discarded: true, messageId });
           client.emit("tutor_message", { text: safetyText });
+        },
+        onSpeedChange: (speed) => {
+          client.emit("speed_updated", { speed });
         },
       },
       { signal: abortController.signal },
@@ -167,47 +167,6 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.abortControllers.delete(client.id);
       this.logger.debug(`Interrupted streaming for ${client.id}`);
     }
-  }
-
-  @SubscribeMessage("exercise_answer")
-  async handleExerciseAnswer(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() data: unknown,
-  ) {
-    const parsed = wsExerciseAnswerSchema.safeParse(data);
-    if (!parsed.success) {
-      client.emit("error", { message: "Invalid exercise answer" });
-      return;
-    }
-
-    const session = await this.sessionService.get(client.id);
-    if (!session) return;
-
-    const userId = (client.data as SocketData).userId;
-
-    await this.sessionService.appendHistory(client.id, {
-      role: "user",
-      content: `[Exercise answer: ${parsed.data.answer}]`,
-    });
-
-    const updatedSession = await this.sessionService.get(client.id);
-    if (!updatedSession) return;
-
-    const result = await this.lessonMaintainer.processExerciseAnswer(
-      updatedSession.lessonId,
-      userId,
-      updatedSession.systemPrompt,
-      updatedSession.history,
-    );
-
-    await this.sessionService.appendHistory(client.id, {
-      role: "assistant",
-      content: result.tutorText,
-    });
-
-    client.emit("exercise_feedback", {
-      text: result.tutorText,
-    });
   }
 
   @SubscribeMessage("set_speed")

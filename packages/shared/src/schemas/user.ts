@@ -3,12 +3,12 @@ import { z } from "zod";
 export const CefrLevel = z.enum(["A1", "A2", "B1", "B2", "C1", "C2"]);
 
 export const CorrectionStyle = z.enum(["immediate", "end_of_lesson", "natural"]);
-export const SpeakingSpeed = z.enum(["slow", "natural", "fast"]);
+export const SpeakingSpeed = z.enum(["very_slow", "slow", "natural", "fast", "very_fast"]);
 
 export const UserPreferencesSchema = z.object({
   correctionStyle: CorrectionStyle.default("immediate"),
   explainGrammar: z.boolean().default(true),
-  speakingSpeed: SpeakingSpeed.default("natural"),
+  speakingSpeed: SpeakingSpeed.default("very_slow"),
   useNativeLanguage: z.boolean().default(false),
   preferredExerciseTypes: z.array(z.string()).default([]),
   interests: z.array(z.string()).default([]),

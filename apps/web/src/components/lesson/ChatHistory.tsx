@@ -2,21 +2,16 @@
 
 import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
-import { ExerciseCard } from "./ExerciseCard";
-import type { ChatMessage, LessonExercise } from "@/types";
+import type { ChatMessage } from "@/types";
 
 interface ChatHistoryProps {
   messages: ChatMessage[];
   isThinking: boolean;
-  currentExercise: LessonExercise | null;
-  onSubmitExercise: (exerciseId: string, answer: string) => void;
 }
 
 export function ChatHistory({
   messages,
   isThinking,
-  currentExercise,
-  onSubmitExercise,
 }: ChatHistoryProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const lastAssistantIdx = messages.length - 1 - [...messages].reverse().findIndex((m) => m.role === "assistant");
@@ -24,7 +19,7 @@ export function ChatHistory({
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isThinking, currentExercise]);
+  }, [messages, isThinking]);
 
   return (
     <div className="flex-1 overflow-y-auto px-5 pb-4 space-y-4">
@@ -50,12 +45,6 @@ export function ChatHistory({
               <div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
             </div>
           )}
-
-          {msg.exercise && (
-            <div className="mt-2">
-              <ExerciseCard exercise={msg.exercise} onSubmit={onSubmitExercise} />
-            </div>
-          )}
         </div>
       ))}
 
@@ -66,11 +55,6 @@ export function ChatHistory({
           <div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
         </div>
       )}
-
-      {currentExercise &&
-        !messages.some((m) => m.exercise && m.exercise.id === currentExercise.id) && (
-          <ExerciseCard exercise={currentExercise} onSubmit={onSubmitExercise} />
-        )}
 
       <div ref={scrollRef} />
     </div>

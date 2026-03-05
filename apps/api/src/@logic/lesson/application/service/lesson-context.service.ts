@@ -68,7 +68,7 @@ export class LessonContextService {
       tutorId: activeTutor.userTutor.tutorId,
       preferences: {
         correctionStyle: prefs?.correctionStyle ?? "immediate",
-        speakingSpeed: prefs?.speakingSpeed ?? "natural",
+        speakingSpeed: prefs?.speakingSpeed ?? "very_slow",
         useNativeLanguage: prefs?.useNativeLanguage ?? false,
         explainGrammar: prefs?.explainGrammar ?? true,
         preferredExercises: prefs?.preferredExerciseTypes ?? [],

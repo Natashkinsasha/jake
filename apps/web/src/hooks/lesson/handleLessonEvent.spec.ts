@@ -11,13 +11,12 @@ describe("handleLessonEvent", () => {
   it("tutor_message → show_message", () => {
     const action = handleLessonEvent(
       "tutor_message",
-      { text: "Hello", exercise: null },
+      { text: "Hello" },
       idle,
     );
     expect(action).toEqual({
       type: "show_message",
       text: "Hello",
-      exercise: null,
       status: "idle",
     });
   });
@@ -49,7 +48,6 @@ describe("handleLessonEvent", () => {
     expect(action).toEqual({
       type: "show_message",
       text: "Correct!",
-      exercise: null,
       status: "idle",
     });
   });
@@ -68,7 +66,6 @@ describe("handleLessonEvent", () => {
     expect(action).toEqual({
       type: "show_message",
       text: "I said hello",
-      exercise: null,
       status: "transcript",
     });
   });
@@ -101,20 +98,5 @@ describe("handleLessonEvent", () => {
   it("unknown event → discard", () => {
     const action = handleLessonEvent("unknown_event", {}, idle);
     expect(action).toEqual({ type: "discard" });
-  });
-
-  it("tutor_message with exercise → includes exercise in show_message", () => {
-    const exercise = { type: "fill_the_gap" as const, id: "ex1", sentence: "I ___ a cat" };
-    const action = handleLessonEvent(
-      "tutor_message",
-      { text: "Fill this", exercise },
-      idle,
-    );
-    expect(action).toEqual({
-      type: "show_message",
-      text: "Fill this",
-      exercise,
-      status: "idle",
-    });
   });
 });

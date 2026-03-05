@@ -1,46 +1,6 @@
-import type { LessonExercise } from "@/types";
-
-/**
- * Maps backend Exercise (from @jake/shared) to frontend LessonExercise format.
- * Backend stores exercise-specific data in `content: Record<string, unknown>`,
- * while frontend components expect flat structures (e.g. `sentence`, `options`).
- */
-function mapExercise(raw: unknown): LessonExercise | null {
-  if (raw === null || raw === undefined || typeof raw !== "object") return null;
-
-  const ex = raw as Record<string, unknown>;
-  const exType = ex["type"];
-  const exId = ex["id"];
-  if (exType === undefined || exType === null || exId === undefined || exId === null) return null;
-
-  // If it already has flat fields (frontend format), return as-is
-  if ("sentence" in ex || "question" in ex || "words" in ex) {
-    return ex as unknown as LessonExercise;
-  }
-
-  const content = (ex["content"] ?? {}) as Record<string, unknown>;
-  const hints = ex["hints"] as string[] | undefined;
-  const hint = hints?.[0];
-  const id = exId as string;
-
-  switch (exType) {
-    case "fill_the_gap":
-      return { id, type: "fill_the_gap", sentence: String(content["sentence"] ?? ""), hint };
-    case "multiple_choice":
-      return { id, type: "multiple_choice", question: String(content["question"] ?? ""), options: Array.isArray(content["options"]) ? content["options"] as string[] : [], hint };
-    case "sentence_builder":
-      return { id, type: "sentence_builder", words: Array.isArray(content["words"]) ? content["words"] as string[] : [], hint };
-    case "error_correction":
-      return { id, type: "error_correction", sentence: String(content["sentence"] ?? ""), hint };
-    default:
-      return null;
-  }
-}
-
 export interface LessonEventData {
   lessonId?: string;
   text?: string;
-  exercise?: unknown;
   state?: string;
   message?: string;
   chunkIndex?: number;
@@ -56,9 +16,9 @@ interface EventContext {
 
 export type LessonAction =
   | { type: "set_state"; patch: Record<string, unknown> }
-  | { type: "show_message"; text: string; exercise: LessonExercise | null; status: string }
+  | { type: "show_message"; text: string; status: string }
   | { type: "stream_chunk"; chunkIndex: number; text: string; messageId?: string }
-  | { type: "stream_end"; fullText: string; exercise: LessonExercise | null; messageId?: string }
+  | { type: "stream_end"; fullText: string; messageId?: string }
   | { type: "stream_discard" }
   | { type: "discard" };
 
@@ -77,7 +37,6 @@ export function handleLessonEvent(
       return {
         type: "show_message",
         text: data.text ?? "",
-        exercise: mapExercise(data.exercise),
         status: "idle",
       };
     }
@@ -86,7 +45,6 @@ export function handleLessonEvent(
       return {
         type: "show_message",
         text: data.text ?? "",
-        exercise: null,
         status: "transcript",
       };
 
@@ -96,7 +54,6 @@ export function handleLessonEvent(
       return {
         type: "show_message",
         text: data.text ?? "",
-        exercise: null,
         status: "idle",
       };
     }
@@ -118,7 +75,6 @@ export function handleLessonEvent(
       return {
         type: "stream_end",
         fullText: data.fullText ?? "",
-        exercise: mapExercise(data.exercise),
         messageId: data.messageId,
       };
 
