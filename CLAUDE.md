@@ -23,9 +23,9 @@ jake/
 ├── apps/
 │   ├── api/                    # NestJS backend (port 4000)
 │   │   ├── src/
-│   │   │   ├── @lib/           # Internal libraries (llm, voice, embedding, job, job-board)
-│   │   │   ├── @shared/        # Infra modules (config, auth, db, redis, ws, job, cls, zod-http)
-│   │   │   ├── @logic/         # Domain modules (auth, health, lesson, memory, progress, tutor, vocabulary)
+│   │   │   ├── @lib/           # Abstract providers & infra (provider, anthropic, deepgram, openai, job, job-board)
+│   │   │   ├── @shared/        # NestJS infra modules (config, auth, db, redis, ws, job, cls, zod-http, anthropic, deepgram, openai)
+│   │   │   ├── @logic/         # Domain modules (auth, health, lesson, llm, voice, embedding, memory, progress, tutor, vocabulary)
 │   │   │   ├── main.ts         # API entry point
 │   │   │   ├── worker.ts       # BullMQ worker entry point
 │   │   │   ├── migrate.ts      # DB migrations runner
@@ -39,10 +39,15 @@ jake/
 │       │   │   ├── (auth)/     # Login page
 │       │   │   └── (lesson)/   # Live lesson page (voice interface)
 │       │   ├── components/     # UI components
-│       │   ├── hooks/          # Custom hooks (useWebSocket, useStudentStt, useAudioPlayer, etc.)
+│       │   ├── hooks/          # Custom hooks (useWebSocket, useStudentStt, useAudioQueue, etc.)
 │       │   ├── lib/            # Utils, auth config, API client
 │       │   └── types/
 │       └── Dockerfile
+├── evals/                      # Prompt evaluation suite (promptfoo)
+│   ├── datasets/               # Test datasets
+│   ├── fixtures/               # Test fixtures
+│   ├── prompts/                # Prompt templates
+│   └── scripts/                # Eval helper scripts
 ├── packages/
 │   └── shared/                 # Zod schemas shared between API and web
 ├── infra/
@@ -80,6 +85,9 @@ pnpm db:seed                          # Seed tutors
 pnpm --filter @jake/api db:generate   # Generate new migration
 pnpm --filter @jake/api test          # API tests
 pnpm --filter @jake/web test          # Web tests
+pnpm --filter @jake/evals eval        # Run prompt evals
+pnpm --filter @jake/evals eval:multi  # Run multi-turn evals
+pnpm --filter @jake/evals eval:view   # View eval results
 ```
 
 ## API Architecture (DDD)
@@ -106,29 +114,33 @@ Each domain module in `@logic/` follows this structure:
 
 ### Domain Modules
 
-| Module | Purpose |
-|--------|---------|
-| **auth** | Google OAuth, user management, JWT signing |
-| **lesson** | Real-time voice lessons, WebSocket gateway, audio pipeline |
-| **tutor** | Tutor profiles (personality, voice, system prompt) |
-| **memory** | Two-tier memory: structured facts + vector embeddings |
-| **vocabulary** | Data layer only (contract + repo). Written by post-lesson job, read by lesson context |
-| **progress** | Data layer only (contract + repo). Grammar topic scores (0-100), used by lesson context |
-| **health** | Health check endpoint |
+| Module         | Purpose                                                                              |
+|----------------|--------------------------------------------------------------------------------------|
+| **auth**       | Google OAuth, user management, JWT signing                                           |
+| **lesson**     | Real-time voice lessons, WebSocket gateway, audio pipeline                           |
+| **tutor**      | Tutor profiles (personality, voice, system prompt)                                   |
+| **llm**        | AnthropicLlmProvider — `generate()`, `generateStream()`, `generateJson<T>()` w/ Zod |
+| **voice**      | ElevenLabs TTS (`synthesize()`) + Deepgram STT (`transcribe()`)                     |
+| **embedding**  | OpenAI embeddings (1536-dim vectors)                                                 |
+| **memory**     | Two-tier memory: structured facts + vector embeddings                                |
+| **vocabulary** | Data layer only (contract + repo). Written by post-lesson job, read by lesson context|
+| **progress**   | Data layer only (contract + repo). Grammar topic scores (0-100), used by lesson context|
+| **health**     | Health check endpoint                                                                |
 
 ### Library Modules (`@lib/`)
 
-| Module | Purpose |
-|--------|---------|
-| **llm** | Claude API — `generate()`, `generateJson<T>()` with Zod validation |
-| **voice** | ElevenLabs TTS (`synthesize()`) + Deepgram STT (`transcribe()`) |
-| **embedding** | OpenAI embeddings (1536-dim vectors) |
-| **job** | BullMQ queue registration wrapper |
-| **job-board** | Bull Board admin UI at `/admin/queues` |
+| Module         | Purpose                                                            |
+|----------------|--------------------------------------------------------------------|
+| **provider**   | Abstract base classes: `LlmProvider`, `TtsProvider`, `SttProvider`, `EmbeddingProvider` |
+| **anthropic**  | Anthropic SDK client wrapper                                       |
+| **deepgram**   | Deepgram SDK client wrapper                                        |
+| **openai**     | OpenAI SDK client wrapper                                          |
+| **job**        | BullMQ queue registration wrapper                                  |
+| **job-board**  | Bull Board admin UI at `/admin/queues`                             |
 
 ### Infrastructure Modules (`@shared/`)
 
-SharedConfigModule, SharedDrizzlePgModule, SharedRedisModule, SharedAuthModule, SharedJobModule, SharedWsModule, SharedClsModule, SharedZodHttpModule.
+SharedConfigModule, SharedDrizzlePgModule, SharedRedisModule, SharedAuthModule, SharedJobModule, SharedWsModule, SharedClsModule, SharedZodHttpModule, SharedAnthropicModule, SharedDeepgramModule, SharedOpenaiModule.
 
 **Convention**: No `@Global()` decorators — each module explicitly imports dependencies.
 
@@ -217,6 +229,9 @@ DEEPGRAM_API_KEY=<key>
 ELEVENLABS_API_KEY=<key>
 NEXTAUTH_SECRET=<secret>
 NEXTAUTH_URL=http://localhost:3000
+LANGFUSE_PUBLIC_KEY=<key>
+LANGFUSE_SECRET_KEY=<key>
+LANGFUSE_BASE_URL=<url>
 ```
 
 ## Gotchas
