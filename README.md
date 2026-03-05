@@ -162,7 +162,7 @@ pnpm --filter @jake/evals generate-prompts  # Regenerate eval prompts from code
 └─────┬─────┘          └────┬─────┘          └──────────────┘
       │                     │
       │ Deepgram WS         │ Claude + ElevenLabs
-      │ (STT streaming)     │
+      │ (client → Deepgram)  │ (server-side streaming)
       ▼                     ▼
 ┌──────────┐          ┌──────────┐
 │ Deepgram │          │ External │
@@ -172,12 +172,32 @@ pnpm --filter @jake/evals generate-prompts  # Regenerate eval prompts from code
 
 1. Client connects to `/ws/lesson` with JWT
 2. Server builds context (student profile, memory, grammar progress)
-3. Claude generates greeting → ElevenLabs synthesizes → `tutor_message` with text + base64 MP3
+3. Claude generates greeting → ElevenLabs synthesizes → `lesson_started` with text + base64 MP3
 4. Client enables mic, streams audio to Deepgram via direct WebSocket
 5. When Deepgram confirms a segment (`is_final`), client buffers it
-6. After 1s silence, client sends accumulated text to server
-7. Claude generates response → TTS → `tutor_message`
-8. If student speaks while tutor plays — interrupt, cancel pending response
+6. After silence (`speech_final`), client sends accumulated text to server via `text` event
+7. Server streams Claude response sentence-by-sentence, each sentence synthesized via ElevenLabs in parallel
+8. Client receives ordered `stream_chunk` events (text + base64 MP3), enqueues audio, reveals text in sync with playback
+9. If student speaks while tutor plays — audio queue stops, pending response is aborted
+
+### TTS (Server-Side Streaming)
+
+TTS runs **on the NestJS server** during lessons via `StreamingPipelineService`:
+1. Claude streams text token-by-token
+2. `SentenceBuffer` accumulates tokens into complete sentences
+3. Each sentence is sent to ElevenLabs TTS **in parallel** (non-blocking)
+4. Chunks are emitted to the client **in strict order** (shorter sentences don't skip ahead)
+5. Client plays chunks sequentially via `useAudioQueue` hook
+
+### STT (Client-Side Deepgram)
+
+STT runs **in the browser** — no audio goes through the server:
+1. Client fetches a short-lived Deepgram token from `GET /api/stt/token` (rate-limited 10/10min)
+2. Opens WebSocket directly to `wss://api.deepgram.com/v1/listen` (Nova-3)
+3. `MediaRecorder` captures mic audio (WebM/Opus) and sends 250ms chunks to Deepgram
+4. Deepgram returns interim + final transcripts; `is_final` segments are buffered
+5. On `speech_final` — all buffered segments are sent to NestJS as a single `text` event
+6. **Gotcha**: `speech_final` often arrives with an empty transcript — actual text comes via `is_final` segments
 
 ### Memory System
 
