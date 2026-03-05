@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 RUN corepack enable && corepack prepare pnpm@9 --activate
 
 FROM base AS builder
@@ -13,7 +13,8 @@ RUN --mount=type=cache,id=pnpm-api,target=/root/.local/share/pnpm/store \
 COPY . .
 RUN pnpm --filter @jake/shared build
 RUN pnpm --filter @jake/api build
-RUN pnpm --filter @jake/api deploy /app/deploy --prod
+RUN --mount=type=cache,id=pnpm-api,target=/root/.local/share/pnpm/store \
+    pnpm --filter @jake/api deploy /app/deploy --prod
 
 FROM base AS runner
 WORKDIR /app
