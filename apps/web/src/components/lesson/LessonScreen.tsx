@@ -24,7 +24,7 @@ export function LessonScreen({ token }: LessonScreenProps) {
     messages, currentExercise, status, connected, isPlaying,
     lessonEnded: serverLessonEnded, error: lessonError, sendText,
     submitExerciseAnswer, endLesson, interruptTutor, stopAllAudio,
-    playPending, setUserSpeaking,
+    setUserSpeaking,
   } = useLessonState(token);
 
   const [isMuted, setIsMuted] = useState(false);
@@ -69,15 +69,6 @@ export function LessonScreen({ token }: LessonScreenProps) {
       micReadyRef.current = true;
     }
   }, [hasReceivedFirstMessage, isMuted, isPaused, stt]);
-
-  // Play pending first message after mic is ready
-  useEffect(() => {
-    if (stt.isEnabled && playPending) {
-      const timer = setTimeout(() => { playPending(); }, 500);
-      return () => { clearTimeout(timer); };
-    }
-    return undefined;
-  }, [stt.isEnabled, playPending]);
 
   // Pause audio when tab loses focus
   useTabFocus({ onBlur: () => { stopAllAudio(); } });

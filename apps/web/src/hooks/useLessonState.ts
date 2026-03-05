@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { useWebSocket } from "./useWebSocket";
-import { useAudioQueue } from "./useAudioQueue";
+import { useTutorTts } from "./useTutorTts";
 import { handleLessonEvent, type LessonEventData } from "./lesson/handleLessonEvent";
 import { WS_URL } from "@/lib/config";
 import type { ChatMessage, LessonExercise, LessonStatus } from "@/types";
@@ -11,7 +11,6 @@ interface LessonState {
   currentExercise: LessonExercise | null;
   status: LessonStatus;
   lessonEnded: boolean;
-  hasPending: boolean;
   error: string | null;
 }
 
@@ -22,76 +21,31 @@ export function useLessonState(token?: string | null) {
     currentExercise: null,
     status: "connecting",
     lessonEnded: false,
-    hasPending: false,
     error: null,
   });
 
-  const pendingAudioRef = useRef<string | null>(null);
   const userSpeakingRef = useRef(false);
   const pendingTurnsRef = useRef(0);
-
-  // messageId: frontend generates an ID per sendText call, backend echoes it.
-  // Only chunks/stream_end matching this ID are accepted. Prevents stale chunks
-  // from a previous (aborted) generation from polluting the current state.
   const activeMessageIdRef = useRef<string | null>(null);
+  const voiceIdRef = useRef<string | null>(null);
+  const speechSpeedRef = useRef<number>(1.0);
+  const streamStartedRef = useRef(false);
 
-  // Streaming: buffer text chunks, reveal in sync with audio playback.
-  // stream_end data is saved to a ref and applied only when all audio finishes.
-  const streamChunksRef = useRef<string[]>([]);
-  const streamEndRef = useRef<{ fullText: string; exercise: LessonExercise | null } | null>(null);
-  const audioDoneRef = useRef(true);
-
-  const audioQueue = useAudioQueue({
-    onChunkStart: (chunkIndex) => {
-      const chunks = streamChunksRef.current;
-      if (chunks.length === 0) return;
-      const visibleText = chunks.slice(0, chunkIndex + 1).join(" ");
-      setState((prev) => {
-        const messages = [...prev.messages];
-        const last = messages[messages.length - 1];
-        if (last?.role === "assistant" && prev.status === "speaking") {
-          messages[messages.length - 1] = { ...last, text: visibleText };
-        }
-        return { ...prev, messages };
-      });
-    },
-    onAllDone: () => {
-      audioDoneRef.current = true;
-      const endData = streamEndRef.current;
-      streamEndRef.current = null;
-      streamChunksRef.current = [];
-
-      if (endData) {
-        // stream_end already arrived — apply final text + exercise
-        setState((prev) => {
-          const messages = [...prev.messages];
-          const last = messages[messages.length - 1];
-          if (last?.role === "assistant") {
-            messages[messages.length - 1] = {
-              ...last,
-              text: endData.fullText,
-              exercise: endData.exercise,
-            };
-          }
-          return {
-            ...prev,
-            messages,
-            currentExercise: endData.exercise,
-            status: "idle",
-          };
-        });
-      } else {
-        // stream_end hasn't arrived yet (will apply when it does)
-        setState((prev) => ({
-          ...prev,
-          status: prev.status === "speaking" ? "idle" : prev.status,
-        }));
-      }
-    },
+  const tts = useTutorTts({
+    voiceId: voiceIdRef.current,
+    speechSpeed: speechSpeedRef.current,
   });
+  const ttsRef = useRef(tts);
+  ttsRef.current = tts;
 
   const handleEvent = useCallback((event: string, data: LessonEventData) => {
-    console.log("[Lesson] event:", event, data.text ? `"${data.text.slice(0, 50)}..."` : "", data.audio ? `audio:${data.audio.length}chars` : "");
+    console.log("[Lesson] event:", event, data.text ? `"${data.text.slice(0, 50)}..."` : "");
+
+    if (event === "lesson_started") {
+      const d = data as LessonEventData & { voiceId?: string; speechSpeed?: number };
+      if (d.voiceId) voiceIdRef.current = d.voiceId;
+      if (d.speechSpeed) speechSpeedRef.current = d.speechSpeed;
+    }
 
     const action = handleLessonEvent(event, data, {
       userSpeaking: userSpeakingRef.current,
@@ -112,107 +66,64 @@ export function useLessonState(token?: string | null) {
         if (event === "error") console.error("Lesson error:", data.message);
         break;
 
-      case "play_audio":
-        pendingAudioRef.current = action.audio;
-        // Buffer text — will be revealed by onChunkStart when audio plays
-        streamChunksRef.current = [action.pending.text];
-        audioDoneRef.current = false;
-        streamEndRef.current = {
-          fullText: action.pending.text,
-          exercise: action.pending.exercise ?? null,
-        };
+      case "show_message":
         setState((prev) => ({
           ...prev,
           messages: [
             ...prev.messages,
             {
               role: "assistant",
-              text: "",
+              text: action.text,
               timestamp: Date.now(),
-              exercise: action.pending.exercise ?? null,
+              exercise: action.exercise,
             },
           ],
-          currentExercise: action.pending.exercise ?? null,
-          hasPending: true,
-          status: "speaking",
+          currentExercise: action.exercise,
+          status: "idle",
         }));
-        break;
-
-      case "show_message":
-        if (action.status === "transcript") {
-          setState((prev) => ({
-            ...prev,
-            messages: [
-              ...prev.messages,
-              { role: "user", text: action.text, timestamp: Date.now() },
-            ],
-          }));
-        } else {
-          setState((prev) => ({
-            ...prev,
-            messages: [
-              ...prev.messages,
-              {
-                role: "assistant",
-                text: action.text,
-                timestamp: Date.now(),
-                exercise: action.exercise,
-              },
-            ],
-            currentExercise: action.exercise,
-            status: "idle",
-          }));
+        if (action.text) {
+          ttsRef.current.speak(action.text);
         }
         break;
 
       case "stream_chunk": {
-        // Reject stale chunks from a previous (aborted) generation
         if (action.messageId && activeMessageIdRef.current && action.messageId !== activeMessageIdRef.current) {
           console.log("[Lesson] discarding stale chunk, messageId mismatch");
           break;
         }
-        // After interrupt activeMessageIdRef is null — reject any chunk with a messageId
         if (action.messageId && !activeMessageIdRef.current) {
           console.log("[Lesson] discarding chunk, no active generation");
           break;
         }
 
-        streamChunksRef.current.push(action.text);
-        audioDoneRef.current = false;
+        if (!streamStartedRef.current) {
+          streamStartedRef.current = true;
+          ttsRef.current.startStream();
+        }
 
-        // Create a placeholder message on the first chunk
+        ttsRef.current.sendChunk(action.text);
+
         setState((prev) => {
           const messages = [...prev.messages];
           const last = messages[messages.length - 1];
-          if (!(last?.role === "assistant" && prev.status === "speaking")) {
+          if (last?.role === "assistant" && prev.status === "speaking") {
+            messages[messages.length - 1] = {
+              ...last,
+              text: last.text ? last.text + " " + action.text : action.text,
+            };
+          } else {
             messages.push({
               role: "assistant",
-              text: "",
+              text: action.text,
               timestamp: Date.now(),
             });
           }
           return { ...prev, messages, status: "speaking" };
         });
-
-        if (action.audio) {
-          audioQueue.enqueue({ chunkIndex: action.chunkIndex, audio: action.audio });
-        } else {
-          // No audio (TTS failed) — show text immediately
-          const visibleText = streamChunksRef.current.join(" ");
-          setState((prev) => {
-            const messages = [...prev.messages];
-            const last = messages[messages.length - 1];
-            if (last?.role === "assistant") {
-              messages[messages.length - 1] = { ...last, text: visibleText };
-            }
-            return { ...prev, messages };
-          });
-        }
         break;
       }
 
       case "stream_end": {
-        // Reject stale stream_end from a previous generation
         if (action.messageId && activeMessageIdRef.current && action.messageId !== activeMessageIdRef.current) {
           console.log("[Lesson] discarding stale stream_end, messageId mismatch");
           break;
@@ -222,48 +133,40 @@ export function useLessonState(token?: string | null) {
           break;
         }
 
-        activeMessageIdRef.current = null; // generation finished
+        activeMessageIdRef.current = null;
+        streamStartedRef.current = false;
 
-        const endData = { fullText: action.fullText, exercise: action.exercise };
+        ttsRef.current.endStream();
 
-        if (audioDoneRef.current) {
-          // Audio already finished (short response or no chunks) — apply immediately
-          streamChunksRef.current = [];
-          streamEndRef.current = null;
-          setState((prev) => {
-            const messages = [...prev.messages];
-            const last = messages[messages.length - 1];
-            if (last?.role === "assistant") {
-              messages[messages.length - 1] = {
-                ...last,
-                text: action.fullText,
-                exercise: action.exercise,
-              };
-            } else {
-              // No prior chunks created a placeholder — add the message directly
-              messages.push({
-                role: "assistant",
-                text: action.fullText,
-                timestamp: Date.now(),
-                exercise: action.exercise,
-              });
-            }
-            return { ...prev, messages, currentExercise: action.exercise, status: "idle" };
-          });
-        } else {
-          // Audio still playing — save for onAllDone
-          streamEndRef.current = endData;
-        }
+        setState((prev) => {
+          const messages = [...prev.messages];
+          const last = messages[messages.length - 1];
+          if (last?.role === "assistant") {
+            messages[messages.length - 1] = {
+              ...last,
+              text: action.fullText,
+              exercise: action.exercise,
+            };
+          } else {
+            messages.push({
+              role: "assistant",
+              text: action.fullText,
+              timestamp: Date.now(),
+              exercise: action.exercise,
+            });
+          }
+          return { ...prev, messages, currentExercise: action.exercise, status: "idle" };
+        });
         break;
       }
 
       case "discard":
         if (event === "tutor_message" || event === "exercise_feedback" || event === "tutor_chunk") {
-          console.log("[Lesson] discarding", event, "—", userSpeakingRef.current ? "user is speaking" : "newer message pending", `(pendingTurns=${pendingTurnsRef.current})`);
+          console.log("[Lesson] discarding", event);
         }
         break;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- audioQueue.enqueue is stable
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const { emit, connected } = useWebSocket({
@@ -279,23 +182,16 @@ export function useLessonState(token?: string | null) {
       const trimmed = text.trim();
       const messageId = crypto.randomUUID();
       activeMessageIdRef.current = messageId;
-      console.log("[Lesson] sendText:", trimmed, `(pendingTurns=${pendingTurnsRef.current}, messageId=${messageId})`);
       setState((prev) => {
         const last = prev.messages[prev.messages.length - 1];
         if (last?.role === "user") {
           const updated = [...prev.messages];
-          updated[updated.length - 1] = {
-            ...last,
-            text: last.text + " " + trimmed,
-          };
+          updated[updated.length - 1] = { ...last, text: last.text + " " + trimmed };
           return { ...prev, messages: updated, status: "thinking" };
         }
         return {
           ...prev,
-          messages: [
-            ...prev.messages,
-            { role: "user", text: trimmed, timestamp: Date.now() },
-          ],
+          messages: [...prev.messages, { role: "user", text: trimmed, timestamp: Date.now() }],
           status: "thinking",
         };
       });
@@ -316,59 +212,38 @@ export function useLessonState(token?: string | null) {
   }, [emit]);
 
   const interruptTutor = useCallback(() => {
-    pendingAudioRef.current = null;
-    audioQueue.stop();
+    tts.stop();
     emit("interrupt", {});
-
-    // Clear messageId — any late chunks from old generation will be rejected
     activeMessageIdRef.current = null;
+    streamStartedRef.current = false;
 
     setState((prev) => {
       const messages = [...prev.messages];
       const last = messages[messages.length - 1];
-      // Append "..." to show interruption, keep whatever text was already shown
       if (last?.role === "assistant" && last.text && prev.status === "speaking") {
-        messages[messages.length - 1] = {
-          ...last,
-          text: last.text + "...",
-        };
+        messages[messages.length - 1] = { ...last, text: last.text + "..." };
       }
       return {
         ...prev,
         messages,
-        hasPending: false,
         status: prev.status === "speaking" ? "idle" : prev.status,
       };
     });
-
-    streamChunksRef.current = [];
-    streamEndRef.current = null;
-    audioDoneRef.current = true;
-  }, [audioQueue, emit]);
+  }, [tts, emit]);
 
   const setUserSpeaking = useCallback((speaking: boolean) => {
     userSpeakingRef.current = speaking;
   }, []);
 
-  const playPending = useCallback(() => {
-    const audio = pendingAudioRef.current;
-    if (audio) {
-      pendingAudioRef.current = null;
-      setState((prev) => ({ ...prev, hasPending: false }));
-      audioQueue.enqueue({ chunkIndex: 0, audio });
-    }
-  }, [audioQueue]);
-
   return {
     ...state,
     connected,
-    isPlaying: audioQueue.isPlaying,
+    isPlaying: tts.isSpeaking,
     sendText,
     submitExerciseAnswer,
     endLesson,
     interruptTutor,
-    stopAllAudio: useCallback(() => { audioQueue.stop(); }, [audioQueue]),
-    playPending: state.hasPending ? playPending : null,
+    stopAllAudio: useCallback(() => { tts.stop(); }, [tts]),
     setUserSpeaking,
   };
 }
