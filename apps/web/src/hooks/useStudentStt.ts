@@ -99,9 +99,7 @@ export function useStudentStt(
     setFinalText("");
 
     try {
-      const tokenRes = await fetch("/api/stt/token");
-      if (!tokenRes.ok) throw new Error("Failed to get STT token");
-      const { key } = (await tokenRes.json()) as { key: string };
+      const { key } = await api.stt.token();
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       // Mic permission = user gesture — unlock audio playback

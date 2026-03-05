@@ -5,7 +5,6 @@ import { LessonMaintainer } from "./application/maintainer/lesson.maintainer";
 import { LessonContextService } from "./application/service/lesson-context.service";
 import { LessonResponseService } from "./application/service/lesson-response.service";
 import { ExerciseParserService } from "./application/service/exercise-parser.service";
-import { AudioPipelineService } from "./application/service/audio-pipeline.service";
 import { StreamingPipelineService } from "./application/service/streaming-pipeline.service";
 import { LessonSessionService } from "./application/service/lesson-session.service";
 import { LessonMapper } from "./application/mapper/lesson.mapper";
@@ -27,6 +26,7 @@ import { TutorModule } from "../tutor/tutor.module";
 import { MemoryModule } from "../memory/memory.module";
 import { VocabularyModule } from "../vocabulary/vocabulary.module";
 import { ProgressModule } from "../progress/progress.module";
+import { SharedConfigModule } from "../../@shared/shared-config/shared-config.module";
 
 @Module({
   imports: [
@@ -45,6 +45,7 @@ import { ProgressModule } from "../progress/progress.module";
     MemoryModule,
     VocabularyModule,
     ProgressModule,
+    SharedConfigModule,
   ],
   controllers: [LessonController],
   providers: [
@@ -53,7 +54,6 @@ import { ProgressModule } from "../progress/progress.module";
     LessonContextService,
     LessonResponseService,
     ExerciseParserService,
-    AudioPipelineService,
     StreamingPipelineService,
     LessonSessionService,
     LessonMapper,

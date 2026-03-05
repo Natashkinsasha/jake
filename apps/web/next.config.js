@@ -36,7 +36,7 @@ images: {
   async rewrites() {
     return [
       {
-        source: "/api/:path((?!auth|stt).*)",
+        source: "/api/:path((?!auth).*)",
         destination: "http://localhost:4000/:path",
       },
       {

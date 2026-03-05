@@ -3,7 +3,6 @@ import { LessonRepository } from "../../infrastructure/repository/lesson.reposit
 import { LessonMessageRepository } from "../../infrastructure/repository/lesson-message.repository";
 import { LessonContextService } from "../service/lesson-context.service";
 import { LessonResponseService } from "../service/lesson-response.service";
-import { AudioPipelineService } from "../service/audio-pipeline.service";
 import { StreamingPipelineService } from "../service/streaming-pipeline.service";
 import type { StreamCallbacks, StreamChunk } from "../service/streaming-pipeline.service";
 import { TtsProvider } from "../../../../@lib/provider/src";
@@ -44,7 +43,6 @@ export class LessonMaintainer {
     private messageRepository: LessonMessageRepository,
     private contextService: LessonContextService,
     private responseService: LessonResponseService,
-    private audioPipeline: AudioPipelineService,
     private streamingPipeline: StreamingPipelineService,
     private sessionService: LessonSessionService,
     private moderationService: ModerationService,
@@ -126,42 +124,33 @@ export class LessonMaintainer {
     };
   }
 
-  async processUserAudio(
+  async processExerciseAnswer(
     lessonId: string,
     userId: string,
-    audioBase64: string,
     systemPrompt: string,
     history: LlmMessage[],
     voiceId: string,
     speechSpeed?: number,
   ) {
-    const result = await this.audioPipeline.processAudio(
-      audioBase64,
-      systemPrompt,
-      history,
-      voiceId,
-      speechSpeed,
-    );
+    const response = await this.responseService.generate(systemPrompt, history);
 
-    await this.messageRepository.create({
-      lessonId,
-      role: "user",
-      content: result.transcript,
-    });
-    await this.messageRepository.create({
-      lessonId,
-      role: "tutor",
-      content: result.tutorText,
-    });
+    let audio = "";
+    try {
+      audio = await this.tts.synthesize(response.text, voiceId, speechSpeed);
+    } catch (error) {
+      this.logger.warn(`TTS failed for exercise feedback: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
+    await this.messageRepository.create({ lessonId, role: "tutor", content: response.text });
 
     await this.factQueue.add("extract", {
       userId,
       lessonId,
-      userMessage: result.transcript,
-      history: [...history, { role: "user", content: result.transcript }],
+      userMessage: history[history.length - 1]?.content ?? "",
+      history,
     });
 
-    return result;
+    return { tutorText: response.text, tutorAudio: audio };
   }
 
   async processTextMessageStreaming(

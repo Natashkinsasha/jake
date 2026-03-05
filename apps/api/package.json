@@ -22,7 +22,6 @@
     "@bull-board/api": "^6.20.3",
     "@bull-board/fastify": "^6.20.3",
     "@bull-board/ui": "^6.20.3",
-    "@deepgram/sdk": "^3.9.0",
     "@fastify/basic-auth": "^6.2.0",
     "@jake/shared": "workspace:*",
     "@knaadh/nestjs-drizzle-pg": "^1.2.0",
