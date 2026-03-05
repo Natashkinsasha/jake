@@ -26,7 +26,7 @@ const log = (...args: unknown[]) => {
 export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
-  const audioQueueRef = useRef<string[]>([]);
+  const audioQueueRef = useRef<Blob[]>([]);
   const playingRef = useRef(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const urlRef = useRef<string | null>(null);
@@ -35,6 +35,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   const pendingTextRef = useRef<string[]>([]);
   const isStreamingRef = useRef(false);
   const wsReadyRef = useRef(false);
+  const eosRequestedRef = useRef(false);
 
   const cleanupAudio = useCallback(() => {
     if (audioRef.current) {
@@ -58,47 +59,37 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
       return;
     }
 
-    const base64 = audioQueueRef.current.shift();
-    if (!base64) return;
+    const blob = audioQueueRef.current.shift();
+    if (!blob) return;
     cleanupAudio();
 
-    try {
-      const binaryString = atob(base64);
-      const bytes = new Uint8Array(binaryString.length);
-      for (let i = 0; i < binaryString.length; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-      const blob = new Blob([bytes], { type: "audio/mpeg" });
-      const url = URL.createObjectURL(blob);
-      urlRef.current = url;
+    const url = URL.createObjectURL(blob);
+    urlRef.current = url;
 
-      const audio = new Audio(url);
-      audioRef.current = audio;
+    const audio = new Audio(url);
+    audioRef.current = audio;
 
-      audio.onended = () => {
-        cleanupAudio();
-        playNext();
-      };
-      audio.onerror = () => {
-        cleanupAudio();
-        playNext();
-      };
-
-      log(`playing chunk (${blob.size} bytes)`);
-      audio.play().catch(() => {
-        cleanupAudio();
-        playNext();
-      });
-    } catch {
-      log("decode error");
+    audio.onended = () => {
+      cleanupAudio();
       playNext();
-    }
+    };
+    audio.onerror = () => {
+      log("audio playback error");
+      cleanupAudio();
+      playNext();
+    };
+
+    log(`playing chunk (${blob.size} bytes)`);
+    audio.play().catch(() => {
+      cleanupAudio();
+      playNext();
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cleanupAudio]);
 
   const enqueueAudio = useCallback(
-    (base64: string) => {
-      audioQueueRef.current.push(base64);
+    (blob: Blob) => {
+      audioQueueRef.current.push(blob);
       if (!playingRef.current) {
         playingRef.current = true;
         setIsSpeaking(true);
@@ -123,6 +114,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
     }
     wsReadyRef.current = false;
     pendingTextRef.current = [];
+    eosRequestedRef.current = false;
   }, []);
 
   const sendTextToWs = useCallback((text: string, flush: boolean) => {
@@ -130,6 +122,8 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ text: text + " ", flush }));
       log("sent text:", text.slice(0, 50));
+    } else {
+      log("sendTextToWs: WS not open, skipping");
     }
   }, []);
 
@@ -138,19 +132,43 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify({ text: "" }));
       log("sent EOS");
+    } else {
+      log("sendEos: WS not open, skipping");
     }
   }, []);
 
   const openWs = useCallback(
     async (voiceId: string, speechSpeed: number, onReady: () => void) => {
+      // Close any existing WS before opening a new one
+      closeWs();
+
       try {
         const { token } = await api.tts.token();
+        log("got single-use token");
 
-        const wsUrl = `wss://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream-input?model_id=${TTS_CONFIG.MODEL}&output_format=${TTS_CONFIG.OUTPUT_FORMAT}`;
+        const wsUrl = `wss://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream-input?model_id=${TTS_CONFIG.MODEL}&output_format=${TTS_CONFIG.OUTPUT_FORMAT}&single_use_token=${token}`;
         const ws = new WebSocket(wsUrl);
         wsRef.current = ws;
 
-        let audioBuffer = "";
+        const audioChunks: BlobPart[] = [];
+
+        const decodeBase64 = (b64: string): ArrayBuffer => {
+          const binary = atob(b64);
+          const bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) {
+            bytes[i] = binary.charCodeAt(i);
+          }
+          return bytes.buffer as ArrayBuffer;
+        };
+
+        const flushAudio = () => {
+          if (audioChunks.length > 0) {
+            const blob = new Blob(audioChunks, { type: "audio/mpeg" });
+            log("enqueuing audio blob:", blob.size, "bytes");
+            enqueueAudio(blob);
+            audioChunks.length = 0;
+          }
+        };
 
         ws.onopen = () => {
           log("WS connected to ElevenLabs");
@@ -158,7 +176,6 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
             JSON.stringify({
               text: " ",
               voice_settings: TTS_CONFIG.VOICE_SETTINGS,
-              xi_api_key: token,
               generation_config: { chunk_length_schedule: [120] },
               ...(speechSpeed !== 1.0 ? { speed: speechSpeed } : {}),
             }),
@@ -171,27 +188,49 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
           const msg = JSON.parse(event.data as string) as {
             audio?: string;
             isFinal?: boolean;
+            message?: string;
+            error?: string;
           };
+
+          if (msg.error) log("WS error from server:", msg.error);
+          if (msg.message) log("WS server message:", msg.message);
+
           if (msg.audio) {
-            audioBuffer += msg.audio;
+            audioChunks.push(decodeBase64(msg.audio));
+            log("received audio chunk:", msg.audio.length, "chars, isFinal:", msg.isFinal);
+          } else {
+            log("received message (no audio), isFinal:", msg.isFinal);
           }
+
           if (msg.isFinal) {
-            if (audioBuffer) {
-              enqueueAudio(audioBuffer);
-              audioBuffer = "";
+            flushAudio();
+            // Close this specific WS instance (not whatever is in wsRef)
+            ws.onmessage = null;
+            ws.onerror = null;
+            ws.onclose = null;
+            ws.close();
+            if (wsRef.current === ws) {
+              wsRef.current = null;
+              wsReadyRef.current = false;
             }
-            closeWs();
           }
         };
 
         ws.onerror = () => {
           log("WS error");
-          closeWs();
+          if (wsRef.current === ws) {
+            closeWs();
+          }
         };
-        ws.onclose = () => {
-          log("WS closed");
-          wsRef.current = null;
-          wsReadyRef.current = false;
+
+        ws.onclose = (event) => {
+          log("WS closed, code:", event.code, "reason:", event.reason || "(none)");
+          // If server closed before isFinal, flush any buffered audio
+          flushAudio();
+          if (wsRef.current === ws) {
+            wsRef.current = null;
+            wsReadyRef.current = false;
+          }
         };
       } catch (error) {
         log("failed to open TTS WS:", error);
@@ -221,15 +260,23 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
       log("startStream, voiceId:", voiceId);
       isStreamingRef.current = true;
       pendingTextRef.current = [];
+      eosRequestedRef.current = false;
 
       void openWs(voiceId, speechSpeed ?? 1.0, () => {
         for (const text of pendingTextRef.current) {
           sendTextToWs(text, true);
         }
         pendingTextRef.current = [];
+
+        // If endStream() was called while WS was still connecting, send EOS now
+        if (eosRequestedRef.current) {
+          log("sending deferred EOS");
+          sendEos();
+          eosRequestedRef.current = false;
+        }
       });
     },
-    [openWs, sendTextToWs],
+    [openWs, sendTextToWs, sendEos],
   );
 
   /** Send a text chunk (sentence) during a streaming session. */
@@ -253,6 +300,9 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
 
     if (wsReadyRef.current) {
       sendEos();
+    } else {
+      log("WS not ready, deferring EOS");
+      eosRequestedRef.current = true;
     }
   }, [sendEos]);
 
