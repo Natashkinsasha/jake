@@ -12,7 +12,6 @@ import { LessonRepository } from "./infrastructure/repository/lesson.repository"
 import { LessonMessageRepository } from "./infrastructure/repository/lesson-message.repository";
 import { PostLessonBullHandler } from "./infrastructure/bull-handler/post-lesson.bull-handler";
 import { LlmModule } from "../llm/src/llm.module";
-import { VoiceModule } from "../voice/src/voice.module";
 import { EmbeddingModule } from "../embedding/src/embedding.module";
 import { SharedAuthModule } from "../../@shared/shared-auth/shared-auth.module";
 import { SharedDrizzlePgModule } from "../../@shared/shared-drizzle-pg/shared-drizzle-pg.module";
@@ -31,7 +30,6 @@ import { SharedConfigModule } from "../../@shared/shared-config/shared-config.mo
 @Module({
   imports: [
     LlmModule,
-    VoiceModule,
     EmbeddingModule,
     SharedAuthModule,
     SharedDrizzlePgModule,
