@@ -19,6 +19,7 @@ import { SharedAuthModule } from "../../@shared/shared-auth/shared-auth.module";
 import { SharedDrizzlePgModule } from "../../@shared/shared-drizzle-pg/shared-drizzle-pg.module";
 import { SharedWsModule } from "../../@shared/shared-ws/shared-ws.module";
 import { SharedRedisModule } from "../../@shared/shared-redis/shared-redis.module";
+import { SharedClsModule } from "../../@shared/shared-cls/shared-cls.module";
 import { JobModule } from "../../@lib/job/src";
 import { QUEUE_NAMES } from "../../@shared/shared-job/queue-names";
 import { AuthModule } from "../auth/auth.module";
@@ -36,6 +37,7 @@ import { ProgressModule } from "../progress/progress.module";
     SharedDrizzlePgModule,
     SharedWsModule,
     SharedRedisModule,
+    SharedClsModule,
     JobModule.registerQueue({ name: QUEUE_NAMES.POST_LESSON }),
     JobModule.registerQueue({ name: QUEUE_NAMES.FACT_EXTRACTION }),
     AuthModule,

@@ -1,19 +1,24 @@
 import { Logger } from "@nestjs/common";
-import { Processor, WorkerHost } from "@nestjs/bullmq";
+import { Processor } from "@nestjs/bullmq";
 import { Job } from "bullmq";
+import { ClsService } from "nestjs-cls";
+import { ClsWorkerHost } from "../../../../@shared/shared-cls/cls-worker-host";
 import { FactExtractionService } from "../../application/service/fact-extraction.service";
 import { QUEUE_NAMES } from "../../../../@shared/shared-job/queue-names";
 import type { LlmMessage } from "../../../../@lib/provider/src";
 
 @Processor(QUEUE_NAMES.FACT_EXTRACTION)
-export class FactExtractionBullHandler extends WorkerHost {
+export class FactExtractionBullHandler extends ClsWorkerHost {
   private readonly logger = new Logger(FactExtractionBullHandler.name);
 
-  constructor(private factExtraction: FactExtractionService) {
+  constructor(
+    protected readonly cls: ClsService,
+    private factExtraction: FactExtractionService,
+  ) {
     super();
   }
 
-  async process(job: Job<{ userId: string; lessonId: string; userMessage: string; history: LlmMessage[] }>) {
+  async processJob(job: Job<{ userId: string; lessonId: string; userMessage: string; history: LlmMessage[] }>) {
     const { userId, lessonId, userMessage, history } = job.data;
     this.logger.debug(`Extracting facts for lesson ${lessonId}`);
 

@@ -1,6 +1,8 @@
 import { Logger } from "@nestjs/common";
-import { Processor, WorkerHost } from "@nestjs/bullmq";
+import { Processor } from "@nestjs/bullmq";
 import { Job } from "bullmq";
+import { ClsService } from "nestjs-cls";
+import { ClsWorkerHost } from "../../../../@shared/shared-cls/cls-worker-host";
 import { Transaction } from "../../../../@shared/shared-cls/transaction";
 import { LlmProvider, EmbeddingProvider } from "../../../../@lib/provider/src";
 import { LessonRepository } from "../repository/lesson.repository";
@@ -24,10 +26,11 @@ Return ONLY valid JSON:
 }`;
 
 @Processor(QUEUE_NAMES.POST_LESSON)
-export class PostLessonBullHandler extends WorkerHost {
+export class PostLessonBullHandler extends ClsWorkerHost {
   private readonly logger = new Logger(PostLessonBullHandler.name);
 
   constructor(
+    protected readonly cls: ClsService,
     private llm: LlmProvider,
     private embeddingProvider: EmbeddingProvider,
     private lessonRepository: LessonRepository,
@@ -39,7 +42,7 @@ export class PostLessonBullHandler extends WorkerHost {
     super();
   }
 
-  async process(job: Job<{ lessonId: string; conversationHistory: Array<{ role: string; content: string }> }>) {
+  async processJob(job: Job<{ lessonId: string; conversationHistory: Array<{ role: string; content: string }> }>) {
     const { lessonId, conversationHistory } = job.data;
     this.logger.log(`Processing post-lesson job for lesson ${lessonId}`);
 
