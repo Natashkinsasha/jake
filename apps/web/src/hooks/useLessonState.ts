@@ -34,14 +34,14 @@ export function useLessonState(token?: string | null) {
 
   const streamTextRef = useRef<string>("");
   const pendingRevealTextRef = useRef<string | null>(null);
+  const finalFullTextRef = useRef<string | null>(null);
   const revealedLenRef = useRef(0);
 
   const tts = useTutorTts({
     onAllDone: () => {
-      // Reveal any remaining text
-      const text = pendingRevealTextRef.current;
-      if (text && revealedLenRef.current < text.length) {
-        revealedLenRef.current = text.length;
+      // Use server's authoritative fullText for the final snap (corrected punctuation etc.)
+      const text = finalFullTextRef.current ?? pendingRevealTextRef.current;
+      if (text) {
         setState((prev) => {
           const messages = [...prev.messages];
           const last = messages[messages.length - 1];
@@ -53,6 +53,7 @@ export function useLessonState(token?: string | null) {
       } else {
         setState((prev) => prev.status === "speaking" ? { ...prev, status: "idle" } : prev);
       }
+      finalFullTextRef.current = null;
       pendingRevealTextRef.current = null;
       revealedLenRef.current = 0;
     },
@@ -205,9 +206,11 @@ export function useLessonState(token?: string | null) {
         streamStartedRef.current = false;
         ttsRef.current.endStream();
 
-        // Store full text — onAllDone will reveal any remainder
+        // Save authoritative fullText for onAllDone final snap.
+        // Don't overwrite pendingRevealTextRef — it's used for mid-reveal
+        // and switching text mid-playback causes visible "corrections".
         streamTextRef.current = "";
-        pendingRevealTextRef.current = action.fullText;
+        finalFullTextRef.current = action.fullText;
         break;
       }
 
@@ -217,6 +220,7 @@ export function useLessonState(token?: string | null) {
         streamStartedRef.current = false;
         streamTextRef.current = "";
         pendingRevealTextRef.current = null;
+        finalFullTextRef.current = null;
         revealedLenRef.current = 0;
         ttsRef.current.stop();
 
@@ -285,6 +289,7 @@ export function useLessonState(token?: string | null) {
     streamStartedRef.current = false;
     streamTextRef.current = "";
     pendingRevealTextRef.current = null;
+    finalFullTextRef.current = null;
     revealedLenRef.current = 0;
 
     setState((prev) => {
