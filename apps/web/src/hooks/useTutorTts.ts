@@ -6,15 +6,13 @@ import { api } from "@/lib/api";
 import { TTS_CONFIG } from "@/lib/config";
 
 interface UseTutorTtsOptions {
-  voiceId: string | null;
-  speechSpeed?: number;
   onPlayStart?: () => void;
   onAllDone?: () => void;
 }
 
 interface UseTutorTtsReturn {
-  speak: (text: string) => void;
-  startStream: () => void;
+  speak: (text: string, voiceId: string, speechSpeed?: number) => void;
+  startStream: (voiceId: string, speechSpeed?: number) => void;
   sendChunk: (text: string) => void;
   endStream: () => void;
   stop: () => void;
@@ -25,7 +23,7 @@ const log = (...args: unknown[]) => {
   console.log("[TTS]", ...args);
 };
 
-export function useTutorTts(options: UseTutorTtsOptions): UseTutorTtsReturn {
+export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
   const audioQueueRef = useRef<string[]>([]);
@@ -56,7 +54,7 @@ export function useTutorTts(options: UseTutorTtsOptions): UseTutorTtsReturn {
       playingRef.current = false;
       setIsSpeaking(false);
       log("all audio done");
-      optionsRef.current.onAllDone?.();
+      optionsRef.current?.onAllDone?.();
       return;
     }
 
@@ -104,7 +102,7 @@ export function useTutorTts(options: UseTutorTtsOptions): UseTutorTtsReturn {
       if (!playingRef.current) {
         playingRef.current = true;
         setIsSpeaking(true);
-        optionsRef.current.onPlayStart?.();
+        optionsRef.current?.onPlayStart?.();
         playNext();
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -144,16 +142,9 @@ export function useTutorTts(options: UseTutorTtsOptions): UseTutorTtsReturn {
   }, []);
 
   const openWs = useCallback(
-    async (onReady: () => void) => {
-      const voiceId = optionsRef.current.voiceId;
-      if (!voiceId) {
-        log("no voiceId, skipping TTS");
-        return;
-      }
-
+    async (voiceId: string, speechSpeed: number, onReady: () => void) => {
       try {
         const { token } = await api.tts.token();
-        const speed = optionsRef.current.speechSpeed ?? 1.0;
 
         const wsUrl = `wss://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream-input?model_id=${TTS_CONFIG.MODEL}&output_format=${TTS_CONFIG.OUTPUT_FORMAT}`;
         const ws = new WebSocket(wsUrl);
@@ -169,7 +160,7 @@ export function useTutorTts(options: UseTutorTtsOptions): UseTutorTtsReturn {
               voice_settings: TTS_CONFIG.VOICE_SETTINGS,
               xi_api_key: token,
               generation_config: { chunk_length_schedule: [120] },
-              ...(speed !== 1.0 ? { speed } : {}),
+              ...(speechSpeed !== 1.0 ? { speed: speechSpeed } : {}),
             }),
           );
           wsReadyRef.current = true;
@@ -207,16 +198,16 @@ export function useTutorTts(options: UseTutorTtsOptions): UseTutorTtsReturn {
         closeWs();
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [enqueueAudio, closeWs],
   );
 
+  /** Speak a single message (greeting, exercise feedback). Opens WS, sends text, closes. */
   const speak = useCallback(
-    (text: string) => {
+    (text: string, voiceId: string, speechSpeed?: number) => {
       if (!text.trim()) return;
-      log("speak:", text.slice(0, 50));
+      log("speak:", text.slice(0, 50), "voiceId:", voiceId);
 
-      void openWs(() => {
+      void openWs(voiceId, speechSpeed ?? 1.0, () => {
         sendTextToWs(text, true);
         sendEos();
       });
@@ -224,19 +215,24 @@ export function useTutorTts(options: UseTutorTtsOptions): UseTutorTtsReturn {
     [openWs, sendTextToWs, sendEos],
   );
 
-  const startStream = useCallback(() => {
-    log("startStream");
-    isStreamingRef.current = true;
-    pendingTextRef.current = [];
-
-    void openWs(() => {
-      for (const text of pendingTextRef.current) {
-        sendTextToWs(text, true);
-      }
+  /** Start a streaming TTS session. Call sendChunk() for each sentence, then endStream(). */
+  const startStream = useCallback(
+    (voiceId: string, speechSpeed?: number) => {
+      log("startStream, voiceId:", voiceId);
+      isStreamingRef.current = true;
       pendingTextRef.current = [];
-    });
-  }, [openWs, sendTextToWs]);
 
+      void openWs(voiceId, speechSpeed ?? 1.0, () => {
+        for (const text of pendingTextRef.current) {
+          sendTextToWs(text, true);
+        }
+        pendingTextRef.current = [];
+      });
+    },
+    [openWs, sendTextToWs],
+  );
+
+  /** Send a text chunk (sentence) during a streaming session. */
   const sendChunk = useCallback(
     (text: string) => {
       if (!text.trim()) return;
@@ -250,6 +246,7 @@ export function useTutorTts(options: UseTutorTtsOptions): UseTutorTtsReturn {
     [sendTextToWs],
   );
 
+  /** End the streaming session. */
   const endStream = useCallback(() => {
     log("endStream");
     isStreamingRef.current = false;
@@ -259,6 +256,7 @@ export function useTutorTts(options: UseTutorTtsOptions): UseTutorTtsReturn {
     }
   }, [sendEos]);
 
+  /** Stop everything — close WS, stop audio. */
   const stop = useCallback(() => {
     log("stop");
     isStreamingRef.current = false;

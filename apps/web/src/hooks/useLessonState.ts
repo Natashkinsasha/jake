@@ -31,10 +31,7 @@ export function useLessonState(token?: string | null) {
   const speechSpeedRef = useRef<number>(1.0);
   const streamStartedRef = useRef(false);
 
-  const tts = useTutorTts({
-    voiceId: voiceIdRef.current,
-    speechSpeed: speechSpeedRef.current,
-  });
+  const tts = useTutorTts();
   const ttsRef = useRef(tts);
   ttsRef.current = tts;
 
@@ -81,8 +78,8 @@ export function useLessonState(token?: string | null) {
           currentExercise: action.exercise,
           status: "idle",
         }));
-        if (action.text) {
-          ttsRef.current.speak(action.text);
+        if (action.text && voiceIdRef.current) {
+          ttsRef.current.speak(action.text, voiceIdRef.current, speechSpeedRef.current);
         }
         break;
 
@@ -96,9 +93,9 @@ export function useLessonState(token?: string | null) {
           break;
         }
 
-        if (!streamStartedRef.current) {
+        if (!streamStartedRef.current && voiceIdRef.current) {
           streamStartedRef.current = true;
-          ttsRef.current.startStream();
+          ttsRef.current.startStream(voiceIdRef.current, speechSpeedRef.current);
         }
 
         ttsRef.current.sendChunk(action.text);
