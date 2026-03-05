@@ -46,6 +46,7 @@ export interface LessonEventData {
   chunkIndex?: number;
   fullText?: string;
   messageId?: string;
+  discarded?: boolean;
 }
 
 interface EventContext {
@@ -58,6 +59,7 @@ export type LessonAction =
   | { type: "show_message"; text: string; exercise: LessonExercise | null; status: string }
   | { type: "stream_chunk"; chunkIndex: number; text: string; messageId?: string }
   | { type: "stream_end"; fullText: string; exercise: LessonExercise | null; messageId?: string }
+  | { type: "stream_discard" }
   | { type: "discard" };
 
 export function handleLessonEvent(
@@ -110,6 +112,9 @@ export function handleLessonEvent(
     }
 
     case "tutor_stream_end":
+      if (data.discarded) {
+        return { type: "stream_discard" };
+      }
       return {
         type: "stream_end",
         fullText: data.fullText ?? "",

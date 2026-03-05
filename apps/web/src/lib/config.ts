@@ -24,13 +24,13 @@ export const STT_CONFIG = {
   LANGUAGE: "en",
   SMART_FORMAT: true,
   INTERIM_RESULTS: true,
-  ENDPOINTING_MS: 300,
+  ENDPOINTING_MS: 200,
   VAD_EVENTS: true,
 } as const;
 
 // Lesson
 export const LESSON_CONFIG = {
-  SILENCE_MS: 1000,
+  SILENCE_MS: 500,
 } as const;
 
 // Chat streaming

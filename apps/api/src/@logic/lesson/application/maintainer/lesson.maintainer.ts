@@ -4,7 +4,7 @@ import { LessonMessageRepository } from "../../infrastructure/repository/lesson-
 import { LessonContextService } from "../service/lesson-context.service";
 import { LessonResponseService } from "../service/lesson-response.service";
 import { StreamingPipelineService } from "../service/streaming-pipeline.service";
-import type { StreamCallbacks, StreamChunk } from "../service/streaming-pipeline.service";
+import type { StreamCallbacks } from "../service/streaming-pipeline.service";
 import type { LlmMessage } from "../../../../@lib/provider/src";
 import { Queue } from "bullmq";
 import { InjectQueue } from "@nestjs/bullmq";
@@ -155,20 +155,29 @@ export class LessonMaintainer {
     ];
 
     // Layer 2: LLM moderation runs in parallel with streaming.
-    // Haiku (~200ms) typically resolves before Sonnet's first chunk (~500ms+).
-    const gate = this.createModerationGate(userId, session.lessonId, text, callbacks);
+    // Optimistic strategy: chunks are sent to client immediately (no buffering).
+    // If moderation flags the input, we discard the stream and send a safety response.
+    const moderationPromise = this.moderationService
+      .llmCheck(text, { userId, lessonId: session.lessonId })
+      .catch((err: unknown) => {
+        this.logger.error(`LLM moderation failed, allowing message: ${err instanceof Error ? err.message : String(err)}`);
+        return { isSafe: true as const, reason: null };
+      });
 
     await this.streamingPipeline.stream(
       session.systemPrompt,
       updatedHistory,
       {
-        onChunk: (chunk) => { gate.handleChunk(chunk); },
+        onChunk: (chunk) => { callbacks.onChunk(chunk); },
         onEnd: (result) => {
           void (async () => {
-            await gate.waitForVerdict();
+            const modResult = await moderationPromise;
 
-            if (!gate.isSafe) {
-              this.emitSafetyResponse(callbacks);
+            if (options?.signal?.aborted) return;
+
+            if (!modResult.isSafe) {
+              this.logger.warn(`LLM flagged input from ${userId}: reason=${modResult.reason}`);
+              callbacks.onDiscard?.(SAFETY_RESPONSE);
               return;
             }
 
@@ -197,54 +206,6 @@ export class LessonMaintainer {
       },
       { signal: options?.signal },
     );
-  }
-
-  private createModerationGate(
-    userId: string,
-    lessonId: string,
-    text: string,
-    callbacks: StreamCallbacks,
-  ) {
-    let resolved = false;
-    let safe = true;
-    const pending: StreamChunk[] = [];
-
-    const promise = this.moderationService
-      .llmCheck(text, { userId, lessonId })
-      .then((result) => {
-        resolved = true;
-        safe = result.isSafe;
-
-        if (!result.isSafe) {
-          this.logger.warn(`LLM flagged input from ${userId}: reason=${result.reason}`);
-        } else {
-          for (const chunk of pending) {
-            callbacks.onChunk(chunk);
-          }
-          pending.length = 0;
-        }
-      })
-      .catch((err: unknown) => {
-        this.logger.error(`LLM moderation failed, allowing message: ${err instanceof Error ? err.message : String(err)}`);
-        resolved = true;
-        safe = true;
-        for (const chunk of pending) {
-          callbacks.onChunk(chunk);
-        }
-        pending.length = 0;
-      });
-
-    return {
-      handleChunk(chunk: StreamChunk) {
-        if (!resolved) {
-          pending.push(chunk);
-        } else if (safe) {
-          callbacks.onChunk(chunk);
-        }
-      },
-      waitForVerdict: () => promise,
-      get isSafe() { return safe; },
-    };
   }
 
   private emitSafetyResponse(callbacks: StreamCallbacks) {

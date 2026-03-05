@@ -20,6 +20,7 @@ export interface StreamCallbacks {
   onChunk(chunk: StreamChunk): void;
   onEnd(result: StreamResult): void;
   onError(error: Error): void;
+  onDiscard?(safetyText: string): void;
 }
 
 @Injectable()

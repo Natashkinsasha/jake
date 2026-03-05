@@ -229,6 +229,34 @@ export function useLessonState(token?: string | null) {
         break;
       }
 
+      case "stream_discard": {
+        // Moderation flagged the input after chunks were already sent.
+        // Stop TTS, clear audio queue, remove partial assistant message.
+        // Decrement pendingTurns so the follow-up safety tutor_message is not discarded.
+        pendingTurnsRef.current = Math.max(0, pendingTurnsRef.current - 1);
+        activeMessageIdRef.current = null;
+        streamStartedRef.current = false;
+        ttsRef.current.stop();
+
+        for (const t of revealTimersRef.current) clearTimeout(t);
+        revealTimersRef.current = [];
+
+        isStreamingModeRef.current = false;
+        pendingSentencesRef.current = [];
+        streamFullTextRef.current = "";
+        streamExerciseRef.current = null;
+
+        setState((prev) => {
+          const messages = [...prev.messages];
+          const last = messages[messages.length - 1];
+          if (last?.role === "assistant") {
+            messages.pop();
+          }
+          return { ...prev, messages, status: "idle" };
+        });
+        break;
+      }
+
       case "discard":
         if (event === "tutor_message" || event === "exercise_feedback" || event === "tutor_chunk") {
           console.log("[Lesson] discarding", event);
