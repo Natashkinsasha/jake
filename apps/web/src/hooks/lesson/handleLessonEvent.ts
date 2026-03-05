@@ -46,6 +46,7 @@ export interface LessonEventData {
   message?: string;
   chunkIndex?: number;
   fullText?: string;
+  messageId?: string;
 }
 
 interface EventContext {
@@ -63,8 +64,8 @@ export type LessonAction =
   | { type: "set_state"; patch: Record<string, unknown> }
   | { type: "play_audio"; audio: string; pending: PendingMessage }
   | { type: "show_message"; text: string; exercise: LessonExercise | null; status: string }
-  | { type: "stream_chunk"; chunkIndex: number; text: string; audio: string }
-  | { type: "stream_end"; fullText: string; exercise: LessonExercise | null }
+  | { type: "stream_chunk"; chunkIndex: number; text: string; audio: string; messageId?: string }
+  | { type: "stream_end"; fullText: string; exercise: LessonExercise | null; messageId?: string }
   | { type: "discard" };
 
 export function handleLessonEvent(
@@ -133,6 +134,7 @@ export function handleLessonEvent(
         chunkIndex: data.chunkIndex ?? 0,
         text: data.text ?? "",
         audio: data.audio ?? "",
+        messageId: data.messageId,
       };
     }
 
@@ -141,6 +143,7 @@ export function handleLessonEvent(
         type: "stream_end",
         fullText: data.fullText ?? "",
         exercise: mapExercise(data.exercise),
+        messageId: data.messageId,
       };
 
     case "status":

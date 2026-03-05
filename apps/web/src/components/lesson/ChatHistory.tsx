@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { ExerciseCard } from "./ExerciseCard";
 import type { ChatMessage, LessonExercise } from "@/types";
@@ -11,46 +11,6 @@ interface ChatHistoryProps {
   isSpeaking: boolean;
   currentExercise: LessonExercise | null;
   onSubmitExercise: (exerciseId: string, answer: string) => void;
-  onRevealedWords?: (count: number) => void;
-}
-
-const TICK_MS = 300;
-
-function StreamingText({
-  text,
-  isActive,
-  onRevealedWords,
-}: {
-  text: string;
-  isActive: boolean;
-  onRevealedWords?: (count: number) => void;
-}) {
-  const words = text.split(" ");
-  const [count, setCount] = useState(1);
-  const wasActiveRef = useRef(false);
-  const [frozen, setFrozen] = useState(false);
-
-  if (isActive) wasActiveRef.current = true;
-
-  useEffect(() => {
-    if (wasActiveRef.current && !isActive && count < words.length) {
-      setFrozen(true);
-    }
-  }, [isActive, count, words.length]);
-
-  useEffect(() => {
-    if (frozen || !isActive || count >= words.length) return;
-    const timer = setTimeout(() => { setCount((c) => Math.min(c + 1, words.length)); }, TICK_MS);
-    return () => { clearTimeout(timer); };
-  }, [count, words.length, frozen, isActive]);
-
-  useEffect(() => {
-    onRevealedWords?.(count);
-  }, [count, onRevealedWords]);
-
-  if (!wasActiveRef.current) return <>{text}</>;
-  if (frozen) return <>{words.slice(0, count).join(" ")}...</>;
-  return <>{words.slice(0, count).join(" ")}</>;
 }
 
 export function ChatHistory({
@@ -59,7 +19,6 @@ export function ChatHistory({
   isSpeaking,
   currentExercise,
   onSubmitExercise,
-  onRevealedWords,
 }: ChatHistoryProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const lastAssistantIdx = messages.length - 1 - [...messages].reverse().findIndex((m) => m.role === "assistant");
@@ -84,11 +43,7 @@ export function ChatHistory({
               "text-white text-[15px] leading-relaxed max-w-[85%]",
               i === lastAssistantIdx && isLastAssistantNew ? "" : "opacity-70",
             )}>
-              {i === lastAssistantIdx && isLastAssistantNew ? (
-                <StreamingText text={msg.text} isActive={isSpeaking} onRevealedWords={onRevealedWords} />
-              ) : (
-                msg.text
-              )}
+              {msg.text}
             </p>
           )}
 

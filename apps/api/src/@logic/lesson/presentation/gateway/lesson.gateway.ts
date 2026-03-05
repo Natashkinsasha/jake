@@ -23,6 +23,7 @@ interface SocketData {
 
 const wsTextMessageSchema = z.object({
   text: z.string().min(1),
+  messageId: z.string().optional(),
 });
 
 const wsSetSpeedSchema = z.object({
@@ -170,6 +171,8 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const abortController = new AbortController();
     this.abortControllers.set(client.id, abortController);
 
+    const messageId = parsed.data.messageId;
+
     client.emit("status", { state: "thinking" });
 
     await this.lessonMaintainer.processTextMessageStreaming(
@@ -181,7 +184,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
       session.voiceId,
       {
         onChunk: (chunk) => {
-          client.emit("tutor_chunk", chunk);
+          client.emit("tutor_chunk", { ...chunk, messageId });
         },
         onEnd: (result) => {
           this.abortControllers.delete(client.id);
@@ -194,6 +197,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
             client.emit("tutor_stream_end", {
               fullText: result.fullText,
               exercise: result.exercise,
+              messageId,
             });
           });
         },

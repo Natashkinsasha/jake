@@ -24,7 +24,7 @@ export function LessonScreen({ token }: LessonScreenProps) {
     messages, currentExercise, status, connected, isPlaying,
     lessonEnded: serverLessonEnded, error: lessonError, sendText,
     submitExerciseAnswer, endLesson, interruptTutor, stopAllAudio,
-    playPending, setUserSpeaking, setRevealedWords,
+    playPending, setUserSpeaking,
   } = useLessonState(token);
 
   const [isMuted, setIsMuted] = useState(false);
@@ -157,7 +157,6 @@ export function LessonScreen({ token }: LessonScreenProps) {
         isSpeaking={isTutorActive}
         currentExercise={currentExercise}
         onSubmitExercise={submitExerciseAnswer}
-        onRevealedWords={setRevealedWords}
       />
 
       {liveTranscript && (

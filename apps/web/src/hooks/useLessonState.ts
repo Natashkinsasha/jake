@@ -29,7 +29,11 @@ export function useLessonState(token?: string | null) {
   const pendingAudioRef = useRef<string | null>(null);
   const userSpeakingRef = useRef(false);
   const pendingTurnsRef = useRef(0);
-  const revealedWordsRef = useRef<number>(Infinity);
+
+  // messageId: frontend generates an ID per sendText call, backend echoes it.
+  // Only chunks/stream_end matching this ID are accepted. Prevents stale chunks
+  // from a previous (aborted) generation from polluting the current state.
+  const activeMessageIdRef = useRef<string | null>(null);
 
   // Streaming: buffer text chunks, reveal in sync with audio playback.
   // stream_end data is saved to a ref and applied only when all audio finishes.
@@ -162,6 +166,17 @@ export function useLessonState(token?: string | null) {
         break;
 
       case "stream_chunk": {
+        // Reject stale chunks from a previous (aborted) generation
+        if (action.messageId && activeMessageIdRef.current && action.messageId !== activeMessageIdRef.current) {
+          console.log("[Lesson] discarding stale chunk, messageId mismatch");
+          break;
+        }
+        // After interrupt activeMessageIdRef is null — reject any chunk with a messageId
+        if (action.messageId && !activeMessageIdRef.current) {
+          console.log("[Lesson] discarding chunk, no active generation");
+          break;
+        }
+
         streamChunksRef.current.push(action.text);
         audioDoneRef.current = false;
 
@@ -197,6 +212,18 @@ export function useLessonState(token?: string | null) {
       }
 
       case "stream_end": {
+        // Reject stale stream_end from a previous generation
+        if (action.messageId && activeMessageIdRef.current && action.messageId !== activeMessageIdRef.current) {
+          console.log("[Lesson] discarding stale stream_end, messageId mismatch");
+          break;
+        }
+        if (action.messageId && !activeMessageIdRef.current) {
+          console.log("[Lesson] discarding stream_end, no active generation");
+          break;
+        }
+
+        activeMessageIdRef.current = null; // generation finished
+
         const endData = { fullText: action.fullText, exercise: action.exercise };
 
         if (audioDoneRef.current) {
@@ -242,7 +269,9 @@ export function useLessonState(token?: string | null) {
       if (!text.trim()) return;
       pendingTurnsRef.current++;
       const trimmed = text.trim();
-      console.log("[Lesson] sendText:", trimmed, `(pendingTurns=${pendingTurnsRef.current})`);
+      const messageId = crypto.randomUUID();
+      activeMessageIdRef.current = messageId;
+      console.log("[Lesson] sendText:", trimmed, `(pendingTurns=${pendingTurnsRef.current}, messageId=${messageId})`);
       setState((prev) => {
         const last = prev.messages[prev.messages.length - 1];
         if (last?.role === "user") {
@@ -262,7 +291,7 @@ export function useLessonState(token?: string | null) {
           status: "thinking",
         };
       });
-      emit("text", { text: trimmed });
+      emit("text", { text: trimmed, messageId });
     },
     [emit],
   );
@@ -283,19 +312,18 @@ export function useLessonState(token?: string | null) {
     audioQueue.stop();
     emit("interrupt", {});
 
-    const visibleWords = revealedWordsRef.current;
+    // Clear messageId — any late chunks from old generation will be rejected
+    activeMessageIdRef.current = null;
 
     setState((prev) => {
       const messages = [...prev.messages];
       const last = messages[messages.length - 1];
-      if (last?.role === "assistant" && visibleWords < Infinity) {
-        const words = last.text.split(" ");
-        if (visibleWords < words.length) {
-          messages[messages.length - 1] = {
-            ...last,
-            text: words.slice(0, visibleWords).join(" ") + "...",
-          };
-        }
+      // Append "..." to show interruption, keep whatever text was already shown
+      if (last?.role === "assistant" && last.text && prev.status === "speaking") {
+        messages[messages.length - 1] = {
+          ...last,
+          text: last.text + "...",
+        };
       }
       return {
         ...prev,
@@ -308,15 +336,10 @@ export function useLessonState(token?: string | null) {
     streamChunksRef.current = [];
     streamEndRef.current = null;
     audioDoneRef.current = true;
-    revealedWordsRef.current = Infinity;
   }, [audioQueue, emit]);
 
   const setUserSpeaking = useCallback((speaking: boolean) => {
     userSpeakingRef.current = speaking;
-  }, []);
-
-  const setRevealedWords = useCallback((count: number) => {
-    revealedWordsRef.current = count;
   }, []);
 
   const playPending = useCallback(() => {
@@ -339,6 +362,5 @@ export function useLessonState(token?: string | null) {
     stopAllAudio: useCallback(() => { audioQueue.stop(); }, [audioQueue]),
     playPending: state.hasPending ? playPending : null,
     setUserSpeaking,
-    setRevealedWords,
   };
 }
