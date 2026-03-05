@@ -167,6 +167,7 @@ export class AnthropicLlmProvider extends LlmProvider {
 
         this.logger.debug(`LLM tool_use response: inputTokens=${response.usage.input_tokens}, outputTokens=${response.usage.output_tokens}`);
 
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
         const sanitized = this.sanitizeNullStrings(toolBlock.input);
         const result = schema.safeParse(sanitized);
         if (!result.success) {
@@ -196,6 +197,7 @@ export class AnthropicLlmProvider extends LlmProvider {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private sanitizeNullStrings(obj: any): any {
     if (obj === "null") return null;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     if (Array.isArray(obj)) return obj.map((v: unknown) => this.sanitizeNullStrings(v));
     if (obj !== null && typeof obj === "object") {
       const result: Record<string, unknown> = {};

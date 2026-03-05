@@ -44,7 +44,7 @@ export function useLessonState(token?: string | null) {
     if (event === "lesson_started") {
       const d = data as LessonEventData & { voiceId?: string; speechSpeed?: number };
       if (d.voiceId) voiceIdRef.current = d.voiceId;
-      if (d.speechSpeed) speechSpeedRef.current = d.speechSpeed;
+      if (d.speechSpeed != null) speechSpeedRef.current = d.speechSpeed;
     }
 
     const action = handleLessonEvent(event, data, {

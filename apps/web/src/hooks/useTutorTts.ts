@@ -56,11 +56,12 @@ export function useTutorTts(options: UseTutorTtsOptions): UseTutorTtsReturn {
       playingRef.current = false;
       setIsSpeaking(false);
       log("all audio done");
-      optionsRef.current?.onAllDone?.();
+      optionsRef.current.onAllDone?.();
       return;
     }
 
-    const base64 = audioQueueRef.current.shift()!;
+    const base64 = audioQueueRef.current.shift();
+    if (!base64) return;
     cleanupAudio();
 
     try {
@@ -103,7 +104,7 @@ export function useTutorTts(options: UseTutorTtsOptions): UseTutorTtsReturn {
       if (!playingRef.current) {
         playingRef.current = true;
         setIsSpeaking(true);
-        optionsRef.current?.onPlayStart?.();
+        optionsRef.current.onPlayStart?.();
         playNext();
       }
       // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -144,7 +145,7 @@ export function useTutorTts(options: UseTutorTtsOptions): UseTutorTtsReturn {
 
   const openWs = useCallback(
     async (onReady: () => void) => {
-      const voiceId = optionsRef.current?.voiceId;
+      const voiceId = optionsRef.current.voiceId;
       if (!voiceId) {
         log("no voiceId, skipping TTS");
         return;
@@ -152,7 +153,7 @@ export function useTutorTts(options: UseTutorTtsOptions): UseTutorTtsReturn {
 
       try {
         const { token } = await api.tts.token();
-        const speed = optionsRef.current?.speechSpeed ?? 1.0;
+        const speed = optionsRef.current.speechSpeed ?? 1.0;
 
         const wsUrl = `wss://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream-input?model_id=${TTS_CONFIG.MODEL}&output_format=${TTS_CONFIG.OUTPUT_FORMAT}`;
         const ws = new WebSocket(wsUrl);
