@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, useCallback } from "react";
+import { useRef, useState, useCallback, useEffect } from "react";
 import { useCallbackRef } from "./useCallbackRef";
 import { api } from "@/lib/api";
 import { TTS_CONFIG } from "@/lib/config";
@@ -8,7 +8,7 @@ import { createLogger } from "./logger";
 
 interface UseTutorTtsOptions {
   onPlayStart?: () => void;
-  onAudioPlay?: (duration: number) => void;
+  onAudioReceived?: (estimatedTotalSec: number) => void;
   onAllDone?: () => void;
 }
 
@@ -27,11 +27,16 @@ const log = createLogger("TTS");
 export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   const [isSpeaking, setIsSpeaking] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);
-  const audioQueueRef = useRef<Blob[]>([]);
-  const playingRef = useRef(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const urlRef = useRef<string | null>(null);
   const optionsRef = useCallbackRef(options);
+
+  // AudioContext gapless playback (pre-decode + sequential play)
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const decodedQueueRef = useRef<AudioBuffer[]>([]);
+  const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const playingRef = useRef(false);
+  const pendingDecodesRef = useRef(0);
+  const allReceivedRef = useRef(false);
+  const audioGenRef = useRef(0);
 
   const pendingTextRef = useRef<string[]>([]);
   const isStreamingRef = useRef(false);
@@ -39,77 +44,113 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   const eosRequestedRef = useRef(false);
   const openGenRef = useRef(0);
   const connectingRef = useRef(false);
+  const estimatedDurationRef = useRef(0);
 
-  const cleanupAudio = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.onloadedmetadata = null;
-      audioRef.current.onended = null;
-      audioRef.current.onerror = null;
-      audioRef.current = null;
+  const ensureAudioCtx = useCallback(() => {
+    if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
+      audioCtxRef.current = new AudioContext();
     }
-    if (urlRef.current) {
-      URL.revokeObjectURL(urlRef.current);
-      urlRef.current = null;
+    if (audioCtxRef.current.state === "suspended") {
+      void audioCtxRef.current.resume();
     }
+    return audioCtxRef.current;
   }, []);
 
-  const playNext = useCallback(() => {
-    if (audioQueueRef.current.length === 0) {
+  const checkDone = useCallback(() => {
+    if (
+      allReceivedRef.current &&
+      pendingDecodesRef.current === 0 &&
+      decodedQueueRef.current.length === 0 &&
+      !currentSourceRef.current
+    ) {
       playingRef.current = false;
       setIsSpeaking(false);
+      allReceivedRef.current = false;
       log("all audio done");
       optionsRef.current?.onAllDone?.();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const playNextBuffer = useCallback(() => {
+    if (decodedQueueRef.current.length === 0) {
+      currentSourceRef.current = null;
+      checkDone();
       return;
     }
 
-    const blob = audioQueueRef.current.shift();
-    if (!blob) return;
-    cleanupAudio();
+    const audioBuffer = decodedQueueRef.current.shift();
+    if (!audioBuffer) return;
+    const ctx = ensureAudioCtx();
+    const source = ctx.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(ctx.destination);
+    source.start();
+    currentSourceRef.current = source;
 
-    const url = URL.createObjectURL(blob);
-    urlRef.current = url;
+    log(`playing chunk (${Math.round(audioBuffer.duration * 1000)}ms)`);
 
-    const audio = new Audio(url);
-    audioRef.current = audio;
-
-    audio.onloadedmetadata = () => {
-      if (Number.isFinite(audio.duration)) {
-        optionsRef.current?.onAudioPlay?.(audio.duration);
+    source.onended = () => {
+      if (currentSourceRef.current === source) {
+        currentSourceRef.current = null;
       }
+      playNextBuffer();
     };
-
-    audio.onended = () => {
-      cleanupAudio();
-      playNext();
-    };
-    audio.onerror = () => {
-      log("audio playback error");
-      cleanupAudio();
-      playNext();
-    };
-
-    log(`playing chunk (${blob.size} bytes)`);
-    audio.play().catch(() => {
-      cleanupAudio();
-      playNext();
-    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cleanupAudio]);
+  }, [ensureAudioCtx, checkDone]);
 
   const enqueueAudio = useCallback(
     (blob: Blob) => {
-      audioQueueRef.current.push(blob);
       if (!playingRef.current) {
         playingRef.current = true;
         setIsSpeaking(true);
         optionsRef.current?.onPlayStart?.();
-        playNext();
       }
+
+      const gen = audioGenRef.current;
+      pendingDecodesRef.current++;
+      const ctx = ensureAudioCtx();
+
+      void blob
+        .arrayBuffer()
+        .then((buf) => ctx.decodeAudioData(buf))
+        .then((audioBuffer) => {
+          if (audioGenRef.current !== gen) return;
+          pendingDecodesRef.current--;
+          estimatedDurationRef.current += audioBuffer.duration;
+          optionsRef.current?.onAudioReceived?.(estimatedDurationRef.current);
+          decodedQueueRef.current.push(audioBuffer);
+          if (!currentSourceRef.current) {
+            playNextBuffer();
+          }
+        })
+        .catch((err: unknown) => {
+          if (audioGenRef.current !== gen) return;
+          log("audio decode error:", err);
+          pendingDecodesRef.current--;
+          checkDone();
+        });
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [playNext],
+    [ensureAudioCtx, playNextBuffer, checkDone],
   );
+
+  const stopAudio = useCallback(() => {
+    audioGenRef.current++;
+    if (currentSourceRef.current) {
+      try {
+        currentSourceRef.current.stop();
+      } catch {
+        // Already stopped
+      }
+      currentSourceRef.current = null;
+    }
+    decodedQueueRef.current = [];
+    pendingDecodesRef.current = 0;
+    allReceivedRef.current = false;
+    playingRef.current = false;
+    setIsSpeaking(false);
+  }, []);
 
   const closeWs = useCallback(() => {
     const ws = wsRef.current;
@@ -168,8 +209,6 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
         const ws = new WebSocket(wsUrl);
         wsRef.current = ws;
 
-        const audioChunks: BlobPart[] = [];
-
         const decodeBase64 = (b64: string): ArrayBuffer => {
           const binary = atob(b64);
           const bytes = new Uint8Array(binary.length);
@@ -177,15 +216,6 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
             bytes[i] = binary.charCodeAt(i);
           }
           return bytes.buffer;
-        };
-
-        const flushAudio = () => {
-          if (audioChunks.length > 0) {
-            const blob = new Blob(audioChunks, { type: "audio/mpeg" });
-            log("enqueuing audio blob:", blob.size, "bytes");
-            enqueueAudio(blob);
-            audioChunks.length = 0;
-          }
         };
 
         ws.onopen = () => {
@@ -227,14 +257,16 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
           if (msg.message) log("WS server message:", msg.message);
 
           if (msg.audio) {
-            audioChunks.push(decodeBase64(msg.audio));
-            log("received audio chunk:", msg.audio.length, "chars, isFinal:", msg.isFinal);
+            const buf = decodeBase64(msg.audio);
+            log("received audio chunk:", buf.byteLength, "bytes, isFinal:", msg.isFinal);
+            const blob = new Blob([buf], { type: "audio/mpeg" });
+            enqueueAudio(blob);
           } else {
             log("received message (no audio), isFinal:", msg.isFinal);
           }
 
           if (msg.isFinal) {
-            flushAudio();
+            allReceivedRef.current = true;
             // Close this specific WS instance (not whatever is in wsRef)
             ws.onmessage = null;
             ws.onerror = null;
@@ -244,6 +276,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
               wsRef.current = null;
               wsReadyRef.current = false;
             }
+            checkDone();
           }
         };
 
@@ -256,11 +289,15 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
 
         ws.onclose = (event) => {
           log("WS closed, code:", event.code, "reason:", event.reason || "(none)");
-          // If server closed before isFinal, flush any buffered audio
-          flushAudio();
           if (wsRef.current === ws) {
             wsRef.current = null;
             wsReadyRef.current = false;
+          }
+          // Safety net: if WS closed without isFinal (server crash, network drop),
+          // mark as received so checkDone can finalize playback
+          if (!allReceivedRef.current) {
+            allReceivedRef.current = true;
+            checkDone();
           }
         };
       } catch (error) {
@@ -269,7 +306,8 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
         closeWs();
       }
     },
-    [enqueueAudio, closeWs, sendTextToWs, sendEos],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [enqueueAudio, closeWs, sendTextToWs, sendEos, checkDone],
   );
 
   /** Speak a single message (greeting, exercise feedback). Opens WS, sends text, closes. */
@@ -348,12 +386,16 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
     log("stop");
     isStreamingRef.current = false;
     openGenRef.current++;
+    estimatedDurationRef.current = 0;
     closeWs();
-    audioQueueRef.current = [];
-    cleanupAudio();
-    playingRef.current = false;
-    setIsSpeaking(false);
-  }, [closeWs, cleanupAudio]);
+    stopAudio();
+  }, [closeWs, stopAudio]);
+
+  useEffect(() => {
+    return () => {
+      void audioCtxRef.current?.close();
+    };
+  }, []);
 
   return { speak, preWarm, startStream, sendChunk, endStream, stop, isSpeaking };
 }

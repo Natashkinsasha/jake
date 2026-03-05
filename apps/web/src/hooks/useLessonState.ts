@@ -36,19 +36,36 @@ export function useLessonState(token?: string | null) {
   const revealTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
   const streamFullTextRef = useRef<string>("");
   const isStreamingModeRef = useRef(false);
+  const revealedCharsRef = useRef(0);
+  const revealStartTimeRef = useRef(0);
+  const estimatedTotalDurRef = useRef(0);
 
-  const scheduleReveals = useCallback((duration: number) => {
-    const fullText = pendingSentencesRef.current.join(" ");
-    const totalChars = fullText.length;
-    if (totalChars === 0) return;
-
-    const durationMs = duration * 1000;
-    const startTime = performance.now();
+  const startRevealTimer = useCallback(() => {
+    for (const t of revealTimersRef.current) clearTimeout(t);
+    revealTimersRef.current = [];
+    revealStartTimeRef.current = performance.now();
+    let lastTickTime = performance.now();
 
     const tick = () => {
-      const elapsed = performance.now() - startTime;
-      const progress = Math.min(elapsed / durationMs, 1);
-      const charIndex = Math.floor(progress * totalChars);
+      const fullText = streamFullTextRef.current || pendingSentencesRef.current.join(" ");
+      const totalChars = fullText.length;
+      const totalDur = estimatedTotalDurRef.current;
+      if (totalChars === 0 || totalDur === 0) {
+        revealTimersRef.current.push(setTimeout(tick, 50));
+        return;
+      }
+
+      const now = performance.now();
+      const dt = (now - lastTickTime) / 1000;
+      lastTickTime = now;
+
+      const elapsed = (now - revealStartTimeRef.current) / 1000;
+      const remainingDur = Math.max(totalDur - elapsed, 0.1);
+      const remainingChars = totalChars - revealedCharsRef.current;
+      const rate = remainingChars / remainingDur;
+      const newChars = Math.max(1, Math.round(rate * dt));
+      const charIndex = Math.min(revealedCharsRef.current + newChars, totalChars);
+      revealedCharsRef.current = charIndex;
 
       setState((prev) => {
         const messages = [...prev.messages];
@@ -59,7 +76,7 @@ export function useLessonState(token?: string | null) {
         return { ...prev, messages };
       });
 
-      if (progress < 1) {
+      if (charIndex < totalChars) {
         revealTimersRef.current.push(setTimeout(tick, 50));
       }
     };
@@ -95,12 +112,17 @@ export function useLessonState(token?: string | null) {
     isStreamingModeRef.current = false;
     pendingSentencesRef.current = [];
     streamFullTextRef.current = "";
+    revealedCharsRef.current = 0;
+          estimatedTotalDurRef.current = 0;
   }, []);
 
   const tts = useTutorTts({
-    onAudioPlay: (duration) => {
+    onPlayStart: () => {
       if (!isStreamingModeRef.current) return;
-      scheduleReveals(duration);
+      startRevealTimer();
+    },
+    onAudioReceived: (estimatedTotalSec) => {
+      estimatedTotalDurRef.current = estimatedTotalSec;
     },
     onAllDone: () => {
       if (!isStreamingModeRef.current) return;
@@ -154,6 +176,8 @@ export function useLessonState(token?: string | null) {
           isStreamingModeRef.current = true;
           pendingSentencesRef.current = [action.text];
           streamFullTextRef.current = action.text;
+          revealedCharsRef.current = 0;
+          estimatedTotalDurRef.current = 0;
 
           setState((prev) => ({
             ...prev,
@@ -195,6 +219,8 @@ export function useLessonState(token?: string | null) {
           streamStartedRef.current = true;
           isStreamingModeRef.current = true;
           pendingSentencesRef.current = [];
+          revealedCharsRef.current = 0;
+          estimatedTotalDurRef.current = 0;
           ttsRef.current.startStream(voiceIdRef.current, speechSpeedRef.current);
         }
 
@@ -246,6 +272,8 @@ export function useLessonState(token?: string | null) {
         isStreamingModeRef.current = false;
         pendingSentencesRef.current = [];
         streamFullTextRef.current = "";
+        revealedCharsRef.current = 0;
+          estimatedTotalDurRef.current = 0;
 
         setState((prev) => {
           const messages = [...prev.messages];
@@ -321,6 +349,8 @@ export function useLessonState(token?: string | null) {
       isStreamingModeRef.current = false;
       pendingSentencesRef.current = [];
       streamFullTextRef.current = "";
+      revealedCharsRef.current = 0;
+          estimatedTotalDurRef.current = 0;
 
       // Keep only already-revealed text; remove placeholder if nothing shown yet
       setState((prev) => {
