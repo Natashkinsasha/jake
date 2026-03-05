@@ -327,6 +327,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   /** Pre-warm: fetch token + open WS to ElevenLabs before first chunk arrives. */
   const preWarm = useCallback(
     (voiceId: string, speechSpeed?: number) => {
+      // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
       if (wsRef.current || connectingRef.current) return;
       log("preWarm");
       void openWs(voiceId, speechSpeed ?? 1.0, () => {});
@@ -342,6 +343,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
       eosRequestedRef.current = false;
 
       // If WS already exists or token fetch in progress (pre-warmed), reuse it
+      // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
       if (wsRef.current || connectingRef.current) {
         log("startStream: reusing pre-warmed WS");
         return;
