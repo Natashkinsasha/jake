@@ -5,6 +5,7 @@ import { unlockAudio } from "./useAudioPlayer";
 import { useCallbackRef } from "./useCallbackRef";
 import { STT_CONFIG } from "@/lib/config";
 import { api } from "@/lib/api";
+import { createLogger } from "./logger";
 
 interface UseStudentSttReturn {
   enable: () => void;
@@ -32,7 +33,7 @@ interface DeepgramResult {
   speech_final?: boolean;
 }
 
-const log = (...args: unknown[]) => { console.log("[STT]", ...args); };
+const log = createLogger("STT");
 
 const DG_PARAMS = new URLSearchParams({
   model: STT_CONFIG.MODEL,

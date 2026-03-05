@@ -4,6 +4,7 @@ import { useRef, useState, useCallback } from "react";
 import { useCallbackRef } from "./useCallbackRef";
 import { api } from "@/lib/api";
 import { TTS_CONFIG } from "@/lib/config";
+import { createLogger } from "./logger";
 
 interface UseTutorTtsOptions {
   onPlayStart?: () => void;
@@ -21,9 +22,7 @@ interface UseTutorTtsReturn {
   isSpeaking: boolean;
 }
 
-const log = (...args: unknown[]) => {
-  console.log("[TTS]", ...args);
-};
+const log = createLogger("TTS");
 
 export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   const [isSpeaking, setIsSpeaking] = useState(false);

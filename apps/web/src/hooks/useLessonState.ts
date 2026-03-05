@@ -3,7 +3,10 @@ import { useWebSocket } from "./useWebSocket";
 import { useTutorTts } from "./useTutorTts";
 import { handleLessonEvent, type LessonEventData } from "./lesson/handleLessonEvent";
 import { WS_URL } from "@/lib/config";
+import { createLogger } from "./logger";
 import type { ChatMessage, LessonStatus } from "@/types";
+
+const log = createLogger("Lesson");
 
 interface LessonState {
   lessonId: string | null;
@@ -108,7 +111,7 @@ export function useLessonState(token?: string | null) {
   ttsRef.current = tts;
 
   const handleEvent = useCallback((event: string, data: LessonEventData) => {
-    console.log("[Lesson] event:", event, data.text ? `"${data.text.slice(0, 50)}..."` : "");
+    log("event:", event, data.text ? `"${data.text.slice(0, 50)}..."` : "");
 
     if (event === "lesson_started") {
       const d = data as LessonEventData & { voiceId?: string; speechSpeed?: number };
@@ -121,7 +124,7 @@ export function useLessonState(token?: string | null) {
       const d = data as LessonEventData & { speed?: string };
       if (d.speed && speedMap[d.speed] != null) {
         speechSpeedRef.current = speedMap[d.speed]!;
-        console.log("[Lesson] speed updated to:", d.speed, speechSpeedRef.current);
+        log("speed updated to:", d.speed, speechSpeedRef.current);
       }
       return;
     }
@@ -142,7 +145,7 @@ export function useLessonState(token?: string | null) {
           if (event === "status" && patch["status"] === undefined) return prev;
           return { ...prev, ...patch } as LessonState;
         });
-        if (event === "error") console.error("Lesson error:", data.message);
+        if (event === "error") log("ERROR:", data.message);
         break;
 
       case "show_message":
@@ -180,11 +183,11 @@ export function useLessonState(token?: string | null) {
 
       case "stream_chunk": {
         if (action.messageId && activeMessageIdRef.current && action.messageId !== activeMessageIdRef.current) {
-          console.log("[Lesson] discarding stale chunk, messageId mismatch");
+          log("discarding stale chunk, messageId mismatch");
           break;
         }
         if (action.messageId && !activeMessageIdRef.current) {
-          console.log("[Lesson] discarding chunk, no active generation");
+          log("discarding chunk, no active generation");
           break;
         }
 
@@ -211,11 +214,11 @@ export function useLessonState(token?: string | null) {
 
       case "stream_end": {
         if (action.messageId && activeMessageIdRef.current && action.messageId !== activeMessageIdRef.current) {
-          console.log("[Lesson] discarding stale stream_end, messageId mismatch");
+          log("discarding stale stream_end, messageId mismatch");
           break;
         }
         if (action.messageId && !activeMessageIdRef.current) {
-          console.log("[Lesson] discarding stream_end, no active generation");
+          log("discarding stream_end, no active generation");
           break;
         }
 
@@ -257,7 +260,7 @@ export function useLessonState(token?: string | null) {
 
       case "discard":
         if (event === "tutor_message" || event === "exercise_feedback" || event === "tutor_chunk") {
-          console.log("[Lesson] discarding", event);
+          log("discarding", event);
         }
         break;
     }

@@ -1,4 +1,6 @@
-const log = (...args: unknown[]) => { console.log("[Audio]", ...args); };
+import { createLogger } from "./logger";
+
+const log = createLogger("Audio");
 
 /** Unlock audio playback on user gesture (call from mic permission handler) */
 export function unlockAudio() {
