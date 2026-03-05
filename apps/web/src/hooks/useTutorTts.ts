@@ -38,6 +38,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   const wsReadyRef = useRef(false);
   const eosRequestedRef = useRef(false);
   const openGenRef = useRef(0);
+  const connectingRef = useRef(false);
 
   const cleanupAudio = useCallback(() => {
     if (audioRef.current) {
@@ -122,6 +123,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
       wsRef.current = null;
     }
     wsReadyRef.current = false;
+    connectingRef.current = false;
     pendingTextRef.current = [];
     eosRequestedRef.current = false;
   }, []);
@@ -150,12 +152,14 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
     async (voiceId: string, speechSpeed: number, onReady: () => void) => {
       // Close any existing WS before opening a new one
       closeWs();
+      connectingRef.current = true;
       const gen = ++openGenRef.current;
 
       try {
         const { token } = await api.tts.token();
         if (openGenRef.current !== gen) {
           log("openWs cancelled (stop() called during token fetch)");
+          connectingRef.current = false;
           return;
         }
         log("got single-use token");
@@ -185,6 +189,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
         };
 
         ws.onopen = () => {
+          connectingRef.current = false;
           log("WS connected to ElevenLabs");
           ws.send(
             JSON.stringify({
@@ -260,6 +265,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
         };
       } catch (error) {
         log("failed to open TTS WS:", error);
+        connectingRef.current = false;
         closeWs();
       }
     },
@@ -283,7 +289,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   /** Pre-warm: fetch token + open WS to ElevenLabs before first chunk arrives. */
   const preWarm = useCallback(
     (voiceId: string, speechSpeed?: number) => {
-      if (wsRef.current) return; // Already open or connecting
+      if (wsRef.current || connectingRef.current) return;
       log("preWarm");
       void openWs(voiceId, speechSpeed ?? 1.0, () => {});
     },
@@ -297,8 +303,8 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
       isStreamingRef.current = true;
       eosRequestedRef.current = false;
 
-      // If WS already exists (pre-warmed or connecting), reuse it
-      if (wsRef.current) {
+      // If WS already exists or token fetch in progress (pre-warmed), reuse it
+      if (wsRef.current || connectingRef.current) {
         log("startStream: reusing pre-warmed WS");
         return;
       }
