@@ -292,8 +292,11 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
           if (msg.audio) {
             const buf = decodeBase64(msg.audio);
             log("received audio chunk:", buf.byteLength, "bytes, isFinal:", msg.isFinal);
-            const blob = new Blob([buf], { type: "audio/mpeg" });
-            enqueueAudio(blob);
+            // Skip tiny chunks that aren't valid MP3 frames
+            if (buf.byteLength > 200) {
+              const blob = new Blob([buf], { type: "audio/mpeg" });
+              enqueueAudio(blob);
+            }
           } else {
             log("received message (no audio), isFinal:", msg.isFinal);
           }
