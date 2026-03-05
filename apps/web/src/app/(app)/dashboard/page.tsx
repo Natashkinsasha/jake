@@ -19,7 +19,7 @@ export default function DashboardPage() {
     <div className="max-w-2xl mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900">
-          G'day{user?.name ? `, ${user.name.split(" ")[0]}` : ""}!
+          Hey{user?.name ? `, ${user.name.split(" ")[0]}` : ""}!
         </h1>
         <p className="text-gray-500 mt-1">Ready for a chat with Jake?</p>
       </div>
@@ -29,7 +29,7 @@ export default function DashboardPage() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-bold mb-1">Start a lesson</h2>
-            <p className="text-blue-100">Have a conversation with Jake, your AI mate</p>
+            <p className="text-blue-100">Have a conversation with Jake, your AI tutor</p>
           </div>
           <button
             type="button"

@@ -128,7 +128,7 @@
     system: file://prompts/fact-extraction-system.txt
     message: |
       Context conversation:
-      tutor: Tell me about your family, mate!
+      tutor: Tell me about your family!
       user: I have two kids, a boy and a girl. My son is 5 and my daughter just turned 3. My wife is a teacher.
   assert:
     - type: is-json

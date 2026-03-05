@@ -46,7 +46,7 @@ export default function LoginPage() {
           </button>
 
           <p className="mt-4 text-xs text-gray-400 text-center">
-            By signing in, you agree to practice English with Jake, your AI tutor mate!
+            By signing in, you agree to practice English with Jake, your AI tutor!
           </p>
         </div>
       </div>
