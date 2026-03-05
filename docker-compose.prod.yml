@@ -48,6 +48,7 @@ services:
     environment:
       PORT: 3000
       HOSTNAME: 0.0.0.0
+      INTERNAL_API_URL: http://api:4000
 
   nginx:
     image: nginx:alpine
