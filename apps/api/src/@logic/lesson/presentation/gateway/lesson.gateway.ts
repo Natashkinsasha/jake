@@ -163,8 +163,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    const session = await this.sessionService.get(client.id);
-    if (!session) return;
+    const userId = (client.data as SocketData).userId;
 
     // Cancel any in-flight generation
     this.abortControllers.get(client.id)?.abort();
@@ -176,29 +175,19 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.emit("status", { state: "thinking" });
 
     await this.lessonMaintainer.processTextMessageStreaming(
-      session.lessonId,
-      (client.data as SocketData).userId,
+      client.id,
+      userId,
       parsed.data.text,
-      session.systemPrompt,
-      session.history,
-      session.voiceId,
       {
         onChunk: (chunk) => {
           client.emit("tutor_chunk", { ...chunk, messageId });
         },
         onEnd: (result) => {
           this.abortControllers.delete(client.id);
-
-          void this.sessionService.appendHistory(
-            client.id,
-            { role: "user", content: parsed.data.text },
-            { role: "assistant", content: result.fullText },
-          ).then(() => {
-            client.emit("tutor_stream_end", {
-              fullText: result.fullText,
-              exercise: result.exercise,
-              messageId,
-            });
+          client.emit("tutor_stream_end", {
+            fullText: result.fullText,
+            exercise: result.exercise,
+            messageId,
           });
         },
         onError: (error) => {
@@ -207,7 +196,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
           client.emit("error", { message: "Something went wrong, mate!" });
         },
       },
-      { speechSpeed: session.speechSpeed, signal: abortController.signal },
+      { signal: abortController.signal },
     );
   }
 

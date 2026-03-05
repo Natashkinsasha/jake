@@ -119,7 +119,7 @@ Each domain module in `@logic/` follows this structure:
 | **auth**       | Google OAuth, user management, JWT signing                                           |
 | **lesson**     | Real-time voice lessons, WebSocket gateway, audio pipeline                           |
 | **tutor**      | Tutor profiles (personality, voice, system prompt)                                   |
-| **llm**        | AnthropicLlmProvider — `generate()`, `generateStream()`, `generateJson<T>()` w/ Zod |
+| **llm**        | AnthropicLlmProvider — `generate()`, `generateStream()`, `generateJson<T>()` w/ Zod. Includes `ModerationService` (regex + LLM safety filter, logged to Langfuse via `withSpan()`) |
 | **voice**      | ElevenLabs TTS (`synthesize()`) + Deepgram STT (`transcribe()`)                     |
 | **embedding**  | OpenAI embeddings (1536-dim vectors)                                                 |
 | **memory**     | Two-tier memory: structured facts + vector embeddings                                |
@@ -148,9 +148,9 @@ SharedConfigModule, SharedDrizzlePgModule, SharedRedisModule, SharedAuthModule, 
 
 ### Events
 
-**Client → Server**: `text`, `audio`, `exercise_answer`, `set_speed`, `end_lesson`
+**Client → Server**: `text`, `audio`, `exercise_answer`, `set_speed`, `end_lesson`, `interrupt`
 
-**Server → Client**: `lesson_started`, `tutor_message`, `transcript`, `status`, `exercise_feedback`, `speed_updated`, `lesson_ended`, `error`
+**Server → Client**: `lesson_started`, `tutor_message`, `tutor_chunk`, `tutor_stream_end`, `transcript`, `status`, `exercise_feedback`, `speed_updated`, `lesson_ended`, `error`
 
 ### Flow
 
@@ -158,8 +158,10 @@ SharedConfigModule, SharedDrizzlePgModule, SharedRedisModule, SharedAuthModule, 
 2. Server builds context: facts, memories, preferences, weak grammar topics
 3. Claude generates greeting → ElevenLabs synthesizes → sent as `lesson_started`
 4. User speaks → Deepgram (client-side) transcribes → `text` event sent
-5. Claude generates response → TTS → `tutor_message` with text + base64 MP3
-6. On disconnect/end → lesson saved to DB → `post-lesson` BullMQ job runs async (summary, vocabulary, progress, memory)
+5. Regex pre-filter (instant) → flagged messages get `tutor_message` with safety response
+6. LLM moderation (Haiku) runs in parallel with Sonnet streaming; chunks buffered until moderation resolves. If flagged → discard chunks, send safety response via `tutor_stream_end`
+7. Streaming: Claude generates response → sentence buffer → TTS per sentence → `tutor_chunk` events → `tutor_stream_end` with full text
+8. On disconnect/end → lesson saved to DB → `post-lesson` BullMQ job runs async (summary, vocabulary, progress, memory)
 
 ### Session
 

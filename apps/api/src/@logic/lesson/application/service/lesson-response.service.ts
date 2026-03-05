@@ -13,8 +13,9 @@ export class LessonResponseService {
   async generate(
     systemPrompt: string,
     history: LlmMessage[],
+    spanName = "lesson.response",
   ) {
-    const response = await this.llm.generate(systemPrompt, history);
+    const response = await this.llm.generate(systemPrompt, history, undefined, spanName);
     const exercise = this.exerciseParser.extract(response.text);
     const cleanText = this.exerciseParser.removeExerciseTags(response.text);
 

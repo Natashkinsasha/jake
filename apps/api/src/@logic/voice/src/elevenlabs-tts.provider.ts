@@ -22,10 +22,10 @@ export class ElevenLabsTtsProvider extends TtsProvider {
     this.logger.log(`Synthesizing ${text.length} chars for voice ${voiceId} (speed=${speed ?? 1.0})`);
 
     return withSpan(
-      "elevenlabs.tts",
-      { "tts.provider": "elevenlabs", "tts.model": "eleven_turbo_v2_5", "tts.voice_id": voiceId, "tts.input_length": text.length, "tts.speed": speed ?? 1.0 },
+      "tts.synthesize",
+      { provider: "elevenlabs", model: "eleven_turbo_v2_5", voice_id: voiceId, input_length: text.length, speed: speed ?? 1.0 },
       () => this.synthesizeWithRetry(text, voiceId, apiKey, 1, speed),
-      (result) => ({ "tts.output_bytes": Buffer.byteLength(result, "base64") }),
+      (result) => ({ output_bytes: Buffer.byteLength(result, "base64") }),
     );
   }
 

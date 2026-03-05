@@ -18,10 +18,10 @@ export class DeepgramSttProvider extends SttProvider {
     this.logger.debug(`STT request: audioSize=${audioBuffer.byteLength} bytes`);
 
     return withSpan(
-      "deepgram.stt",
-      { "stt.provider": "deepgram", "stt.model": "nova-3", "stt.input_bytes": audioBuffer.byteLength },
+      "stt.transcribe",
+      { provider: "deepgram", model: "nova-3", input_bytes: audioBuffer.byteLength },
       () => this.transcribeWithRetry(audioBuffer, 1),
-      (transcript) => ({ "stt.output_length": transcript.length }),
+      (transcript) => ({ output_length: transcript.length }),
     );
   }
 

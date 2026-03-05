@@ -21,13 +21,14 @@ export abstract class LlmProvider {
     systemPrompt: string,
     messages: LlmMessage[],
     maxTokens?: number,
+    spanName?: string,
   ): Promise<LlmResponse>;
 
   abstract generateStream(
     systemPrompt: string,
     messages: LlmMessage[],
     callbacks: LlmStreamCallbacks,
-    options?: { maxTokens?: number; signal?: AbortSignal },
+    options?: { maxTokens?: number; signal?: AbortSignal; spanName?: string },
   ): Promise<LlmResponse>;
 
   abstract generateJson<T>(
@@ -35,5 +36,6 @@ export abstract class LlmProvider {
     messages: LlmMessage[],
     schema: ZodSchema<T>,
     maxTokens?: number,
+    spanName?: string,
   ): Promise<T>;
 }

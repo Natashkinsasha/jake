@@ -5,13 +5,15 @@ import { LessonContextService } from "../service/lesson-context.service";
 import { LessonResponseService } from "../service/lesson-response.service";
 import { AudioPipelineService } from "../service/audio-pipeline.service";
 import { StreamingPipelineService } from "../service/streaming-pipeline.service";
-import type { StreamCallbacks } from "../service/streaming-pipeline.service";
+import type { StreamCallbacks, StreamChunk } from "../service/streaming-pipeline.service";
 import { TtsProvider } from "../../../../@lib/provider/src";
 import type { LlmMessage } from "../../../../@lib/provider/src";
 import { Queue } from "bullmq";
 import { InjectQueue } from "@nestjs/bullmq";
 import { buildFullSystemPrompt } from "../service/prompt-builder";
 import { QUEUE_NAMES } from "../../../../@shared/shared-job/queue-names";
+import { ModerationService, SAFETY_RESPONSE } from "../../../llm/src/moderation/moderation.service";
+import { LessonSessionService } from "../service/lesson-session.service";
 
 export function toSpeechSpeed(pref: string): number {
   switch (pref) {
@@ -44,6 +46,8 @@ export class LessonMaintainer {
     private responseService: LessonResponseService,
     private audioPipeline: AudioPipelineService,
     private streamingPipeline: StreamingPipelineService,
+    private sessionService: LessonSessionService,
+    private moderationService: ModerationService,
     private tts: TtsProvider,
     @InjectQueue(QUEUE_NAMES.POST_LESSON) private postLessonQueue: Queue,
     @InjectQueue(QUEUE_NAMES.FACT_EXTRACTION) private factQueue: Queue,
@@ -89,7 +93,7 @@ export class LessonMaintainer {
 
     const greeting = await this.responseService.generate(systemPrompt, [
       { role: "user", content: pickGreetingPrompt() },
-    ]);
+    ], "lesson.greeting");
 
     const lesson = await this.lessonRepository.createWithGreeting(
       {
@@ -160,93 +164,137 @@ export class LessonMaintainer {
     return result;
   }
 
-  async processTextMessage(
-    lessonId: string,
+  async processTextMessageStreaming(
+    socketId: string,
     userId: string,
     text: string,
-    systemPrompt: string,
-    history: LlmMessage[],
-    voiceId: string,
-    speechSpeed?: number,
+    callbacks: StreamCallbacks,
+    options?: { signal?: AbortSignal },
   ) {
-    const updatedHistory: LlmMessage[] = [
-      ...history,
-      { role: "user", content: text },
-    ];
+    const session = await this.sessionService.get(socketId);
+    if (!session) return;
 
-    const response = await this.responseService.generate(
-      systemPrompt,
-      updatedHistory,
-    );
-
-    let tutorAudio = "";
-    try {
-      tutorAudio = await this.tts.synthesize(response.text, voiceId, speechSpeed);
-    } catch (error) {
-      this.logger.warn(`TTS failed, sending text only: ${error instanceof Error ? error.message : String(error)}`);
+    // Layer 1: Regex pre-filter (instant, <1ms)
+    const quickResult = this.moderationService.quickCheck(text);
+    if (!quickResult.isSafe) {
+      this.logger.warn(`Regex flagged input from ${userId}: reason="${quickResult.reason}"`);
+      await this.emitSafetyResponse(session.voiceId, session.speechSpeed, callbacks);
+      return;
     }
 
-    await this.messageRepository.create({ lessonId, role: "user", content: text });
-    await this.messageRepository.create({
-      lessonId,
-      role: "tutor",
-      content: response.text,
-    });
-
-    await this.factQueue.add("extract", {
-      userId,
-      lessonId,
-      userMessage: text,
-      history: updatedHistory,
-    });
-
-    return {
-      tutorText: response.text,
-      tutorAudio: tutorAudio,
-      exercise: response.exercise,
-    };
-  }
-
-  async processTextMessageStreaming(
-    lessonId: string,
-    userId: string,
-    text: string,
-    systemPrompt: string,
-    history: LlmMessage[],
-    voiceId: string,
-    callbacks: StreamCallbacks,
-    options?: { speechSpeed?: number; signal?: AbortSignal },
-  ) {
     const updatedHistory: LlmMessage[] = [
-      ...history,
+      ...session.history,
       { role: "user", content: text },
     ];
 
+    // Layer 2: LLM moderation runs in parallel with streaming.
+    // Haiku (~200ms) typically resolves before Sonnet's first chunk (~500ms+).
+    const gate = this.createModerationGate(userId, session.lessonId, text, callbacks);
+
     await this.streamingPipeline.stream(
-      systemPrompt,
+      session.systemPrompt,
       updatedHistory,
-      voiceId,
+      session.voiceId,
       {
-        onChunk: (chunk) => { callbacks.onChunk(chunk); },
+        onChunk: (chunk) => { gate.handleChunk(chunk); },
         onEnd: (result) => {
           void (async () => {
-            await this.messageRepository.create({ lessonId, role: "user", content: text });
-            await this.messageRepository.create({ lessonId, role: "tutor", content: result.fullText });
+            await gate.waitForVerdict();
+
+            if (!gate.isSafe) {
+              await this.emitSafetyResponse(session.voiceId, session.speechSpeed, callbacks);
+              return;
+            }
+
+            await this.messageRepository.create({ lessonId: session.lessonId, role: "user", content: text });
+            await this.messageRepository.create({ lessonId: session.lessonId, role: "tutor", content: result.fullText });
 
             await this.factQueue.add("extract", {
               userId,
-              lessonId,
+              lessonId: session.lessonId,
               userMessage: text,
               history: updatedHistory,
             });
 
+            await this.sessionService.appendHistory(
+              socketId,
+              { role: "user", content: text },
+              { role: "assistant", content: result.fullText },
+            );
+
             callbacks.onEnd(result);
           })();
         },
-        onError: (error) => { callbacks.onError(error); },
+        onError: (error) => {
+          callbacks.onError(error);
+        },
       },
-      { speechSpeed: options?.speechSpeed, signal: options?.signal },
+      { speechSpeed: session.speechSpeed, signal: options?.signal },
     );
+  }
+
+  private createModerationGate(
+    userId: string,
+    lessonId: string,
+    text: string,
+    callbacks: StreamCallbacks,
+  ) {
+    let resolved = false;
+    let safe = true;
+    const pending: StreamChunk[] = [];
+
+    const promise = this.moderationService
+      .llmCheck(text, { userId, lessonId })
+      .then((result) => {
+        resolved = true;
+        safe = result.isSafe;
+
+        if (!result.isSafe) {
+          this.logger.warn(`LLM flagged input from ${userId}: reason=${result.reason}`);
+        } else {
+          for (const chunk of pending) {
+            callbacks.onChunk(chunk);
+          }
+          pending.length = 0;
+        }
+      })
+      .catch((err: unknown) => {
+        this.logger.error(`LLM moderation failed, allowing message: ${err instanceof Error ? err.message : String(err)}`);
+        resolved = true;
+        safe = true;
+        for (const chunk of pending) {
+          callbacks.onChunk(chunk);
+        }
+        pending.length = 0;
+      });
+
+    return {
+      handleChunk(chunk: StreamChunk) {
+        if (!resolved) {
+          pending.push(chunk);
+        } else if (safe) {
+          callbacks.onChunk(chunk);
+        }
+      },
+      waitForVerdict: () => promise,
+      get isSafe() { return safe; },
+    };
+  }
+
+  private async emitSafetyResponse(
+    voiceId: string,
+    speechSpeed: number | undefined,
+    callbacks: StreamCallbacks,
+  ) {
+    let audio = "";
+    try {
+      audio = await this.tts.synthesize(SAFETY_RESPONSE, voiceId, speechSpeed);
+    } catch (error) {
+      this.logger.warn(`TTS failed for safety response: ${error instanceof Error ? error.message : String(error)}`);
+    }
+
+    callbacks.onChunk({ chunkIndex: 0, text: SAFETY_RESPONSE, audio });
+    callbacks.onEnd({ fullText: SAFETY_RESPONSE, exercise: null, tokens: { text: "", inputTokens: 0, outputTokens: 0 } });
   }
 
   async endLesson(lessonId: string, history: LlmMessage[]) {

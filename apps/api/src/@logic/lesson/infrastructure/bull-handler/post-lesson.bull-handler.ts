@@ -123,6 +123,8 @@ export class PostLessonBullHandler extends ClsWorkerHost {
       SUMMARY_PROMPT,
       [{ role: "user", content: historyText }],
       PostLessonLlmResponseSchema,
+      undefined,
+      "post-lesson.summary",
     );
   }
 }

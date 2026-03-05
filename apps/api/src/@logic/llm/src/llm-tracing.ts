@@ -40,6 +40,14 @@ export async function shutdownTracing(): Promise<void> {
   }
 }
 
+function toLangfuseMetadata(attrs: Attributes): Attributes {
+  const out: Attributes = {};
+  for (const [key, value] of Object.entries(attrs)) {
+    out[`langfuse.span.metadata.${key}`] = value;
+  }
+  return out;
+}
+
 export async function withSpan<T>(
   name: string,
   attributes: Attributes,
@@ -48,10 +56,10 @@ export async function withSpan<T>(
 ): Promise<T> {
   const tracer = trace.getTracer("jake-api");
   return tracer.startActiveSpan(name, async (span) => {
-    span.setAttributes(attributes);
+    span.setAttributes(toLangfuseMetadata(attributes));
     try {
       const result = await fn();
-      if (onSuccess) span.setAttributes(onSuccess(result));
+      if (onSuccess) span.setAttributes(toLangfuseMetadata(onSuccess(result)));
       span.setStatus({ code: SpanStatusCode.OK });
       return result;
     } catch (error) {

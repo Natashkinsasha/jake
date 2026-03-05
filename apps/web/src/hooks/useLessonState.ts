@@ -227,7 +227,7 @@ export function useLessonState(token?: string | null) {
         const endData = { fullText: action.fullText, exercise: action.exercise };
 
         if (audioDoneRef.current) {
-          // Audio already finished (short response) — apply immediately
+          // Audio already finished (short response or no chunks) — apply immediately
           streamChunksRef.current = [];
           streamEndRef.current = null;
           setState((prev) => {
@@ -239,6 +239,14 @@ export function useLessonState(token?: string | null) {
                 text: action.fullText,
                 exercise: action.exercise,
               };
+            } else {
+              // No prior chunks created a placeholder — add the message directly
+              messages.push({
+                role: "assistant",
+                text: action.fullText,
+                timestamp: Date.now(),
+                exercise: action.exercise,
+              });
             }
             return { ...prev, messages, currentExercise: action.exercise, status: "idle" };
           });

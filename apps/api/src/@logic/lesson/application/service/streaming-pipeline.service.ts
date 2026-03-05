@@ -94,7 +94,7 @@ export class StreamingPipelineService {
             }
           },
         },
-        { signal: options?.signal },
+        { signal: options?.signal, spanName: "lesson.stream" },
       );
 
       if (options?.signal?.aborted) return;

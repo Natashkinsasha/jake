@@ -32,13 +32,13 @@ export class LessonController {
   @Post("stt/metrics")
   async sttMetrics(@Body() body: SttMetricsBody) {
     await withSpan(
-      "deepgram.stt",
+      "stt.browser-session",
       {
-        "stt.provider": "deepgram",
-        "stt.model": "nova-3",
-        "stt.duration_ms": body.durationMs,
-        "stt.transcript_length": body.transcriptLength,
-        "stt.segments": body.segments,
+        provider: "deepgram",
+        model: "nova-3",
+        duration_ms: body.durationMs,
+        transcript_length: body.transcriptLength,
+        segments: body.segments,
       },
       async () => {},
     );

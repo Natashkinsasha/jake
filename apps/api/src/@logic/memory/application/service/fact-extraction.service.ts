@@ -34,6 +34,8 @@ export class FactExtractionService {
       FACT_EXTRACTION_PROMPT,
       [...history, { role: "user", content: userMessage }],
       FactExtractionResultSchema,
+      undefined,
+      "memory.fact-extraction",
     );
 
     for (const fact of result.facts) {
