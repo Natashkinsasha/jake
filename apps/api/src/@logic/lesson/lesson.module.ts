@@ -5,7 +5,6 @@ import { LessonMaintainer } from "./application/maintainer/lesson.maintainer";
 import { LessonContextService } from "./application/service/lesson-context.service";
 import { LessonResponseService } from "./application/service/lesson-response.service";
 import { ExerciseParserService } from "./application/service/exercise-parser.service";
-import { AudioPipelineService } from "./application/service/audio-pipeline.service";
 import { StreamingPipelineService } from "./application/service/streaming-pipeline.service";
 import { LessonSessionService } from "./application/service/lesson-session.service";
 import { LessonMapper } from "./application/mapper/lesson.mapper";
@@ -13,7 +12,6 @@ import { LessonRepository } from "./infrastructure/repository/lesson.repository"
 import { LessonMessageRepository } from "./infrastructure/repository/lesson-message.repository";
 import { PostLessonBullHandler } from "./infrastructure/bull-handler/post-lesson.bull-handler";
 import { LlmModule } from "../llm/src/llm.module";
-import { VoiceModule } from "../voice/src/voice.module";
 import { EmbeddingModule } from "../embedding/src/embedding.module";
 import { SharedAuthModule } from "../../@shared/shared-auth/shared-auth.module";
 import { SharedDrizzlePgModule } from "../../@shared/shared-drizzle-pg/shared-drizzle-pg.module";
@@ -27,11 +25,11 @@ import { TutorModule } from "../tutor/tutor.module";
 import { MemoryModule } from "../memory/memory.module";
 import { VocabularyModule } from "../vocabulary/vocabulary.module";
 import { ProgressModule } from "../progress/progress.module";
+import { SharedConfigModule } from "../../@shared/shared-config/shared-config.module";
 
 @Module({
   imports: [
     LlmModule,
-    VoiceModule,
     EmbeddingModule,
     SharedAuthModule,
     SharedDrizzlePgModule,
@@ -45,6 +43,7 @@ import { ProgressModule } from "../progress/progress.module";
     MemoryModule,
     VocabularyModule,
     ProgressModule,
+    SharedConfigModule,
   ],
   controllers: [LessonController],
   providers: [
@@ -53,7 +52,6 @@ import { ProgressModule } from "../progress/progress.module";
     LessonContextService,
     LessonResponseService,
     ExerciseParserService,
-    AudioPipelineService,
     StreamingPipelineService,
     LessonSessionService,
     LessonMapper,

@@ -40,7 +40,6 @@ function mapExercise(raw: unknown): LessonExercise | null {
 export interface LessonEventData {
   lessonId?: string;
   text?: string;
-  audio?: string;
   exercise?: unknown;
   state?: string;
   message?: string;
@@ -54,17 +53,10 @@ interface EventContext {
   pendingTurns: number;
 }
 
-interface PendingMessage {
-  text: string;
-  audio?: string;
-  exercise?: LessonExercise | null;
-}
-
 export type LessonAction =
   | { type: "set_state"; patch: Record<string, unknown> }
-  | { type: "play_audio"; audio: string; pending: PendingMessage }
   | { type: "show_message"; text: string; exercise: LessonExercise | null; status: string }
-  | { type: "stream_chunk"; chunkIndex: number; text: string; audio: string; messageId?: string }
+  | { type: "stream_chunk"; chunkIndex: number; text: string; messageId?: string }
   | { type: "stream_end"; fullText: string; exercise: LessonExercise | null; messageId?: string }
   | { type: "discard" };
 
@@ -80,18 +72,6 @@ export function handleLessonEvent(
     case "tutor_message": {
       const shouldDiscard = ctx.userSpeaking || ctx.pendingTurns > 1;
       if (shouldDiscard) return { type: "discard" };
-
-      if (data.audio) {
-        return {
-          type: "play_audio",
-          audio: data.audio,
-          pending: {
-            text: data.text ?? "",
-            audio: data.audio,
-            exercise: mapExercise(data.exercise),
-          },
-        };
-      }
       return {
         type: "show_message",
         text: data.text ?? "",
@@ -111,14 +91,6 @@ export function handleLessonEvent(
     case "exercise_feedback": {
       const shouldDiscardFb = ctx.userSpeaking || ctx.pendingTurns > 1;
       if (shouldDiscardFb) return { type: "discard" };
-
-      if (data.audio) {
-        return {
-          type: "play_audio",
-          audio: data.audio,
-          pending: { text: data.text ?? "", exercise: null },
-        };
-      }
       return {
         type: "show_message",
         text: data.text ?? "",
@@ -133,7 +105,6 @@ export function handleLessonEvent(
         type: "stream_chunk",
         chunkIndex: data.chunkIndex ?? 0,
         text: data.text ?? "",
-        audio: data.audio ?? "",
         messageId: data.messageId,
       };
     }

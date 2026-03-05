@@ -167,7 +167,9 @@ export class AnthropicLlmProvider extends LlmProvider {
 
         this.logger.debug(`LLM tool_use response: inputTokens=${response.usage.input_tokens}, outputTokens=${response.usage.output_tokens}`);
 
-        const result = schema.safeParse(toolBlock.input);
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+        const sanitized = this.sanitizeNullStrings(toolBlock.input);
+        const result = schema.safeParse(sanitized);
         if (!result.success) {
           this.logger.error(
             `LLM tool_use validation failed: ${JSON.stringify(result.error.issues)}`,
@@ -189,5 +191,21 @@ export class AnthropicLlmProvider extends LlmProvider {
       { provider: "anthropic", model: this.MODEL, method: "generateJson" },
       doGenerateJson,
     );
+  }
+
+  // LLMs sometimes return "null" string instead of JSON null
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private sanitizeNullStrings(obj: any): any {
+    if (obj === "null") return null;
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    if (Array.isArray(obj)) return obj.map((v: unknown) => this.sanitizeNullStrings(v));
+    if (obj !== null && typeof obj === "object") {
+      const result: Record<string, unknown> = {};
+      for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+        result[k] = this.sanitizeNullStrings(v);
+      }
+      return result;
+    }
+    return obj;
   }
 }

@@ -3,10 +3,8 @@ import { LessonRepository } from "../../infrastructure/repository/lesson.reposit
 import { LessonMessageRepository } from "../../infrastructure/repository/lesson-message.repository";
 import { LessonContextService } from "../service/lesson-context.service";
 import { LessonResponseService } from "../service/lesson-response.service";
-import { AudioPipelineService } from "../service/audio-pipeline.service";
 import { StreamingPipelineService } from "../service/streaming-pipeline.service";
 import type { StreamCallbacks, StreamChunk } from "../service/streaming-pipeline.service";
-import { TtsProvider } from "../../../../@lib/provider/src";
 import type { LlmMessage } from "../../../../@lib/provider/src";
 import { Queue } from "bullmq";
 import { InjectQueue } from "@nestjs/bullmq";
@@ -44,11 +42,9 @@ export class LessonMaintainer {
     private messageRepository: LessonMessageRepository,
     private contextService: LessonContextService,
     private responseService: LessonResponseService,
-    private audioPipeline: AudioPipelineService,
     private streamingPipeline: StreamingPipelineService,
     private sessionService: LessonSessionService,
     private moderationService: ModerationService,
-    private tts: TtsProvider,
     @InjectQueue(QUEUE_NAMES.POST_LESSON) private postLessonQueue: Queue,
     @InjectQueue(QUEUE_NAMES.FACT_EXTRACTION) private factQueue: Queue,
   ) {}
@@ -106,62 +102,33 @@ export class LessonMaintainer {
 
     const speechSpeed = toSpeechSpeed(context.preferences.speakingSpeed);
 
-    let greetingAudio = "";
-    try {
-      greetingAudio = await this.tts.synthesize(
-        greeting.text,
-        context.tutorVoiceId,
-        speechSpeed,
-      );
-    } catch (error) {
-      this.logger.warn(`TTS failed for greeting, sending text only: ${error instanceof Error ? error.message : String(error)}`);
-    }
-
     return {
       lessonId: lesson.id,
       systemPrompt,
       voiceId: context.tutorVoiceId,
       speechSpeed,
-      greeting: { text: greeting.text, audio: greetingAudio, exercise: greeting.exercise },
+      greeting: { text: greeting.text, exercise: greeting.exercise },
     };
   }
 
-  async processUserAudio(
+  async processExerciseAnswer(
     lessonId: string,
     userId: string,
-    audioBase64: string,
     systemPrompt: string,
     history: LlmMessage[],
-    voiceId: string,
-    speechSpeed?: number,
   ) {
-    const result = await this.audioPipeline.processAudio(
-      audioBase64,
-      systemPrompt,
-      history,
-      voiceId,
-      speechSpeed,
-    );
+    const response = await this.responseService.generate(systemPrompt, history);
 
-    await this.messageRepository.create({
-      lessonId,
-      role: "user",
-      content: result.transcript,
-    });
-    await this.messageRepository.create({
-      lessonId,
-      role: "tutor",
-      content: result.tutorText,
-    });
+    await this.messageRepository.create({ lessonId, role: "tutor", content: response.text });
 
     await this.factQueue.add("extract", {
       userId,
       lessonId,
-      userMessage: result.transcript,
-      history: [...history, { role: "user", content: result.transcript }],
+      userMessage: history[history.length - 1]?.content ?? "",
+      history,
     });
 
-    return result;
+    return { tutorText: response.text };
   }
 
   async processTextMessageStreaming(
@@ -178,7 +145,7 @@ export class LessonMaintainer {
     const quickResult = this.moderationService.quickCheck(text);
     if (!quickResult.isSafe) {
       this.logger.warn(`Regex flagged input from ${userId}: reason="${quickResult.reason}"`);
-      await this.emitSafetyResponse(session.voiceId, session.speechSpeed, callbacks);
+      this.emitSafetyResponse(callbacks);
       return;
     }
 
@@ -194,7 +161,6 @@ export class LessonMaintainer {
     await this.streamingPipeline.stream(
       session.systemPrompt,
       updatedHistory,
-      session.voiceId,
       {
         onChunk: (chunk) => { gate.handleChunk(chunk); },
         onEnd: (result) => {
@@ -202,7 +168,7 @@ export class LessonMaintainer {
             await gate.waitForVerdict();
 
             if (!gate.isSafe) {
-              await this.emitSafetyResponse(session.voiceId, session.speechSpeed, callbacks);
+              this.emitSafetyResponse(callbacks);
               return;
             }
 
@@ -229,7 +195,7 @@ export class LessonMaintainer {
           callbacks.onError(error);
         },
       },
-      { speechSpeed: session.speechSpeed, signal: options?.signal },
+      { signal: options?.signal },
     );
   }
 
@@ -281,19 +247,8 @@ export class LessonMaintainer {
     };
   }
 
-  private async emitSafetyResponse(
-    voiceId: string,
-    speechSpeed: number | undefined,
-    callbacks: StreamCallbacks,
-  ) {
-    let audio = "";
-    try {
-      audio = await this.tts.synthesize(SAFETY_RESPONSE, voiceId, speechSpeed);
-    } catch (error) {
-      this.logger.warn(`TTS failed for safety response: ${error instanceof Error ? error.message : String(error)}`);
-    }
-
-    callbacks.onChunk({ chunkIndex: 0, text: SAFETY_RESPONSE, audio });
+  private emitSafetyResponse(callbacks: StreamCallbacks) {
+    callbacks.onChunk({ chunkIndex: 0, text: SAFETY_RESPONSE });
     callbacks.onEnd({ fullText: SAFETY_RESPONSE, exercise: null, tokens: { text: "", inputTokens: 0, outputTokens: 0 } });
   }
 

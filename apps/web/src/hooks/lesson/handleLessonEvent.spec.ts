@@ -8,20 +8,7 @@ describe("handleLessonEvent", () => {
     expect(action).toEqual({ type: "set_state", patch: { lessonId: "abc", status: "idle" } });
   });
 
-  it("tutor_message with audio → play_audio", () => {
-    const action = handleLessonEvent(
-      "tutor_message",
-      { text: "Hello", audio: "base64data", exercise: null },
-      idle,
-    );
-    expect(action.type).toBe("play_audio");
-    if (action.type === "play_audio") {
-      expect(action.audio).toBe("base64data");
-      expect(action.pending.text).toBe("Hello");
-    }
-  });
-
-  it("tutor_message without audio → show_message", () => {
+  it("tutor_message → show_message", () => {
     const action = handleLessonEvent(
       "tutor_message",
       { text: "Hello", exercise: null },
@@ -53,19 +40,7 @@ describe("handleLessonEvent", () => {
     expect(action).toEqual({ type: "discard" });
   });
 
-  it("exercise_feedback with audio → play_audio", () => {
-    const action = handleLessonEvent(
-      "exercise_feedback",
-      { text: "Correct!", audio: "audiodata" },
-      idle,
-    );
-    expect(action.type).toBe("play_audio");
-    if (action.type === "play_audio") {
-      expect(action.pending.exercise).toBeNull();
-    }
-  });
-
-  it("exercise_feedback without audio → show_message", () => {
+  it("exercise_feedback → show_message", () => {
     const action = handleLessonEvent(
       "exercise_feedback",
       { text: "Correct!" },
@@ -82,7 +57,7 @@ describe("handleLessonEvent", () => {
   it("exercise_feedback discarded when user is speaking", () => {
     const action = handleLessonEvent(
       "exercise_feedback",
-      { text: "Correct!", audio: "data" },
+      { text: "Correct!" },
       { userSpeaking: true, pendingTurns: 0 },
     );
     expect(action).toEqual({ type: "discard" });
@@ -128,15 +103,18 @@ describe("handleLessonEvent", () => {
     expect(action).toEqual({ type: "discard" });
   });
 
-  it("tutor_message with exercise → includes exercise in pending", () => {
+  it("tutor_message with exercise → includes exercise in show_message", () => {
     const exercise = { type: "fill_the_gap" as const, id: "ex1", sentence: "I ___ a cat" };
     const action = handleLessonEvent(
       "tutor_message",
-      { text: "Fill this", audio: "data", exercise },
+      { text: "Fill this", exercise },
       idle,
     );
-    if (action.type === "play_audio") {
-      expect(action.pending.exercise).toEqual(exercise);
-    }
+    expect(action).toEqual({
+      type: "show_message",
+      text: "Fill this",
+      exercise,
+      status: "idle",
+    });
   });
 });

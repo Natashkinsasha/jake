@@ -14,7 +14,6 @@ import { z } from "zod";
 import { WsAuthGuard } from "../../../../@shared/shared-ws/ws-auth.guard";
 import { LessonMaintainer, toSpeechSpeed } from "../../application/maintainer/lesson.maintainer";
 import { LessonSessionService } from "../../application/service/lesson-session.service";
-import { wsAudioMessageSchema } from "../dto/ws/ws-audio-message";
 import { wsExerciseAnswerSchema } from "../dto/ws/ws-exercise-answer";
 
 interface SocketData {
@@ -81,11 +80,12 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       client.emit("lesson_started", {
         lessonId: result.lessonId,
+        voiceId: result.voiceId,
+        speechSpeed: result.speechSpeed,
       });
 
       client.emit("tutor_message", {
         text: result.greeting.text,
-        audio: result.greeting.audio,
         exercise: result.greeting.exercise,
       });
     } catch (error: unknown) {
@@ -103,52 +103,6 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (session) {
       await this.lessonMaintainer.endLesson(session.lessonId, session.history);
       await this.sessionService.delete(client.id);
-    }
-  }
-
-  @SubscribeMessage("audio")
-  async handleAudio(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() data: unknown,
-  ) {
-    const parsed = wsAudioMessageSchema.safeParse(data);
-    if (!parsed.success) {
-      client.emit("error", { message: "Invalid audio message" });
-      return;
-    }
-
-    const session = await this.sessionService.get(client.id);
-    if (!session) return;
-
-    const userId = (client.data as SocketData).userId;
-
-    try {
-      client.emit("status", { state: "thinking" });
-
-      const result = await this.lessonMaintainer.processUserAudio(
-        session.lessonId,
-        userId,
-        parsed.data.audio,
-        session.systemPrompt,
-        session.history,
-        session.voiceId,
-        session.speechSpeed,
-      );
-
-      await this.sessionService.appendHistory(
-        client.id,
-        { role: "user", content: result.transcript },
-        { role: "assistant", content: result.tutorText },
-      );
-
-      client.emit("transcript", { text: result.transcript });
-      client.emit("tutor_message", {
-        text: result.tutorText,
-        audio: result.tutorAudio,
-        exercise: result.exercise,
-      });
-    } catch {
-      client.emit("error", { message: "Something went wrong, mate!" });
     }
   }
 
@@ -224,23 +178,21 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const session = await this.sessionService.get(client.id);
     if (!session) return;
 
+    const userId = (client.data as SocketData).userId;
+
     await this.sessionService.appendHistory(client.id, {
       role: "user",
       content: `[Exercise answer: ${parsed.data.answer}]`,
     });
 
-    // Re-read session to get updated history
     const updatedSession = await this.sessionService.get(client.id);
     if (!updatedSession) return;
 
-    const result = await this.lessonMaintainer.processUserAudio(
+    const result = await this.lessonMaintainer.processExerciseAnswer(
       updatedSession.lessonId,
-      (client.data as SocketData).userId,
-      "",
+      userId,
       updatedSession.systemPrompt,
       updatedSession.history,
-      updatedSession.voiceId,
-      updatedSession.speechSpeed,
     );
 
     await this.sessionService.appendHistory(client.id, {
@@ -250,7 +202,6 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     client.emit("exercise_feedback", {
       text: result.tutorText,
-      audio: result.tutorAudio,
     });
   }
 

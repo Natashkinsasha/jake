@@ -1,5 +1,12 @@
 # Jake — English Tutor App
 
+## Commit Rules
+
+**Before every commit**, you MUST:
+1. Run the `superpowers:requesting-code-review` skill (code review agent) on all changed files
+2. Fix any issues found during review
+3. Only then proceed with the commit (hooks will auto-run lint, type-check, tests)
+
 AI-powered English tutor with real-time voice lessons. Student speaks → Deepgram transcribes → Claude generates response → ElevenLabs synthesizes speech.
 
 ## Tech Stack

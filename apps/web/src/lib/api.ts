@@ -61,10 +61,14 @@ export const api = {
       }),
   },
   stt: {
+    token: () => request<{ key: string }>("/lessons/stt/token"),
     metrics: (data: { durationMs: number; transcriptLength: number; segments: number }) =>
       request<{ success: boolean }>("/lessons/stt/metrics", {
         method: "POST",
         body: JSON.stringify(data),
       }),
+  },
+  tts: {
+    token: () => request<{ token: string }>("/lessons/tts/token"),
   },
 };
