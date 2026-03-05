@@ -105,8 +105,8 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
         optionsRef.current?.onPlayStart?.();
         playNext();
       }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [playNext],
   );
 

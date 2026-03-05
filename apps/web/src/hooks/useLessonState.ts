@@ -123,7 +123,7 @@ export function useLessonState(token?: string | null) {
       const speedMap: Record<string, number> = { very_slow: 0.7, slow: 0.85, normal: 1.0, natural: 1.0, fast: 1.15, very_fast: 1.3 };
       const d = data as LessonEventData & { speed?: string };
       if (d.speed && speedMap[d.speed] != null) {
-        speechSpeedRef.current = speedMap[d.speed]!;
+        speechSpeedRef.current = speedMap[d.speed] ?? 1.0;
         log("speed updated to:", d.speed, speechSpeedRef.current);
       }
       return;
