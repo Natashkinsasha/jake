@@ -7,9 +7,9 @@ import { TTS_CONFIG } from "@/lib/config";
 import { createLogger } from "./logger";
 
 interface UseTutorTtsOptions {
-  onPlayStart?: () => void;
-  onAudioReceived?: (estimatedTotalSec: number) => void;
   onAllDone?: () => void;
+  onPlaybackStart?: () => void;
+  onPlaybackProgress?: (playedSeconds: number, totalDecodedSeconds: number, allReceived: boolean) => void;
 }
 
 interface UseTutorTtsReturn {
@@ -38,13 +38,19 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   const allReceivedRef = useRef(false);
   const audioGenRef = useRef(0);
 
+  // Playback progress tracking
+  const totalDecodedDurRef = useRef(0);
+  const playedDurRef = useRef(0);
+  const bufStartCtxTimeRef = useRef(0);
+  const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   const pendingTextRef = useRef<string[]>([]);
   const isStreamingRef = useRef(false);
   const wsReadyRef = useRef(false);
   const eosRequestedRef = useRef(false);
   const openGenRef = useRef(0);
   const connectingRef = useRef(false);
-  const estimatedDurationRef = useRef(0);
+
 
   const ensureAudioCtx = useCallback(() => {
     if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
@@ -63,7 +69,13 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
       decodedQueueRef.current.length === 0 &&
       !currentSourceRef.current
     ) {
+      if (progressTimerRef.current) {
+        clearInterval(progressTimerRef.current);
+        progressTimerRef.current = null;
+      }
       playingRef.current = false;
+      totalDecodedDurRef.current = 0;
+      playedDurRef.current = 0;
       setIsSpeaking(false);
       allReceivedRef.current = false;
       log("all audio done");
@@ -87,6 +99,22 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
     source.connect(ctx.destination);
     source.start();
     currentSourceRef.current = source;
+    bufStartCtxTimeRef.current = ctx.currentTime;
+
+    // Start progress reporting on first buffer
+    if (!progressTimerRef.current) {
+      optionsRef.current?.onPlaybackStart?.();
+      progressTimerRef.current = setInterval(() => {
+        const c = audioCtxRef.current;
+        if (!c || !currentSourceRef.current) return;
+        const elapsed = c.currentTime - bufStartCtxTimeRef.current;
+        optionsRef.current?.onPlaybackProgress?.(
+          playedDurRef.current + elapsed,
+          totalDecodedDurRef.current,
+          allReceivedRef.current,
+        );
+      }, 60);
+    }
 
     log(`playing chunk (${Math.round(audioBuffer.duration * 1000)}ms)`);
 
@@ -94,6 +122,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
       if (currentSourceRef.current === source) {
         currentSourceRef.current = null;
       }
+      playedDurRef.current += audioBuffer.duration;
       playNextBuffer();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -104,7 +133,6 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
       if (!playingRef.current) {
         playingRef.current = true;
         setIsSpeaking(true);
-        optionsRef.current?.onPlayStart?.();
       }
 
       const gen = audioGenRef.current;
@@ -117,8 +145,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
         .then((audioBuffer) => {
           if (audioGenRef.current !== gen) return;
           pendingDecodesRef.current--;
-          estimatedDurationRef.current += audioBuffer.duration;
-          optionsRef.current?.onAudioReceived?.(estimatedDurationRef.current);
+          totalDecodedDurRef.current += audioBuffer.duration;
           decodedQueueRef.current.push(audioBuffer);
           if (!currentSourceRef.current) {
             playNextBuffer();
@@ -137,6 +164,10 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
 
   const stopAudio = useCallback(() => {
     audioGenRef.current++;
+    if (progressTimerRef.current) {
+      clearInterval(progressTimerRef.current);
+      progressTimerRef.current = null;
+    }
     if (currentSourceRef.current) {
       try {
         currentSourceRef.current.stop();
@@ -149,6 +180,8 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
     pendingDecodesRef.current = 0;
     allReceivedRef.current = false;
     playingRef.current = false;
+    totalDecodedDurRef.current = 0;
+    playedDurRef.current = 0;
     setIsSpeaking(false);
   }, []);
 
@@ -233,7 +266,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
 
           // Flush any text buffered by sendChunk() before WS was ready
           for (const text of pendingTextRef.current) {
-            sendTextToWs(text, true);
+            sendTextToWs(text, false);
           }
           pendingTextRef.current = [];
 
@@ -356,13 +389,13 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
     [openWs],
   );
 
-  /** Send a text chunk (sentence) during a streaming session. */
+  /** Send a text chunk (sentence) during a streaming session. No flush — let ElevenLabs maintain consistent prosody. */
   const sendChunk = useCallback(
     (text: string) => {
       if (!text.trim()) return;
 
       if (wsReadyRef.current) {
-        sendTextToWs(text, true);
+        sendTextToWs(text, false);
       } else {
         pendingTextRef.current.push(text);
       }
@@ -388,7 +421,6 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
     log("stop");
     isStreamingRef.current = false;
     openGenRef.current++;
-    estimatedDurationRef.current = 0;
     closeWs();
     stopAudio();
   }, [closeWs, stopAudio]);

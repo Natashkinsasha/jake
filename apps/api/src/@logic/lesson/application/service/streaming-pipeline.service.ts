@@ -21,7 +21,7 @@ export interface StreamCallbacks {
   onSpeedChange?(speed: string): void;
 }
 
-const MAX_BUFFER_AGE_MS = 300;
+const MAX_BUFFER_AGE_MS = 500;
 
 @Injectable()
 export class StreamingPipelineService {

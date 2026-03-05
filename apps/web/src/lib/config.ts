@@ -48,5 +48,5 @@ export const TOAST_CONFIG = {
 export const TTS_CONFIG = {
   MODEL: "eleven_turbo_v2_5",
   OUTPUT_FORMAT: "mp3_22050_32",
-  VOICE_SETTINGS: { stability: 0.5, similarity_boost: 0.75, style: 0.3 },
+  VOICE_SETTINGS: { stability: 0.35, similarity_boost: 0.75, style: 0.55 },
 } as const;

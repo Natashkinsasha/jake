@@ -32,101 +32,66 @@ export function useLessonState(token?: string | null) {
   const speechSpeedRef = useRef<number>(1.0);
   const streamStartedRef = useRef(false);
 
-  const pendingSentencesRef = useRef<string[]>([]);
-  const revealTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const streamFullTextRef = useRef<string>("");
-  const isStreamingModeRef = useRef(false);
-  const revealedCharsRef = useRef(0);
-  const revealStartTimeRef = useRef(0);
-  const estimatedTotalDurRef = useRef(0);
+  const streamTextRef = useRef<string>("");
+  const pendingRevealTextRef = useRef<string | null>(null);
+  const revealedLenRef = useRef(0);
 
-  const startRevealTimer = useCallback(() => {
-    for (const t of revealTimersRef.current) clearTimeout(t);
-    revealTimersRef.current = [];
-    revealStartTimeRef.current = performance.now();
-    let lastTickTime = performance.now();
+  const tts = useTutorTts({
+    onAllDone: () => {
+      // Reveal any remaining text
+      const text = pendingRevealTextRef.current;
+      if (text && revealedLenRef.current < text.length) {
+        revealedLenRef.current = text.length;
+        setState((prev) => {
+          const messages = [...prev.messages];
+          const last = messages[messages.length - 1];
+          if (last?.role === "assistant") {
+            messages[messages.length - 1] = { ...last, text };
+          }
+          return { ...prev, messages, status: "idle" };
+        });
+      } else {
+        setState((prev) => prev.status === "speaking" ? { ...prev, status: "idle" } : prev);
+      }
+      pendingRevealTextRef.current = null;
+      revealedLenRef.current = 0;
+    },
+    onPlaybackProgress: (playedSec, totalDecodedSec, allReceived) => {
+      const fullText = pendingRevealTextRef.current;
+      if (!fullText) return;
 
-    const tick = () => {
-      const fullText = streamFullTextRef.current || pendingSentencesRef.current.join(" ");
-      const totalChars = fullText.length;
-      const totalDur = estimatedTotalDurRef.current;
-      if (totalChars === 0 || totalDur === 0) {
-        revealTimersRef.current.push(setTimeout(tick, 50));
-        return;
+      let targetLen: number;
+      if (allReceived && totalDecodedSec > 0) {
+        // Exact sync — we know the total audio duration
+        targetLen = Math.floor(fullText.length * (playedSec / totalDecodedSec));
+      } else {
+        // Estimate ~15 chars/sec adjusted for speech speed
+        const rate = 15 * speechSpeedRef.current;
+        targetLen = Math.floor(playedSec * rate);
       }
 
-      const now = performance.now();
-      const dt = (now - lastTickTime) / 1000;
-      lastTickTime = now;
+      // Never go backward, never exceed text length
+      targetLen = Math.max(revealedLenRef.current, Math.min(targetLen, fullText.length));
+      if (targetLen <= revealedLenRef.current) return;
 
-      const elapsed = (now - revealStartTimeRef.current) / 1000;
-      const remainingDur = Math.max(totalDur - elapsed, 0.1);
-      const remainingChars = totalChars - revealedCharsRef.current;
-      const rate = remainingChars / remainingDur;
-      const newChars = Math.max(1, Math.round(rate * dt));
-      const charIndex = Math.min(revealedCharsRef.current + newChars, totalChars);
-      revealedCharsRef.current = charIndex;
+      // Snap forward to word boundary
+      while (targetLen < fullText.length && fullText[targetLen] !== " ") {
+        targetLen++;
+      }
+
+      revealedLenRef.current = targetLen;
+      const revealed = fullText.slice(0, targetLen);
 
       setState((prev) => {
         const messages = [...prev.messages];
         const last = messages[messages.length - 1];
         if (last?.role === "assistant") {
-          messages[messages.length - 1] = { ...last, text: fullText.slice(0, charIndex) };
+          messages[messages.length - 1] = { ...last, text: revealed };
+        } else {
+          messages.push({ role: "assistant", text: revealed, timestamp: Date.now() });
         }
         return { ...prev, messages };
       });
-
-      if (charIndex < totalChars) {
-        revealTimersRef.current.push(setTimeout(tick, 50));
-      }
-    };
-
-    tick();
-  }, []);
-
-  const finalizeStream = useCallback(() => {
-    for (const t of revealTimersRef.current) clearTimeout(t);
-    revealTimersRef.current = [];
-
-    // Capture ref values BEFORE setState — React batching may defer
-    // the updater, and refs are cleared synchronously after setState call
-    const fullText = streamFullTextRef.current
-      || pendingSentencesRef.current.join(" ");
-
-    setState((prev) => {
-      const messages = [...prev.messages];
-      const last = messages[messages.length - 1];
-      if (last?.role === "assistant") {
-        messages[messages.length - 1] = {
-          ...last,
-          text: fullText,
-        };
-      }
-      return {
-        ...prev,
-        messages,
-        status: "idle",
-      };
-    });
-
-    isStreamingModeRef.current = false;
-    pendingSentencesRef.current = [];
-    streamFullTextRef.current = "";
-    revealedCharsRef.current = 0;
-          estimatedTotalDurRef.current = 0;
-  }, []);
-
-  const tts = useTutorTts({
-    onPlayStart: () => {
-      if (!isStreamingModeRef.current) return;
-      startRevealTimer();
-    },
-    onAudioReceived: (estimatedTotalSec) => {
-      estimatedTotalDurRef.current = estimatedTotalSec;
-    },
-    onAllDone: () => {
-      if (!isStreamingModeRef.current) return;
-      finalizeStream();
     },
   });
   const ttsRef = useRef(tts);
@@ -170,40 +135,27 @@ export function useLessonState(token?: string | null) {
         if (event === "error") log("ERROR:", data.message);
         break;
 
-      case "show_message":
+      case "show_message": {
         if (action.text && voiceIdRef.current) {
-          // Typewriter reveal synced with audio
-          isStreamingModeRef.current = true;
-          pendingSentencesRef.current = [action.text];
-          streamFullTextRef.current = action.text;
-          revealedCharsRef.current = 0;
-          estimatedTotalDurRef.current = 0;
-
+          // Buffer text — reveal progressively as audio plays
+          pendingRevealTextRef.current = action.text;
+          revealedLenRef.current = 0;
           setState((prev) => ({
             ...prev,
-            messages: [
-              ...prev.messages,
-              { role: "assistant", text: "", timestamp: Date.now() },
-            ],
+            messages: [...prev.messages, { role: "assistant" as const, text: "", timestamp: Date.now() }],
             status: "speaking",
           }));
-
           ttsRef.current.speak(action.text, voiceIdRef.current, speechSpeedRef.current);
         } else {
+          // No TTS — show text immediately
           setState((prev) => ({
             ...prev,
-            messages: [
-              ...prev.messages,
-              {
-                role: "assistant",
-                text: action.text,
-                timestamp: Date.now(),
-              },
-            ],
+            messages: [...prev.messages, { role: "assistant" as const, text: action.text, timestamp: Date.now() }],
             status: "idle",
           }));
         }
         break;
+      }
 
       case "stream_chunk": {
         if (action.messageId && activeMessageIdRef.current && action.messageId !== activeMessageIdRef.current) {
@@ -217,24 +169,25 @@ export function useLessonState(token?: string | null) {
 
         if (!streamStartedRef.current && voiceIdRef.current) {
           streamStartedRef.current = true;
-          isStreamingModeRef.current = true;
-          pendingSentencesRef.current = [];
-          revealedCharsRef.current = 0;
-          estimatedTotalDurRef.current = 0;
           ttsRef.current.startStream(voiceIdRef.current, speechSpeedRef.current);
         }
 
         ttsRef.current.sendChunk(action.text);
-        pendingSentencesRef.current.push(action.text);
 
-        // Create empty placeholder message on first chunk (no text yet)
-        if (pendingSentencesRef.current.length === 1) {
-          setState((prev) => ({
-            ...prev,
-            messages: [...prev.messages, { role: "assistant", text: "", timestamp: Date.now() }],
-            status: "speaking",
-          }));
-        }
+        // Accumulate text — progress callback will reveal it in sync with audio
+        streamTextRef.current += (streamTextRef.current ? " " : "") + action.text;
+        pendingRevealTextRef.current = streamTextRef.current;
+
+        // Ensure assistant message bubble exists (empty until audio plays)
+        setState((prev) => {
+          const messages = [...prev.messages];
+          const last = messages[messages.length - 1];
+          if (last?.role !== "assistant") {
+            messages.push({ role: "assistant", text: "", timestamp: Date.now() });
+            return { ...prev, messages, status: "speaking" };
+          }
+          return prev.status === "speaking" ? prev : { ...prev, status: "speaking" };
+        });
         break;
       }
 
@@ -252,28 +205,20 @@ export function useLessonState(token?: string | null) {
         streamStartedRef.current = false;
         ttsRef.current.endStream();
 
-        // Save for later reveal (when audio finishes)
-        streamFullTextRef.current = action.fullText;
+        // Store full text — onAllDone will reveal any remainder
+        streamTextRef.current = "";
+        pendingRevealTextRef.current = action.fullText;
         break;
       }
 
       case "stream_discard": {
-        // Moderation flagged the input after chunks were already sent.
-        // Stop TTS, clear audio queue, remove partial assistant message.
-        // Decrement pendingTurns so the follow-up safety tutor_message is not discarded.
         pendingTurnsRef.current = Math.max(0, pendingTurnsRef.current - 1);
         activeMessageIdRef.current = null;
         streamStartedRef.current = false;
+        streamTextRef.current = "";
+        pendingRevealTextRef.current = null;
+        revealedLenRef.current = 0;
         ttsRef.current.stop();
-
-        for (const t of revealTimersRef.current) clearTimeout(t);
-        revealTimersRef.current = [];
-
-        isStreamingModeRef.current = false;
-        pendingSentencesRef.current = [];
-        streamFullTextRef.current = "";
-        revealedCharsRef.current = 0;
-          estimatedTotalDurRef.current = 0;
 
         setState((prev) => {
           const messages = [...prev.messages];
@@ -313,18 +258,16 @@ export function useLessonState(token?: string | null) {
       if (voiceIdRef.current) {
         ttsRef.current.preWarm(voiceIdRef.current, speechSpeedRef.current);
       }
+
       setState((prev) => {
-        const last = prev.messages[prev.messages.length - 1];
+        const messages = [...prev.messages];
+        const last = messages[messages.length - 1];
         if (last?.role === "user") {
-          const updated = [...prev.messages];
-          updated[updated.length - 1] = { ...last, text: last.text + " " + trimmed };
-          return { ...prev, messages: updated, status: "thinking" };
+          messages[messages.length - 1] = { ...last, text: last.text + " " + trimmed };
+        } else {
+          messages.push({ role: "user", text: trimmed, timestamp: Date.now() });
         }
-        return {
-          ...prev,
-          messages: [...prev.messages, { role: "user", text: trimmed, timestamp: Date.now() }],
-          status: "thinking",
-        };
+        return { ...prev, messages, status: "thinking" };
       });
       emit("text", { text: trimmed, messageId });
     },
@@ -340,41 +283,22 @@ export function useLessonState(token?: string | null) {
     emit("interrupt", {});
     activeMessageIdRef.current = null;
     streamStartedRef.current = false;
+    streamTextRef.current = "";
+    pendingRevealTextRef.current = null;
+    revealedLenRef.current = 0;
 
-    // Clear reveal timers
-    for (const t of revealTimersRef.current) clearTimeout(t);
-    revealTimersRef.current = [];
-
-    if (isStreamingModeRef.current) {
-      isStreamingModeRef.current = false;
-      pendingSentencesRef.current = [];
-      streamFullTextRef.current = "";
-      revealedCharsRef.current = 0;
-          estimatedTotalDurRef.current = 0;
-
-      // Keep only already-revealed text; remove placeholder if nothing shown yet
-      setState((prev) => {
-        const messages = [...prev.messages];
-        const last = messages[messages.length - 1];
-        if (last?.role === "assistant") {
-          if (last.text) {
-            messages[messages.length - 1] = { ...last, text: last.text + "..." };
-          } else {
-            messages.pop();
-          }
-        }
-        return { ...prev, messages, status: "idle" };
-      });
-    } else {
-      setState((prev) => {
-        const messages = [...prev.messages];
-        const last = messages[messages.length - 1];
-        if (last?.role === "assistant" && last.text && prev.status === "speaking") {
+    setState((prev) => {
+      const messages = [...prev.messages];
+      const last = messages[messages.length - 1];
+      if (last?.role === "assistant") {
+        if (last.text) {
           messages[messages.length - 1] = { ...last, text: last.text + "..." };
+        } else {
+          messages.pop();
         }
-        return { ...prev, messages, status: prev.status === "speaking" || prev.status === "thinking" ? "idle" : prev.status };
-      });
-    }
+      }
+      return { ...prev, messages, status: "idle" };
+    });
   }, [tts, emit]);
 
   const setUserSpeaking = useCallback((speaking: boolean) => {

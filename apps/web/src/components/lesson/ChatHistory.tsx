@@ -24,7 +24,7 @@ export function ChatHistory({
   return (
     <div className="flex-1 overflow-y-auto px-5 pb-4 space-y-4">
       {messages.map((msg, i) => (
-        <div key={msg.timestamp}>
+        <div key={`${msg.timestamp}-${i}`}>
           {msg.role === "user" ? (
             <div className="flex justify-end">
               <p className="text-white/60 text-sm max-w-[85%] text-right">
