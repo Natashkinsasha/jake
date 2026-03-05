@@ -23,6 +23,8 @@ export interface StreamCallbacks {
   onDiscard?(safetyText: string): void;
 }
 
+const MAX_BUFFER_AGE_MS = 300;
+
 @Injectable()
 export class StreamingPipelineService {
   private readonly logger = new Logger(StreamingPipelineService.name);
@@ -40,6 +42,25 @@ export class StreamingPipelineService {
   ): Promise<void> {
     const sentenceBuffer = new SentenceBuffer();
     let chunkIndex = 0;
+    let bufferStartTime: number | null = null;
+
+    const emitChunk = (text: string) => {
+      if (!options?.signal?.aborted) {
+        callbacks.onChunk({ chunkIndex: chunkIndex++, text });
+      }
+    };
+
+    const flushIfStale = () => {
+      if (
+        bufferStartTime !== null
+        && Date.now() - bufferStartTime >= MAX_BUFFER_AGE_MS
+        && sentenceBuffer.hasContent()
+      ) {
+        bufferStartTime = null;
+        const flushed = sentenceBuffer.flush();
+        if (flushed) emitChunk(flushed);
+      }
+    };
 
     try {
       const llmResponse = await this.llm.generateStream(
@@ -48,17 +69,24 @@ export class StreamingPipelineService {
         {
           onText: (delta) => {
             const sentences = sentenceBuffer.push(delta);
+
             for (const sentence of sentences) {
-              if (!options?.signal?.aborted) {
-                callbacks.onChunk({ chunkIndex: chunkIndex++, text: sentence });
-              }
+              emitChunk(sentence);
             }
+
+            // Track buffer age: flush if text sits without a sentence boundary for too long
+            if (sentences.length > 0) {
+              bufferStartTime = sentenceBuffer.hasContent() ? Date.now() : null;
+            } else if (sentenceBuffer.hasContent() && bufferStartTime === null) {
+              bufferStartTime = Date.now();
+            }
+
+            flushIfStale();
           },
           onDone: () => {
+            bufferStartTime = null;
             const remaining = sentenceBuffer.flush();
-            if (remaining && !options?.signal?.aborted) {
-              callbacks.onChunk({ chunkIndex: chunkIndex++, text: remaining });
-            }
+            if (remaining) emitChunk(remaining);
           },
         },
         { signal: options?.signal, spanName: "lesson.stream" },

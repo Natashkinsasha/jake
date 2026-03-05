@@ -37,6 +37,10 @@ export class SentenceBuffer {
     return sentences;
   }
 
+  hasContent(): boolean {
+    return this.buffer.trim().length > 0;
+  }
+
   flush(): string | null {
     const remaining = this.buffer.trim();
     this.buffer = "";
