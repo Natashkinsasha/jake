@@ -37,6 +37,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   const isStreamingRef = useRef(false);
   const wsReadyRef = useRef(false);
   const eosRequestedRef = useRef(false);
+  const openGenRef = useRef(0);
 
   const cleanupAudio = useCallback(() => {
     if (audioRef.current) {
@@ -149,9 +150,14 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
     async (voiceId: string, speechSpeed: number, onReady: () => void) => {
       // Close any existing WS before opening a new one
       closeWs();
+      const gen = ++openGenRef.current;
 
       try {
         const { token } = await api.tts.token();
+        if (openGenRef.current !== gen) {
+          log("openWs cancelled (stop() called during token fetch)");
+          return;
+        }
         log("got single-use token");
 
         const wsUrl = `wss://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream-input?model_id=${TTS_CONFIG.MODEL}&output_format=${TTS_CONFIG.OUTPUT_FORMAT}&single_use_token=${token}`;
@@ -318,6 +324,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   const stop = useCallback(() => {
     log("stop");
     isStreamingRef.current = false;
+    openGenRef.current++;
     closeWs();
     audioQueueRef.current = [];
     cleanupAudio();
