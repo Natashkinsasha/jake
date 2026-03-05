@@ -176,7 +176,9 @@ export function useLessonState(token?: string | null) {
         ttsRef.current.sendChunk(action.text);
 
         // Accumulate text — progress callback will reveal it in sync with audio
-        streamTextRef.current += (streamTextRef.current ? " " : "") + action.text;
+        // Don't add space if chunk starts with punctuation (e.g. ", I'm...")
+        const sep = streamTextRef.current && !/^[,.\-!?;:'"]/.test(action.text) ? " " : "";
+        streamTextRef.current += sep + action.text;
         pendingRevealTextRef.current = streamTextRef.current;
 
         // Ensure assistant message bubble exists (empty until audio plays)
