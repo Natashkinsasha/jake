@@ -68,4 +68,7 @@ export const api = {
         body: JSON.stringify(data),
       }),
   },
+  tts: {
+    token: () => request<{ token: string }>("/lessons/tts/token"),
+  },
 };

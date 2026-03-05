@@ -11,6 +11,7 @@ import { EnvService } from "../../../../@shared/shared-config/env.service";
 @UseGuards(JwtAuthGuard)
 export class LessonController {
   private sttTokenHits = new Map<string, { count: number; resetAt: number }>();
+  private ttsTokenHits = new Map<string, { count: number; resetAt: number }>();
 
   constructor(
     private lessonMaintainer: LessonMaintainer,
@@ -56,6 +57,43 @@ export class LessonController {
     }
 
     return { key: apiKey };
+  }
+
+  @Get("tts/token")
+  async ttsToken(@CurrentUserId() userId: string) {
+    const now = Date.now();
+    const entry = this.ttsTokenHits.get(userId);
+
+    if (entry && now < entry.resetAt) {
+      entry.count++;
+      if (entry.count > 10) {
+        throw new HttpException("Too many requests", 429);
+      }
+    } else {
+      this.ttsTokenHits.set(userId, { count: 1, resetAt: now + 10 * 60 * 1000 });
+    }
+
+    const apiKey = this.env.get("ELEVENLABS_API_KEY");
+    if (!apiKey) {
+      throw new HttpException("ELEVENLABS_API_KEY not configured", 500);
+    }
+
+    const res = await fetch("https://api.elevenlabs.io/v1/single-use-token/tts_websocket", {
+      method: "POST",
+      headers: {
+        "xi-api-key": apiKey,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ allowed_voice_ids: ["*"] }),
+    }).catch(() => null);
+
+    if (!res?.ok) {
+      const body = await res?.text().catch(() => "");
+      throw new HttpException(`ElevenLabs token error: ${body}`, 502);
+    }
+
+    const data = (await res.json()) as { token: string };
+    return { token: data.token };
   }
 
   @Get(":id")
