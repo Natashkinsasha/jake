@@ -277,6 +277,11 @@ export function useLessonState(token?: string | null) {
       const trimmed = text.trim();
       const messageId = crypto.randomUUID();
       activeMessageIdRef.current = messageId;
+
+      // Pre-warm TTS WebSocket while server processes the request
+      if (voiceIdRef.current) {
+        ttsRef.current.preWarm(voiceIdRef.current, speechSpeedRef.current);
+      }
       setState((prev) => {
         const last = prev.messages[prev.messages.length - 1];
         if (last?.role === "user") {

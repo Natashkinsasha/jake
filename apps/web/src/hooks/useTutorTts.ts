@@ -13,6 +13,7 @@ interface UseTutorTtsOptions {
 
 interface UseTutorTtsReturn {
   speak: (text: string, voiceId: string, speechSpeed?: number) => void;
+  preWarm: (voiceId: string, speechSpeed?: number) => void;
   startStream: (voiceId: string, speechSpeed?: number) => void;
   sendChunk: (text: string) => void;
   endStream: () => void;
@@ -195,6 +196,18 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
             }),
           );
           wsReadyRef.current = true;
+
+          // Flush any text buffered by sendChunk() before WS was ready
+          for (const text of pendingTextRef.current) {
+            sendTextToWs(text, true);
+          }
+          pendingTextRef.current = [];
+
+          if (eosRequestedRef.current) {
+            sendEos();
+            eosRequestedRef.current = false;
+          }
+
           onReady();
         };
 
@@ -251,7 +264,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
         closeWs();
       }
     },
-    [enqueueAudio, closeWs],
+    [enqueueAudio, closeWs, sendTextToWs, sendEos],
   );
 
   /** Speak a single message (greeting, exercise feedback). Opens WS, sends text, closes. */
@@ -268,29 +281,34 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
     [openWs, sendTextToWs, sendEos],
   );
 
+  /** Pre-warm: fetch token + open WS to ElevenLabs before first chunk arrives. */
+  const preWarm = useCallback(
+    (voiceId: string, speechSpeed?: number) => {
+      if (wsRef.current) return; // Already open or connecting
+      log("preWarm");
+      void openWs(voiceId, speechSpeed ?? 1.0, () => {});
+    },
+    [openWs],
+  );
+
   /** Start a streaming TTS session. Call sendChunk() for each sentence, then endStream(). */
   const startStream = useCallback(
     (voiceId: string, speechSpeed?: number) => {
       log("startStream, voiceId:", voiceId);
       isStreamingRef.current = true;
-      pendingTextRef.current = [];
       eosRequestedRef.current = false;
 
-      void openWs(voiceId, speechSpeed ?? 1.0, () => {
-        for (const text of pendingTextRef.current) {
-          sendTextToWs(text, true);
-        }
-        pendingTextRef.current = [];
+      // If WS already exists (pre-warmed or connecting), reuse it
+      if (wsRef.current) {
+        log("startStream: reusing pre-warmed WS");
+        return;
+      }
 
-        // If endStream() was called while WS was still connecting, send EOS now
-        if (eosRequestedRef.current) {
-          log("sending deferred EOS");
-          sendEos();
-          eosRequestedRef.current = false;
-        }
-      });
+      // No pre-warm, open normally
+      pendingTextRef.current = [];
+      void openWs(voiceId, speechSpeed ?? 1.0, () => {});
     },
-    [openWs, sendTextToWs, sendEos],
+    [openWs],
   );
 
   /** Send a text chunk (sentence) during a streaming session. */
@@ -332,5 +350,5 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
     setIsSpeaking(false);
   }, [closeWs, cleanupAudio]);
 
-  return { speak, startStream, sendChunk, endStream, stop, isSpeaking };
+  return { speak, preWarm, startStream, sendChunk, endStream, stop, isSpeaking };
 }
