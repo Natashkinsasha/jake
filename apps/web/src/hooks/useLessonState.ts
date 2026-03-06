@@ -288,6 +288,13 @@ export function useLessonState(token?: string | null) {
     [emit],
   );
 
+  const sendVoiceSample = useCallback(
+    (base64Audio: string) => {
+      emit("voice_sample", { audio: base64Audio });
+    },
+    [emit],
+  );
+
   const endLesson = useCallback(() => {
     emit("end_lesson", {});
   }, [emit]);
@@ -326,6 +333,7 @@ export function useLessonState(token?: string | null) {
     isPlaying: tts.isSpeaking,
     ttsError,
     sendText,
+    sendVoiceSample,
     endLesson,
     interruptTutor,
     stopAllAudio: useCallback(() => { tts.stop(); }, [tts]),

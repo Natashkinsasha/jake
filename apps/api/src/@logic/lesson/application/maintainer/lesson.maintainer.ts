@@ -133,6 +133,13 @@ export class LessonMaintainer {
     const session = await this.sessionService.get(socketId);
     if (!session) return;
 
+    // Inject voice mismatch hint into system prompt (one-time)
+    let systemPrompt = session.systemPrompt;
+    if (session.voiceMismatch) {
+      systemPrompt += "\n\n=== VOICE OBSERVATION ===\nThe student's voice sounds noticeably different from their usual voice today. They might be sick, tired, or feeling off. You can gently and naturally ask if they're feeling okay — don't make a big deal of it, just show you noticed. One brief mention is enough.";
+      await this.sessionService.setVoiceMismatch(socketId, false);
+    }
+
     // Layer 1: Regex pre-filter (instant, <1ms)
     const quickResult = this.moderationService.quickCheck(text);
     if (!quickResult.isSafe) {
@@ -157,7 +164,7 @@ export class LessonMaintainer {
       });
 
     await this.streamingPipeline.stream(
-      session.systemPrompt,
+      systemPrompt,
       updatedHistory,
       {
         onChunk: (chunk) => {
