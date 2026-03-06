@@ -57,6 +57,8 @@ module.exports = {
     "unicorn/prefer-number-properties": "error",
     "unicorn/no-for-loop": "error",
     "unicorn/prefer-includes": "error",
+    // memory leak prevention
+    "no-loop-func": "error",
   },
   overrides: [
     {
