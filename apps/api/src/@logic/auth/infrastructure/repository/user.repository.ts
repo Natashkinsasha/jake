@@ -60,6 +60,7 @@ export class UserRepository {
     useNativeLanguage: boolean;
     preferredExerciseTypes: string[];
     interests: string[];
+    ttsModel: string;
   }>): Promise<void> {
     await this.txHost.tx.update(userPreferenceTable).set(data).where(eq(userPreferenceTable.userId, userId));
   }

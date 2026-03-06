@@ -8,6 +8,7 @@ const updatePreferencesBodySchema = z.object({
   useNativeLanguage: z.boolean().optional(),
   preferredExerciseTypes: z.array(z.string()).optional(),
   interests: z.array(z.string()).optional(),
+  ttsModel: z.string().optional(),
 });
 
 export class UpdatePreferencesBody extends createZodDto(updatePreferencesBodySchema) {}
