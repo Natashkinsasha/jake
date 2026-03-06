@@ -37,9 +37,9 @@ interface UseTutorTtsOptions {
 }
 
 interface UseTutorTtsReturn {
-  speak: (text: string, voiceId: string, speechSpeed?: number) => void;
-  preWarm: (voiceId: string, speechSpeed?: number) => void;
-  startStream: (voiceId: string, speechSpeed?: number) => void;
+  speak: (text: string, voiceId: string, speechSpeed?: number, model?: string) => void;
+  preWarm: (voiceId: string, speechSpeed?: number, model?: string) => void;
+  startStream: (voiceId: string, speechSpeed?: number, model?: string) => void;
   sendChunk: (text: string) => void;
   endStream: () => void;
   stop: () => void;
@@ -253,7 +253,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   }, []);
 
   const openWs = useCallback(
-    async (voiceId: string, speechSpeed: number, onReady: () => void) => {
+    async (voiceId: string, speechSpeed: number, onReady: () => void, model?: string) => {
       // Close any existing WS before opening a new one
       closeWs();
       connectingRef.current = true;
@@ -268,7 +268,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
         }
         log("got single-use token");
 
-        const wsUrl = `wss://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream-input?model_id=${TTS_CONFIG.MODEL}&output_format=${TTS_CONFIG.OUTPUT_FORMAT}&single_use_token=${token}`;
+        const wsUrl = `wss://api.elevenlabs.io/v1/text-to-speech/${voiceId}/stream-input?model_id=${model ?? TTS_CONFIG.MODEL}&output_format=${TTS_CONFIG.OUTPUT_FORMAT}&single_use_token=${token}`;
         const ws = new WebSocket(wsUrl);
         wsRef.current = ws;
 
@@ -384,32 +384,32 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
 
   /** Speak a single message (greeting, exercise feedback). Opens WS, sends text, closes. */
   const speak = useCallback(
-    (text: string, voiceId: string, speechSpeed?: number) => {
+    (text: string, voiceId: string, speechSpeed?: number, model?: string) => {
       if (!text.trim()) return;
       log("speak:", text.slice(0, 50), "voiceId:", voiceId);
 
       void openWs(voiceId, speechSpeed ?? 1.0, () => {
         sendTextToWs(text, true);
         sendEos();
-      });
+      }, model);
     },
     [openWs, sendTextToWs, sendEos],
   );
 
   /** Pre-warm: fetch token + open WS to ElevenLabs before first chunk arrives. */
   const preWarm = useCallback(
-    (voiceId: string, speechSpeed?: number) => {
+    (voiceId: string, speechSpeed?: number, model?: string) => {
       // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
       if (wsRef.current || connectingRef.current) return;
       log("preWarm");
-      void openWs(voiceId, speechSpeed ?? 1.0, () => {});
+      void openWs(voiceId, speechSpeed ?? 1.0, () => {}, model);
     },
     [openWs],
   );
 
   /** Start a streaming TTS session. Call sendChunk() for each sentence, then endStream(). */
   const startStream = useCallback(
-    (voiceId: string, speechSpeed?: number) => {
+    (voiceId: string, speechSpeed?: number, model?: string) => {
       log("startStream, voiceId:", voiceId);
       isStreamingRef.current = true;
       eosRequestedRef.current = false;
@@ -423,7 +423,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
 
       // No pre-warm, open normally
       pendingTextRef.current = [];
-      void openWs(voiceId, speechSpeed ?? 1.0, () => {});
+      void openWs(voiceId, speechSpeed ?? 1.0, () => {}, model);
     },
     [openWs],
   );

@@ -13,6 +13,7 @@ export interface UserPreferences {
   explainGrammar?: boolean;
   useNativeLanguage?: boolean;
   speakingSpeed?: string;
+  ttsModel?: string;
 }
 
 // Lesson types

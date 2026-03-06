@@ -31,6 +31,7 @@ export function useLessonState(token?: string | null) {
   const activeMessageIdRef = useRef<string | null>(null);
   const voiceIdRef = useRef<string | null>(null);
   const speechSpeedRef = useRef<number>(1.0);
+  const ttsModelRef = useRef<string | undefined>(undefined);
   const streamStartedRef = useRef(false);
 
   const streamTextRef = useRef<string>("");
@@ -107,9 +108,10 @@ export function useLessonState(token?: string | null) {
     log("event:", event, data.text ? `"${data.text.slice(0, 50)}..."` : "");
 
     if (event === "lesson_started") {
-      const d = data as LessonEventData & { voiceId?: string; speechSpeed?: number };
+      const d = data as LessonEventData & { voiceId?: string; speechSpeed?: number; ttsModel?: string };
       if (d.voiceId) voiceIdRef.current = d.voiceId;
       if (d.speechSpeed != null) speechSpeedRef.current = d.speechSpeed;
+      if (d.ttsModel) ttsModelRef.current = d.ttsModel;
     }
 
     if (event === "speed_updated") {
@@ -151,7 +153,7 @@ export function useLessonState(token?: string | null) {
             messages: [...prev.messages, { role: "assistant" as const, text: "", timestamp: Date.now() }],
             status: "speaking",
           }));
-          ttsRef.current.speak(action.text, voiceIdRef.current, speechSpeedRef.current);
+          ttsRef.current.speak(action.text, voiceIdRef.current, speechSpeedRef.current, ttsModelRef.current);
         } else {
           // No TTS — show text immediately
           setState((prev) => ({
@@ -175,7 +177,7 @@ export function useLessonState(token?: string | null) {
 
         if (!streamStartedRef.current && voiceIdRef.current) {
           streamStartedRef.current = true;
-          ttsRef.current.startStream(voiceIdRef.current, speechSpeedRef.current);
+          ttsRef.current.startStream(voiceIdRef.current, speechSpeedRef.current, ttsModelRef.current);
         }
 
         ttsRef.current.sendChunk(action.text);
@@ -266,7 +268,7 @@ export function useLessonState(token?: string | null) {
 
       // Pre-warm TTS WebSocket while server processes the request
       if (voiceIdRef.current) {
-        ttsRef.current.preWarm(voiceIdRef.current, speechSpeedRef.current);
+        ttsRef.current.preWarm(voiceIdRef.current, speechSpeedRef.current, ttsModelRef.current);
       }
 
       setState((prev) => {

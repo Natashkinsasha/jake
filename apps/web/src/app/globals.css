@@ -40,3 +40,11 @@
 .animate-stagger-8 { animation-delay: 0.4s; }
 .animate-stagger-9 { animation-delay: 0.45s; }
 .animate-stagger-10 { animation-delay: 0.5s; }
+
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+.animate-slide-in-right {
+  animation: slide-in-right 0.2s ease-out;
+}
