@@ -12,6 +12,7 @@ export const FactExtractionResultSchema = z.object({
   facts: z.array(z.object({
     category: MemoryCategory,
     fact: z.string(),
+    isTemporary: z.boolean(),
   })),
   errors: z.array(z.object({
     text: z.string(),

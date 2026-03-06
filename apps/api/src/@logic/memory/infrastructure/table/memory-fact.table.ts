@@ -10,6 +10,7 @@ export const memoryFactTable = pgTable(
     fact: text("fact").notNull(),
     source: varchar("source", { length: 255 }).notNull(),
     isActive: boolean("is_active").default(true),
+    expiresAt: timestamp("expires_at"),
     createdAt: timestamp("created_at").defaultNow().notNull(),
     updatedAt: timestamp("updated_at").defaultNow().notNull(),
   },
