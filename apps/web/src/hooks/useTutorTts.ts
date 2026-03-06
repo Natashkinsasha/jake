@@ -53,10 +53,11 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   const wsRef = useRef<WebSocket | null>(null);
   const optionsRef = useCallbackRef(options);
 
-  // AudioContext gapless playback (pre-decode + sequential play)
+  // AudioContext gapless playback (pre-decode + scheduled play)
   const audioCtxRef = useRef<AudioContext | null>(null);
   const decodedQueueRef = useRef<AudioBuffer[]>([]);
   const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const scheduledSourcesRef = useRef<AudioBufferSourceNode[]>([]);
   const playingRef = useRef(false);
   const allReceivedRef = useRef(false);
   const audioGenRef = useRef(0);
@@ -64,7 +65,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   // Playback progress tracking
   const totalDecodedDurRef = useRef(0);
   const playedDurRef = useRef(0);
-  const bufStartCtxTimeRef = useRef(0);
+  const batchStartTimeRef = useRef(0);
   const progressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const pendingTextRef = useRef<string[]>([]);
@@ -99,6 +100,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
       }
       playingRef.current = false;
       preBufferMetRef.current = false;
+      scheduledSourcesRef.current = [];
       totalDecodedDurRef.current = 0;
       playedDurRef.current = 0;
       setIsSpeaking(false);
@@ -124,17 +126,18 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
       source.start(startTime);
       nextStartTimeRef.current = startTime + audioBuffer.duration;
       currentSourceRef.current = source;
-      bufStartCtxTimeRef.current = startTime;
+      scheduledSourcesRef.current.push(source);
 
       // Start progress reporting on first buffer
       if (!progressTimerRef.current) {
+        batchStartTimeRef.current = startTime;
         optionsRef.current?.onPlaybackStart?.();
         progressTimerRef.current = setInterval(() => {
           const c = audioCtxRef.current;
-          if (!c || !currentSourceRef.current) return;
-          const elapsed = c.currentTime - bufStartCtxTimeRef.current;
+          if (!c) return;
+          const elapsed = c.currentTime - batchStartTimeRef.current;
           optionsRef.current?.onPlaybackProgress?.(
-            playedDurRef.current + elapsed,
+            Math.max(0, elapsed),
             totalDecodedDurRef.current,
             allReceivedRef.current,
           );
@@ -144,6 +147,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
       log(`scheduled chunk (${Math.round(audioBuffer.duration * 1000)}ms) at ${startTime.toFixed(3)}`);
 
       source.onended = () => {
+        scheduledSourcesRef.current = scheduledSourcesRef.current.filter((s) => s !== source);
         if (currentSourceRef.current === source) {
           currentSourceRef.current = null;
         }
@@ -192,14 +196,15 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
       clearInterval(progressTimerRef.current);
       progressTimerRef.current = null;
     }
-    if (currentSourceRef.current) {
+    for (const source of scheduledSourcesRef.current) {
       try {
-        currentSourceRef.current.stop();
+        source.stop();
       } catch {
         // Already stopped
       }
-      currentSourceRef.current = null;
     }
+    scheduledSourcesRef.current = [];
+    currentSourceRef.current = null;
     decodedQueueRef.current = [];
     allReceivedRef.current = false;
     playingRef.current = false;
