@@ -5,9 +5,8 @@ export const returningStudentContext: LessonContext = {
   level: "B1",
   lessonNumber: 5,
   lastLessonAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-  tutorSystemPrompt: "",
+  tutorPromptFragment: "",
   tutorVoiceId: "pNInz6obpgDQGcFmaJgB",
-  tutorId: "jake-tutor-id",
   preferences: {
     correctionStyle: "natural",
     explainGrammar: true,
@@ -15,6 +14,7 @@ export const returningStudentContext: LessonContext = {
     useNativeLanguage: false,
     preferredExercises: ["fill_the_gap", "multiple_choice"],
     interests: ["programming", "movies", "travel"],
+    ttsModel: "eleven_turbo_v2_5",
   },
   facts: [
     { category: "personal", fact: "Lives in Berlin" },
@@ -36,9 +36,8 @@ export const firstLessonContext: LessonContext = {
   level: null,
   lessonNumber: 1,
   lastLessonAt: null,
-  tutorSystemPrompt: "",
+  tutorPromptFragment: "",
   tutorVoiceId: "pNInz6obpgDQGcFmaJgB",
-  tutorId: "jake-tutor-id",
   preferences: {
     correctionStyle: "natural",
     explainGrammar: true,
@@ -46,6 +45,7 @@ export const firstLessonContext: LessonContext = {
     useNativeLanguage: false,
     preferredExercises: [],
     interests: [],
+    ttsModel: "eleven_turbo_v2_5",
   },
   facts: [],
   recentEmotionalContext: [],

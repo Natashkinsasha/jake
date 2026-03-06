@@ -47,9 +47,11 @@ export const api = {
         body: JSON.stringify(data),
       }),
   },
-  tutors: {
-    list: () =>
-      request<{ id: string; name: string; personality: string; accent: string; avatarUrl: string | null; traits: string[] }[]>("/tutors"),
+  tutor: {
+    profiles: () =>
+      request<{ gender: string; nationality: string; description: string; traits: string[] }[]>("/tutor/profiles"),
+    voices: (gender: string) =>
+      request<{ id: string; name: string; gender: string }[]>(`/tutor/voices?gender=${gender}`),
   },
   lessons: {
     list: (offset = 0, limit = 10) => request<LessonListItem[]>(`/lessons?offset=${offset}&limit=${limit}`),

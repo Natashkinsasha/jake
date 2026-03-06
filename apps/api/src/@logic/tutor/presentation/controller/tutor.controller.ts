@@ -1,17 +1,25 @@
-import { Controller, Get, UseGuards } from "@nestjs/common";
-import { ZodSerializerDto } from "nestjs-zod";
+import { Controller, Get, Query, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "@shared/shared-auth/jwt-auth.guard";
-import { TutorMaintainer } from "../../application/maintainer/tutor.maintainer";
-import { TutorListResponse } from "../dto/response/tutor-list.response";
+import { TutorContract } from "../../contract/tutor.contract";
+import type { TutorGender } from "../../domain/tutor-types";
 
-@Controller("tutors")
+@Controller("tutor")
 @UseGuards(JwtAuthGuard)
 export class TutorController {
-  constructor(private tutorMaintainer: TutorMaintainer) {}
+  constructor(private readonly tutorContract: TutorContract) {}
 
-  @Get()
-  @ZodSerializerDto(TutorListResponse)
-  async list() {
-    return this.tutorMaintainer.listActive();
+  @Get("profiles")
+  getProfiles() {
+    return this.tutorContract.getProfiles().map((p) => ({
+      gender: p.gender,
+      nationality: p.nationality,
+      description: p.description,
+      traits: p.traits,
+    }));
+  }
+
+  @Get("voices")
+  getVoices(@Query("gender") gender: TutorGender) {
+    return this.tutorContract.getVoices(gender);
   }
 }

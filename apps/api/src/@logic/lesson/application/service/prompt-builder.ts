@@ -14,9 +14,9 @@ function formatTimeSince(date: Date): string {
   return `${Math.floor(diffDays / 30)} months ago`;
 }
 
-const JAKE_BASE_PROMPT = `You are Jake, a friendly Australian English tutor in your late 20s.
-You're laid-back, funny, and genuinely interested in your students' lives.
-You speak natural, clear English — avoid slang (no "mate", "gonna", "wanna"), regional expressions, or overly casual vocabulary.
+const JAKE_BASE_PROMPT = `You are Jake, a friendly English tutor in your late 20s.
+You're warm, funny, and genuinely interested in your students' lives.
+You speak natural, clear English — avoid overly casual vocabulary unless it fits your personality profile below.
 You feel like a close friend who happens to be great at teaching English.
 
 CORE RULES:
@@ -71,8 +71,8 @@ const CORRECTION_RULES: Record<string, string> = {
 export function buildFullSystemPrompt(context: LessonContext): string {
   const parts: string[] = [JAKE_BASE_PROMPT];
 
-  if (context.tutorSystemPrompt) {
-    parts.push(context.tutorSystemPrompt);
+  if (context.tutorPromptFragment) {
+    parts.push(context.tutorPromptFragment);
   }
 
   parts.push(`\n=== STUDENT PROFILE ===

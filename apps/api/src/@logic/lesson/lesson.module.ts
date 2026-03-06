@@ -8,7 +8,6 @@ import { JobModule } from "@lib/job/src";
 import { QUEUE_NAMES } from "@shared/shared-job/queue-names";
 import { SharedConfigModule } from "@shared/shared-config/shared-config.module";
 import { AuthModule } from "../auth/auth.module";
-import { TutorModule } from "../tutor/tutor.module";
 import { MemoryModule } from "../memory/memory.module";
 import { VocabularyModule } from "../vocabulary/vocabulary.module";
 import { ProgressModule } from "../progress/progress.module";
@@ -40,7 +39,6 @@ import { LessonController } from "./presentation/controller/lesson.controller";
     JobModule.registerQueue({ name: QUEUE_NAMES.POST_LESSON }),
     JobModule.registerQueue({ name: QUEUE_NAMES.FACT_EXTRACTION }),
     AuthModule,
-    TutorModule,
     MemoryModule,
     VocabularyModule,
     ProgressModule,

@@ -4,7 +4,9 @@ import { LessonRepository } from "../../infrastructure/repository/lesson.reposit
 import { MemoryContract } from "../../../memory/contract/memory.contract";
 import { ProgressContract } from "../../../progress/contract/progress.contract";
 import { VocabularyContract } from "../../../vocabulary/contract/vocabulary.contract";
-import { TutorContract } from "../../../tutor/contract/tutor.contract";
+import { getTutorProfile } from "../../../tutor/domain/tutor-profiles";
+import { getDefaultVoice } from "../../../tutor/domain/tutor-voices";
+import type { TutorGender, TutorNationality } from "../../../tutor/domain/tutor-types";
 import { LessonContext } from "../dto/lesson-context";
 
 @Injectable()
@@ -15,7 +17,6 @@ export class LessonContextService {
     private memoryContract: MemoryContract,
     private progressContract: ProgressContract,
     private vocabularyContract: VocabularyContract,
-    private tutorContract: TutorContract,
   ) {}
 
   async build(userId: string): Promise<LessonContext> {
@@ -23,19 +24,24 @@ export class LessonContextService {
       user,
       grammarProgress,
       recentVocab,
-      activeTutor,
       lessonCount,
       recentLessons,
     ] = await Promise.all([
       this.authContract.findByIdWithPreferences(userId),
       this.progressContract.findByUser(userId),
       this.vocabularyContract.findRecentByUser(userId, 20),
-      this.tutorContract.findActiveUserTutor(userId),
       this.lessonRepository.countByUser(userId),
       this.lessonRepository.findRecentByUser(userId, 1),
     ]);
 
-    if (!user || !activeTutor) throw new NotFoundException("User or tutor not found");
+    if (!user) throw new NotFoundException("User not found");
+
+    const prefs = user.user_preferences;
+
+    const gender = (prefs?.tutorGender ?? "male") as TutorGender;
+    const nationality = (prefs?.tutorNationality ?? "australian") as TutorNationality;
+    const voiceId = prefs?.tutorVoiceId ?? getDefaultVoice(gender).id;
+    const profile = getTutorProfile(nationality, gender);
 
     const suggestedTopics: string[] = [];
     const weak = grammarProgress
@@ -59,16 +65,13 @@ export class LessonContextService {
       suggestedTopics[0] ?? "general English lesson",
     );
 
-    const prefs = user.user_preferences;
-
     return {
       studentName: user.users.name,
       level: user.users.currentLevel,
       lessonNumber: lessonCount + 1,
       lastLessonAt: recentLessons[0]?.startedAt ?? null,
-      tutorSystemPrompt: activeTutor.tutor.systemPrompt,
-      tutorVoiceId: activeTutor.tutor.voiceId,
-      tutorId: activeTutor.userTutor.tutorId,
+      tutorPromptFragment: profile.promptFragment,
+      tutorVoiceId: voiceId,
       preferences: {
         correctionStyle: prefs?.correctionStyle ?? "immediate",
         speakingSpeed: prefs?.speakingSpeed ?? "very_slow",

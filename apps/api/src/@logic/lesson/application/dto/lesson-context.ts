@@ -3,9 +3,8 @@ export interface LessonContext {
   level: string | null;
   lessonNumber: number;
   lastLessonAt: Date | null;
-  tutorSystemPrompt: string;
+  tutorPromptFragment: string;
   tutorVoiceId: string;
-  tutorId: string;
   preferences: {
     correctionStyle: string;
     speakingSpeed: string;

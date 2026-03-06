@@ -9,6 +9,9 @@ const updatePreferencesBodySchema = z.object({
   preferredExerciseTypes: z.array(z.string()).optional(),
   interests: z.array(z.string()).optional(),
   ttsModel: z.string().optional(),
+  tutorGender: z.enum(["male", "female"]).optional(),
+  tutorNationality: z.enum(["australian", "british", "scottish", "american"]).optional(),
+  tutorVoiceId: z.string().optional(),
 });
 
 export class UpdatePreferencesBody extends createZodDto(updatePreferencesBodySchema) {}

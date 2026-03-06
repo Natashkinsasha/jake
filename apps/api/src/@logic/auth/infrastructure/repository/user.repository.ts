@@ -61,6 +61,9 @@ export class UserRepository {
     preferredExerciseTypes: string[];
     interests: string[];
     ttsModel: string;
+    tutorGender: string;
+    tutorNationality: string;
+    tutorVoiceId: string;
   }>): Promise<void> {
     await this.txHost.tx.update(userPreferenceTable).set(data).where(eq(userPreferenceTable.userId, userId));
   }

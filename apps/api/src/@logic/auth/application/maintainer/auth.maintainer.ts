@@ -1,7 +1,6 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { UserRepository } from "../../infrastructure/repository/user.repository";
-import { TutorContract } from "../../../tutor/contract/tutor.contract";
 import { GoogleAuthBody } from "../../presentation/dto/body/google-auth.body";
 import { UpdatePreferencesBody } from "../../presentation/dto/body/update-preferences.body";
 
@@ -10,7 +9,6 @@ export class AuthMaintainer {
   constructor(
     private userRepository: UserRepository,
     private jwtService: JwtService,
-    private tutorContract: TutorContract,
   ) {}
 
   async googleAuth(googleUser: GoogleAuthBody) {
@@ -23,16 +21,6 @@ export class AuthMaintainer {
         name: googleUser.name,
         avatarUrl: googleUser.avatarUrl,
       });
-    }
-
-    // Ensure user has an active tutor
-    const activeTutor = await this.tutorContract.findActiveUserTutor(user.id);
-    if (!activeTutor) {
-      const activeTutors = await this.tutorContract.findActiveTutors();
-      const firstTutor = activeTutors[0];
-      if (firstTutor) {
-        await this.tutorContract.selectTutor(user.id, firstTutor.id);
-      }
     }
 
     const token = await this.jwtService.signAsync({
