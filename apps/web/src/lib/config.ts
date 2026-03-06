@@ -47,7 +47,10 @@ export const TOAST_CONFIG = {
 // TTS (ElevenLabs)
 export const TTS_CONFIG = {
   MODEL: "eleven_turbo_v2_5",
-  OUTPUT_FORMAT: "pcm_22050",
-  SAMPLE_RATE: 22050,
-  VOICE_SETTINGS: { stability: 0.5, similarity_boost: 0.75, style: 0.4 },
+  OUTPUT_FORMAT: "pcm_24000",
+  SAMPLE_RATE: 24000,
+  VOICE_SETTINGS: { stability: 0.65, similarity_boost: 0.75, style: 0.4 },
+  CHUNK_LENGTH_SCHEDULE: [120, 160, 250],
+  CROSSFADE_MS: 5,
+  PRE_BUFFER_MS: 150,
 } as const;
