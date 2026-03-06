@@ -40,7 +40,7 @@ export const api = {
         method: "POST",
         body: JSON.stringify(data),
       }),
-    me: () => request<{ user_preferences?: UserPreferences } & BackendUser>("/auth/me"),
+    me: () => request<{ users: BackendUser; user_preferences: UserPreferences | null }>("/auth/me"),
     updatePreferences: (data: Partial<UserPreferences>) =>
       request<{ success: boolean }>("/auth/me/preferences", {
         method: "PUT",

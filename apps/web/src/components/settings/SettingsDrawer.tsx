@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { api } from "@/lib/api";
-import type { UserPreferences } from "@/types";
+import type { BackendUser, UserPreferences } from "@/types";
 
 interface SettingsDrawerProps {
   open: boolean;
@@ -30,6 +30,7 @@ const CORRECTION_STYLES = [
 ] as const;
 
 export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
+  const [user, setUser] = useState<BackendUser | null>(null);
   const [prefs, setPrefs] = useState<UserPreferences | null>(null);
   const [loading, setLoading] = useState(true);
   const backdropRef = useRef<HTMLDivElement>(null);
@@ -38,6 +39,7 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
     if (!open) return;
     setLoading(true);
     void api.auth.me().then((res) => {
+      setUser(res.users);
       setPrefs(res.user_preferences ?? {});
       setLoading(false);
     }).catch(() => { setLoading(false); });
@@ -79,6 +81,30 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
           <div className="p-4 text-sm text-gray-400">Loading...</div>
         ) : (
           <div className="p-4 space-y-6">
+            {user && (
+              <section>
+                <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Profile</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Name</span>
+                    <span className="text-gray-900 font-medium">{user.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Email</span>
+                    <span className="text-gray-900 text-right truncate ml-2">{user.email}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Level</span>
+                    <span className="text-gray-900">{user.currentLevel ?? "Not set"}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Native Language</span>
+                    <span className="text-gray-900">{user.nativeLanguage ?? "Not set"}</span>
+                  </div>
+                </div>
+              </section>
+            )}
+
             <section>
               <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Voice</h3>
               <div className="space-y-4">

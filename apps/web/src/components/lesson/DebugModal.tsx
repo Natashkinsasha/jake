@@ -22,7 +22,7 @@ export function DebugModal({ open, onClose, debugInfo }: DebugModalProps) {
     if (!open) return;
     void api.auth.me().then((res) => {
       setPrefs(res.user_preferences ?? {});
-    });
+    }).catch(() => {});
   }, [open]);
 
   if (!open) return null;

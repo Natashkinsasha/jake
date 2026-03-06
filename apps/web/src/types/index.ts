@@ -5,7 +5,10 @@ export interface BackendUser {
   email: string;
   name: string;
   avatarUrl: string | null;
+  nativeLanguage: string | null;
   currentLevel: string | null;
+  onboardingCompleted: boolean;
+  createdAt: string;
 }
 
 export interface UserPreferences {
