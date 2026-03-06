@@ -10,9 +10,22 @@ function pcmToAudioBuffer(ctx: AudioContext, raw: ArrayBuffer): AudioBuffer {
   const int16 = new Int16Array(raw);
   const audioBuffer = ctx.createBuffer(1, int16.length, TTS_CONFIG.SAMPLE_RATE);
   const channel = audioBuffer.getChannelData(0);
+
+  const fadeSamples = Math.min(
+    Math.floor((TTS_CONFIG.CROSSFADE_MS / 1000) * TTS_CONFIG.SAMPLE_RATE),
+    Math.floor(int16.length / 2),
+  );
+
   for (const [i, sample] of int16.entries()) {
-    channel[i] = sample / 32768;
+    let gain = 1;
+    if (i < fadeSamples) {
+      gain = i / fadeSamples;
+    } else if (i >= int16.length - fadeSamples) {
+      gain = (int16.length - 1 - i) / fadeSamples;
+    }
+    channel[i] = (sample / 32768) * gain;
   }
+
   return audioBuffer;
 }
 
