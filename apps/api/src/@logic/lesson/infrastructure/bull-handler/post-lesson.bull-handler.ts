@@ -2,6 +2,7 @@ import { Logger } from "@nestjs/common";
 import { Processor } from "@nestjs/bullmq";
 import { Job } from "bullmq";
 import { ClsService } from "nestjs-cls";
+import { PostLessonLlmResponseSchema, PostLessonLlmResponse } from "@jake/shared";
 import { ClsWorkerHost } from "../../../../@shared/shared-cls/cls-worker-host";
 import { Transaction } from "../../../../@shared/shared-cls/transaction";
 import { LlmProvider, EmbeddingProvider } from "../../../../@lib/provider/src";
@@ -10,7 +11,6 @@ import { AuthContract } from "../../../auth/contract/auth.contract";
 import { VocabularyContract } from "../../../vocabulary/contract/vocabulary.contract";
 import { ProgressContract } from "../../../progress/contract/progress.contract";
 import { MemoryContract } from "../../../memory/contract/memory.contract";
-import { PostLessonLlmResponseSchema, PostLessonLlmResponse } from "@jake/shared";
 import { QUEUE_NAMES } from "../../../../@shared/shared-job/queue-names";
 
 const SUMMARY_PROMPT = `Analyze the full lesson conversation and generate a structured summary.

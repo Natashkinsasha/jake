@@ -1,8 +1,8 @@
 "use client";
 
-import { LessonScreen } from "@/components/lesson/LessonScreen";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { LessonScreen } from "@/components/lesson/LessonScreen";
 import { useBackendSession } from "@/hooks/useBackendSession";
 
 export default function LessonPage() {

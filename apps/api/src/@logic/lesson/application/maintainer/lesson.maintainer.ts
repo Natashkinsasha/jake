@@ -1,4 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { Queue } from "bullmq";
+import { InjectQueue } from "@nestjs/bullmq";
 import { LessonRepository } from "../../infrastructure/repository/lesson.repository";
 import { LessonMessageRepository } from "../../infrastructure/repository/lesson-message.repository";
 import { LessonContextService } from "../service/lesson-context.service";
@@ -6,8 +8,6 @@ import { LessonResponseService } from "../service/lesson-response.service";
 import { StreamingPipelineService } from "../service/streaming-pipeline.service";
 import type { StreamCallbacks } from "../service/streaming-pipeline.service";
 import type { LlmMessage } from "../../../../@lib/provider/src";
-import { Queue } from "bullmq";
-import { InjectQueue } from "@nestjs/bullmq";
 import { buildFullSystemPrompt } from "../service/prompt-builder";
 import { QUEUE_NAMES } from "../../../../@shared/shared-job/queue-names";
 import { ModerationService, SAFETY_RESPONSE } from "../../../llm/src/moderation/moderation.service";
@@ -17,7 +17,7 @@ const SET_SPEED_RE = /<set_speed>(very_slow|slow|natural|fast|very_fast)<\/set_s
 
 function stripSpeedTags(text: string): { cleanText: string; speed: string | null } {
   let speed: string | null = null;
-  const cleanText = text.replace(SET_SPEED_RE, (_, s: string) => { speed = s; return ""; }).trim();
+  const cleanText = text.replaceAll(SET_SPEED_RE, (_, s: string) => { speed = s; return ""; }).trim();
   return { cleanText, speed };
 }
 

@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
+import { FactExtractionResultSchema, type FactExtractionResult } from "@jake/shared";
 import { LlmProvider } from "../../../../@lib/provider/src";
 import type { LlmMessage } from "../../../../@lib/provider/src";
 import { MemoryFactRepository } from "../../infrastructure/repository/memory-fact.repository";
-import { FactExtractionResultSchema, type FactExtractionResult } from "@jake/shared";
 
 const FACT_EXTRACTION_PROMPT = `
 Analyze the student's message in the context of the conversation.

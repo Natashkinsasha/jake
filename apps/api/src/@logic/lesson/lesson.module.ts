@@ -1,15 +1,4 @@
 import { Module } from "@nestjs/common";
-import { LessonController } from "./presentation/controller/lesson.controller";
-import { LessonGateway } from "./presentation/gateway/lesson.gateway";
-import { LessonMaintainer } from "./application/maintainer/lesson.maintainer";
-import { LessonContextService } from "./application/service/lesson-context.service";
-import { LessonResponseService } from "./application/service/lesson-response.service";
-import { StreamingPipelineService } from "./application/service/streaming-pipeline.service";
-import { LessonSessionService } from "./application/service/lesson-session.service";
-import { LessonMapper } from "./application/mapper/lesson.mapper";
-import { LessonRepository } from "./infrastructure/repository/lesson.repository";
-import { LessonMessageRepository } from "./infrastructure/repository/lesson-message.repository";
-import { PostLessonBullHandler } from "./infrastructure/bull-handler/post-lesson.bull-handler";
 import { LlmModule } from "../llm/src/llm.module";
 import { EmbeddingModule } from "../embedding/src/embedding.module";
 import { SharedAuthModule } from "../../@shared/shared-auth/shared-auth.module";
@@ -25,6 +14,17 @@ import { MemoryModule } from "../memory/memory.module";
 import { VocabularyModule } from "../vocabulary/vocabulary.module";
 import { ProgressModule } from "../progress/progress.module";
 import { SharedConfigModule } from "../../@shared/shared-config/shared-config.module";
+import { PostLessonBullHandler } from "./infrastructure/bull-handler/post-lesson.bull-handler";
+import { LessonMessageRepository } from "./infrastructure/repository/lesson-message.repository";
+import { LessonRepository } from "./infrastructure/repository/lesson.repository";
+import { LessonMapper } from "./application/mapper/lesson.mapper";
+import { LessonSessionService } from "./application/service/lesson-session.service";
+import { StreamingPipelineService } from "./application/service/streaming-pipeline.service";
+import { LessonResponseService } from "./application/service/lesson-response.service";
+import { LessonContextService } from "./application/service/lesson-context.service";
+import { LessonMaintainer } from "./application/maintainer/lesson.maintainer";
+import { LessonGateway } from "./presentation/gateway/lesson.gateway";
+import { LessonController } from "./presentation/controller/lesson.controller";
 
 @Module({
   imports: [

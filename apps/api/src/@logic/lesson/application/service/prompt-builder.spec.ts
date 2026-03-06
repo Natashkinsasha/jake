@@ -1,5 +1,5 @@
-import { buildFullSystemPrompt } from "./prompt-builder";
 import { type LessonContext } from "../dto/lesson-context";
+import { buildFullSystemPrompt } from "./prompt-builder";
 
 function createMockContext(overrides: Partial<LessonContext> = {}): LessonContext {
   return {

@@ -1,5 +1,5 @@
-import { JwtTokenService } from "./jwt-token.service";
 import { type JwtService } from "@nestjs/jwt";
+import { JwtTokenService } from "./jwt-token.service";
 
 describe("JwtTokenService", () => {
   let service: JwtTokenService;

@@ -1,9 +1,9 @@
 import { Body, Controller, Get, Post, Put, UseGuards } from "@nestjs/common";
+import { JwtAuthGuard } from "@shared/shared-auth/jwt-auth.guard";
+import { CurrentUserId } from "@shared/shared-auth/current-user.decorator";
 import { AuthMaintainer } from "../../application/maintainer/auth.maintainer";
 import { GoogleAuthBody } from "../dto/body/google-auth.body";
 import { UpdatePreferencesBody } from "../dto/body/update-preferences.body";
-import { JwtAuthGuard } from "@shared/shared-auth/jwt-auth.guard";
-import { CurrentUserId } from "@shared/shared-auth/current-user.decorator";
 
 @Controller("auth")
 export class AuthController {

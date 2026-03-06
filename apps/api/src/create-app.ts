@@ -1,7 +1,7 @@
 import { NestFactory } from "@nestjs/core";
 import { FastifyAdapter, type NestFastifyApplication } from "@nestjs/platform-fastify";
-import { AppModule } from "./app.module";
 import { IoAdapter } from "@nestjs/platform-socket.io";
+import { AppModule } from "./app.module";
 
 class CustomIoAdapter extends IoAdapter {
   override createIOServer(port: number, options?: Record<string, unknown>) {

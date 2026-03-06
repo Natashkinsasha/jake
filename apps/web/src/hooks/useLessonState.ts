@@ -2,8 +2,8 @@ import { useState, useCallback, useRef } from "react";
 import { useWebSocket } from "./useWebSocket";
 import { useTutorTts } from "./useTutorTts";
 import { handleLessonEvent, type LessonEventData } from "./lesson/handleLessonEvent";
-import { WS_URL } from "@/lib/config";
 import { createLogger } from "./logger";
+import { WS_URL } from "@/lib/config";
 import type { ChatMessage, LessonStatus } from "@/types";
 
 const log = createLogger("Lesson");

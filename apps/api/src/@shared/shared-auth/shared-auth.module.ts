@@ -1,8 +1,8 @@
 import { Module } from "@nestjs/common";
 import { JwtModule } from "@nestjs/jwt";
-import { JwtAuthGuard } from "./jwt-auth.guard";
 import { SharedConfigModule } from "../shared-config/shared-config.module";
 import { EnvService } from "../shared-config/env.service";
+import { JwtAuthGuard } from "./jwt-auth.guard";
 
 @Module({
   imports: [
