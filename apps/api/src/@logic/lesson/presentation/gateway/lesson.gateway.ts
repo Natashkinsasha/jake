@@ -14,10 +14,14 @@ import { z } from "zod";
 import { WsAuthGuard } from "@shared/shared-ws/ws-auth.guard";
 import { LessonMaintainer, toSpeechSpeed } from "../../application/maintainer/lesson.maintainer";
 import { LessonSessionService } from "../../application/service/lesson-session.service";
+import { VoicePrintService } from "../../application/service/voice-print.service";
 
 interface SocketData {
   userId: string;
+  voiceSampleProcessed?: boolean;
 }
+
+const MAX_VOICE_SAMPLE_BYTES = 512 * 1024; // 512KB
 
 const wsTextMessageSchema = z.object({
   text: z.string().min(1),
@@ -41,6 +45,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private lessonMaintainer: LessonMaintainer,
     private sessionService: LessonSessionService,
     private jwtService: JwtService,
+    private voicePrintService: VoicePrintService,
   ) {}
 
   async handleConnection(client: Socket) {
@@ -188,6 +193,36 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
     await this.sessionService.updateSpeechSpeed(client.id, speed);
 
     client.emit("speed_updated", { speed: parsed.data.speed });
+  }
+
+  @SubscribeMessage("voice_sample")
+  async handleVoiceSample(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { audio: string },
+  ) {
+    if (!data?.audio) return;
+
+    const socketData = client.data as SocketData;
+    if (socketData.voiceSampleProcessed) return;
+    socketData.voiceSampleProcessed = true;
+
+    const userId = socketData.userId;
+
+    try {
+      const audioBuffer = Buffer.from(data.audio, "base64");
+      if (audioBuffer.length > MAX_VOICE_SAMPLE_BYTES) {
+        this.logger.warn(`Voice sample too large (${audioBuffer.length} bytes) from user ${userId}`);
+        return;
+      }
+      const result = await this.voicePrintService.processVoiceSample(userId, audioBuffer);
+
+      if (result.status === "mismatch") {
+        await this.sessionService.setVoiceMismatch(client.id, true);
+        this.logger.log(`Voice mismatch detected for user ${userId}, similarity: ${result.similarity?.toFixed(3)}`);
+      }
+    } catch (error) {
+      this.logger.error(`Voice sample processing failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   @SubscribeMessage("end_lesson")

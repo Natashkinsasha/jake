@@ -9,6 +9,7 @@ export interface LessonSession {
   voiceId: string;
   speechSpeed: number;
   history: LlmMessage[];
+  voiceMismatch?: boolean;
 }
 
 const SESSION_TTL = 7200; // 2 hours
@@ -51,6 +52,13 @@ export class LessonSessionService {
     const session = await this.get(socketId);
     if (!session) return;
     session.speechSpeed = speed;
+    await this.save(socketId, session);
+  }
+
+  async setVoiceMismatch(socketId: string, mismatch: boolean): Promise<void> {
+    const session = await this.get(socketId);
+    if (!session) return;
+    session.voiceMismatch = mismatch;
     await this.save(socketId, session);
   }
 

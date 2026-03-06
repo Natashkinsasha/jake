@@ -22,6 +22,7 @@ interface UseStudentSttOptions {
   onSpeechStart?: () => void;
   onSpeechEnd?: () => void;
   onSegment?: (text: string) => void;
+  onVoiceSample?: (base64Audio: string) => void;
 }
 
 interface DeepgramResult {
@@ -62,9 +63,13 @@ export function useStudentStt(
   const speechStartTimeRef = useRef(0);
   const segmentCountRef = useRef(0);
   const transcriptLengthRef = useRef(0);
+  const voiceSampleChunksRef = useRef<Blob[]>([]);
+  const voiceSampleSentRef = useRef(false);
+  const voiceSampleStartRef = useRef(0);
   const onSpeechStartRef = useCallbackRef(options?.onSpeechStart);
   const onSpeechEndRef = useCallbackRef(options?.onSpeechEnd);
   const onSegmentRef = useCallbackRef(options?.onSegment);
+  const onVoiceSampleRef = useCallbackRef(options?.onVoiceSample);
 
   useEffect(() => {
     const supported = typeof navigator.mediaDevices.getUserMedia === "function";
@@ -91,6 +96,8 @@ export function useStudentStt(
     streamRef.current?.getTracks().forEach((t) => { t.stop(); });
     streamRef.current = null;
     speechDetectedRef.current = false;
+    voiceSampleChunksRef.current = [];
+    voiceSampleSentRef.current = false;
   }, []);
 
   const startStreaming = useCallback(async () => {
@@ -152,6 +159,31 @@ export function useStudentStt(
         recorder.ondataavailable = (e) => {
           if (e.data.size > 0 && ws.readyState === WebSocket.OPEN) {
             ws.send(e.data);
+          }
+
+          // Buffer first 10 seconds for voice sample
+          if (!voiceSampleSentRef.current && e.data.size > 0) {
+            if (voiceSampleChunksRef.current.length === 0) {
+              voiceSampleStartRef.current = Date.now();
+            }
+            voiceSampleChunksRef.current.push(e.data);
+
+            const elapsed = Date.now() - voiceSampleStartRef.current;
+            if (elapsed >= 10_000) {
+              voiceSampleSentRef.current = true;
+              const blob = new Blob(voiceSampleChunksRef.current, { type: recorder.mimeType });
+              voiceSampleChunksRef.current = [];
+
+              void blob.arrayBuffer().then((buf) => {
+                const bytes = new Uint8Array(buf);
+                let binary = "";
+                const chunkSize = 8192;
+                for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+                  binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+                }
+                onVoiceSampleRef.current?.(btoa(binary));
+              }).catch(() => { /* ignore encoding errors */ });
+            }
           }
         };
 
@@ -237,7 +269,7 @@ export function useStudentStt(
       setError(message);
       cleanup();
     }
-  }, [cleanup, onSpeechStartRef, onSpeechEndRef, onSegmentRef]);
+  }, [cleanup, onSpeechStartRef, onSpeechEndRef, onSegmentRef, onVoiceSampleRef]);
 
   const enable = useCallback(() => {
     void startStreaming();

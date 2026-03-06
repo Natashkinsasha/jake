@@ -23,6 +23,8 @@ import { StreamingPipelineService } from "./application/service/streaming-pipeli
 import { LessonResponseService } from "./application/service/lesson-response.service";
 import { LessonContextService } from "./application/service/lesson-context.service";
 import { LessonMaintainer } from "./application/maintainer/lesson.maintainer";
+import { VoicePrintService } from "./application/service/voice-print.service";
+import { VoicePrintRepository } from "./infrastructure/repository/voice-print.repository";
 import { LessonGateway } from "./presentation/gateway/lesson.gateway";
 import { LessonController } from "./presentation/controller/lesson.controller";
 
@@ -56,6 +58,8 @@ import { LessonController } from "./presentation/controller/lesson.controller";
     LessonRepository,
     LessonMessageRepository,
     PostLessonBullHandler,
+    VoicePrintService,
+    VoicePrintRepository,
   ],
 })
 export class LessonModule {}

@@ -25,7 +25,7 @@ export function LessonScreen({ token }: LessonScreenProps) {
   const {
     messages, status, connected, isPlaying,
     lessonEnded: serverLessonEnded, error: lessonError, ttsError, sendText,
-    endLesson, interruptTutor, stopAllAudio,
+    sendVoiceSample, endLesson, interruptTutor, stopAllAudio,
     setUserSpeaking, debugInfo,
   } = useLessonState(token);
 
@@ -52,6 +52,9 @@ export function LessonScreen({ token }: LessonScreenProps) {
   const stt = useStudentStt({
     onSpeechEnd: () => {
       setUserSpeaking(false);
+    },
+    onVoiceSample: (base64Audio: string) => {
+      sendVoiceSample(base64Audio);
     },
     onSegment: (text: string) => {
       if (isTutorActiveRef.current) {
