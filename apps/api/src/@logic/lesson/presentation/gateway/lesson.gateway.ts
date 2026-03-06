@@ -12,6 +12,7 @@ import { Server, Socket } from "socket.io";
 import { JwtService } from "@nestjs/jwt";
 import { z } from "zod";
 import { WsAuthGuard } from "@shared/shared-ws/ws-auth.guard";
+import type { LlmMessage } from "@lib/provider/src";
 import { LessonMaintainer, toSpeechSpeed } from "../../application/maintainer/lesson.maintainer";
 import { LessonSessionService } from "../../application/service/lesson-session.service";
 
@@ -33,6 +34,8 @@ const wsSetSpeedSchema = z.object({
 export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(LessonGateway.name);
   private abortControllers = new Map<string, AbortController>();
+  private sentChunksText = new Map<string, string>();
+  private pendingUserText = new Map<string, string>();
 
   @WebSocketServer()
   server!: Server;
@@ -98,6 +101,8 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleDisconnect(client: Socket) {
     this.abortControllers.get(client.id)?.abort();
     this.abortControllers.delete(client.id);
+    this.sentChunksText.delete(client.id);
+    this.pendingUserText.delete(client.id);
 
     const session = await this.sessionService.get(client.id);
     if (session) {
@@ -126,6 +131,9 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     const messageId = parsed.data.messageId;
 
+    this.sentChunksText.set(client.id, "");
+    this.pendingUserText.set(client.id, parsed.data.text);
+
     client.emit("status", { state: "thinking" });
 
     await this.lessonMaintainer.processTextMessageStreaming(
@@ -134,10 +142,15 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
       parsed.data.text,
       {
         onChunk: (chunk) => {
+          const current = this.sentChunksText.get(client.id) ?? "";
+          const sep = current && !/^[,.\-!?;:'"]/.test(chunk.text) ? " " : "";
+          this.sentChunksText.set(client.id, current + sep + chunk.text);
           client.emit("tutor_chunk", { ...chunk, messageId });
         },
         onEnd: (result) => {
           this.abortControllers.delete(client.id);
+          this.sentChunksText.delete(client.id);
+          this.pendingUserText.delete(client.id);
           client.emit("tutor_stream_end", {
             fullText: result.fullText,
             messageId,
@@ -145,11 +158,15 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
         },
         onError: (error) => {
           this.abortControllers.delete(client.id);
+          this.sentChunksText.delete(client.id);
+          this.pendingUserText.delete(client.id);
           this.logger.error(`Streaming failed: ${error.message}`);
           client.emit("error", { message: "Something went wrong!" });
         },
         onDiscard: (safetyText) => {
           this.abortControllers.delete(client.id);
+          this.sentChunksText.delete(client.id);
+          this.pendingUserText.delete(client.id);
           client.emit("tutor_stream_end", { discarded: true, messageId });
           client.emit("tutor_message", { text: safetyText });
         },
@@ -162,11 +179,24 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage("interrupt")
-  handleInterrupt(@ConnectedSocket() client: Socket) {
+  async handleInterrupt(@ConnectedSocket() client: Socket) {
     const controller = this.abortControllers.get(client.id);
     if (controller) {
       controller.abort();
       this.abortControllers.delete(client.id);
+
+      const partialText = this.sentChunksText.get(client.id);
+      const userText = this.pendingUserText.get(client.id);
+      this.sentChunksText.delete(client.id);
+      this.pendingUserText.delete(client.id);
+
+      const messages: LlmMessage[] = [];
+      if (userText?.trim()) messages.push({ role: "user", content: userText.trim() });
+      if (partialText?.trim()) messages.push({ role: "assistant", content: partialText.trim() + "..." });
+      if (messages.length > 0) {
+        await this.sessionService.appendHistory(client.id, ...messages);
+      }
+
       this.logger.debug(`Interrupted streaming for ${client.id}`);
     }
   }

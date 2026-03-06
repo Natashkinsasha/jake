@@ -14,6 +14,8 @@ import { useStudentStt } from "@/hooks/useStudentStt";
 import { useSpeechBuffer } from "@/hooks/useSpeechBuffer";
 import { useElapsedTimer } from "@/hooks/useElapsedTimer";
 import { useTabFocus } from "@/hooks/useTabFocus";
+import { isBackchannel } from "@/lib/backchannel";
+import { shouldAbortForRevision } from "@/lib/text-similarity";
 
 interface LessonScreenProps {
   token?: string | null;
@@ -37,15 +39,23 @@ export function LessonScreen({ token }: LessonScreenProps) {
   const isTutorActive = isPlaying || status === "speaking" || status === "thinking";
   const isTutorActiveRef = useRef(false);
   isTutorActiveRef.current = isTutorActive;
+  const statusRef = useRef(status);
+  statusRef.current = status;
+  const lastSentTextRef = useRef("");
 
   const hasReceivedFirstMessage = messages.some((msg) => msg.role === "assistant");
   const elapsed = useElapsedTimer(hasReceivedFirstMessage);
 
+  const wrappedSendText = useCallback((text: string) => {
+    lastSentTextRef.current = text;
+    sendText(text);
+  }, [sendText]);
+
   const speechBuffer = useSpeechBuffer({
     onFlush: useCallback((text: string) => {
       setLiveTranscript("");
-      sendText(text);
-    }, [sendText]),
+      wrappedSendText(text);
+    }, [wrappedSendText]),
     onSpeechDone: useCallback(() => { setUserSpeaking(false); }, [setUserSpeaking]),
   });
 
@@ -54,7 +64,18 @@ export function LessonScreen({ token }: LessonScreenProps) {
       setUserSpeaking(false);
     },
     onSegment: (text: string) => {
-      if (isTutorActiveRef.current) {
+      // Abort if Deepgram significantly revised the transcript we already sent
+      if (statusRef.current === "thinking" && lastSentTextRef.current) {
+        const bufferedText = speechBuffer.getText();
+        const fullNew = bufferedText ? bufferedText + " " + text : text;
+        if (shouldAbortForRevision(lastSentTextRef.current, fullNew)) {
+          interruptTutor();
+          speechBuffer.clear();
+          lastSentTextRef.current = "";
+        }
+      }
+
+      if (isTutorActiveRef.current && !isBackchannel(text)) {
         setUserSpeaking(true);
         interruptTutor();
         speechBuffer.clear();
