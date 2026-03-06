@@ -32,6 +32,7 @@ export function useLessonState(token?: string | null) {
   const voiceIdRef = useRef<string | null>(null);
   const speechSpeedRef = useRef<number>(1.0);
   const ttsModelRef = useRef<string | undefined>(undefined);
+  const systemPromptRef = useRef<string | null>(null);
   const streamStartedRef = useRef(false);
 
   const streamTextRef = useRef<string>("");
@@ -108,10 +109,11 @@ export function useLessonState(token?: string | null) {
     log("event:", event, data.text ? `"${data.text.slice(0, 50)}..."` : "");
 
     if (event === "lesson_started") {
-      const d = data as LessonEventData & { voiceId?: string; speechSpeed?: number; ttsModel?: string };
+      const d = data as LessonEventData & { voiceId?: string; speechSpeed?: number; ttsModel?: string; systemPrompt?: string };
       if (d.voiceId) voiceIdRef.current = d.voiceId;
       if (d.speechSpeed != null) speechSpeedRef.current = d.speechSpeed;
       if (d.ttsModel) ttsModelRef.current = d.ttsModel;
+      if (d.systemPrompt) systemPromptRef.current = d.systemPrompt;
     }
 
     if (event === "speed_updated") {
@@ -328,5 +330,11 @@ export function useLessonState(token?: string | null) {
     interruptTutor,
     stopAllAudio: useCallback(() => { tts.stop(); }, [tts]),
     setUserSpeaking,
+    debugInfo: {
+      voiceId: voiceIdRef.current,
+      speechSpeed: speechSpeedRef.current,
+      ttsModel: ttsModelRef.current,
+      systemPrompt: systemPromptRef.current,
+    },
   };
 }
