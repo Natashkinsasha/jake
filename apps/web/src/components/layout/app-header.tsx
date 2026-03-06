@@ -13,9 +13,9 @@ export function AppHeader() {
   if (pathname === "/lesson") return null;
 
   return (
-    <header className="bg-white border-b border-gray-200">
+    <header className="border-b border-gray-100 bg-white/80 backdrop-blur-sm sticky top-0 z-30">
       <div className="max-w-2xl mx-auto px-4 lg:px-6 flex items-center justify-between h-14">
-        <Link href="/dashboard" className="font-bold text-lg text-primary-600">
+        <Link href="/dashboard" className="font-bold text-xl text-primary-700 hover:text-primary-500 transition-colors">
           Jake
         </Link>
         <div className="flex items-center gap-3">
@@ -25,10 +25,10 @@ export function AppHeader() {
               alt=""
               width={32}
               height={32}
-              className="rounded-full"
+              className="rounded-full ring-2 ring-gray-100"
             />
           )}
-          <span className="text-sm text-gray-700 hidden sm:block">
+          <span className="text-sm text-gray-600 hidden sm:block">
             {user?.name ?? session?.user?.name}
           </span>
           <button

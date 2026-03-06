@@ -8,7 +8,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm mb-4">
-            <span className="text-4xl">🎓</span>
+            <span className="text-4xl font-bold text-white">J</span>
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">Jake</h1>
           <p className="text-blue-100 text-lg">

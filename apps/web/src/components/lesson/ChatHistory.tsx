@@ -1,17 +1,29 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { cn } from "@/lib/utils";
 import type { ChatMessage } from "@/types";
+import { cn } from "@/lib/utils";
 
 interface ChatHistoryProps {
   messages: ChatMessage[];
   isThinking: boolean;
+  isTutorActive?: boolean;
+}
+
+function ThinkingDots() {
+  return (
+    <div className="flex gap-1 py-1 px-1">
+      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+    </div>
+  );
 }
 
 export function ChatHistory({
   messages,
   isThinking,
+  isTutorActive = false,
 }: ChatHistoryProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const lastAssistantIdx = messages.length - 1 - [...messages].reverse().findIndex((m) => m.role === "assistant");
@@ -22,37 +34,66 @@ export function ChatHistory({
   }, [messages, isThinking]);
 
   return (
-    <div className="flex-1 overflow-y-auto px-5 pb-4 space-y-4">
+    <div className="flex-1 overflow-y-auto px-4 pb-3 space-y-3">
       {messages.map((msg, i) => (
         <div key={`${msg.timestamp}-${i}`}>
           {msg.role === "user" ? (
+            /* User message — right aligned, gradient bubble */
             <div className="flex justify-end">
-              <p className="text-white/60 text-sm max-w-[85%] text-right">
-                {msg.text}
-              </p>
+              <div className="gradient-bg rounded-2xl rounded-br-md px-4 py-2.5 max-w-[80%] shadow-sm">
+                <p className="text-white text-[15px] leading-relaxed">
+                  {msg.text}
+                </p>
+              </div>
             </div>
           ) : msg.text ? (
-            <p className={cn(
-              "text-white text-[15px] leading-relaxed max-w-[85%]",
-              i === lastAssistantIdx && isLastAssistantNew ? "" : "opacity-70",
-            )}>
-              {msg.text}
-            </p>
+            /* Tutor message — left aligned, white bubble */
+            <div className="flex justify-start">
+              <div className={cn(
+                "bg-white/95 backdrop-blur-sm rounded-2xl rounded-bl-md px-4 py-2.5 max-w-[80%] shadow-sm",
+                i === lastAssistantIdx && isLastAssistantNew ? "" : "opacity-80",
+              )}>
+                <p className="text-gray-800 text-[15px] leading-relaxed">
+                  {msg.text}
+                </p>
+              </div>
+            </div>
           ) : (
-            <div className="flex gap-1.5 py-1">
-              <div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-              <div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-              <div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+            /* Empty assistant message = loading */
+            <div className="flex justify-start">
+              <div className="bg-white/95 backdrop-blur-sm rounded-2xl rounded-bl-md px-4 py-2.5 shadow-sm">
+                <ThinkingDots />
+              </div>
             </div>
           )}
         </div>
       ))}
 
+      {/* Thinking indicator */}
       {isThinking && (
-        <div className="flex gap-1.5 py-1">
-          <div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-          <div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-          <div className="w-1.5 h-1.5 bg-white/40 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+        <div className="flex justify-start">
+          <div className="bg-white/95 backdrop-blur-sm rounded-2xl rounded-bl-md px-4 py-2.5 shadow-sm">
+            <ThinkingDots />
+          </div>
+        </div>
+      )}
+
+      {/* Tutor speaking indicator — inline at bottom of chat */}
+      {isTutorActive && !isThinking && (
+        <div className="flex items-center gap-2 py-1">
+          <div className="flex items-center gap-1">
+            {[0, 1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className="w-0.5 bg-white/50 rounded-full animate-wave"
+                style={{
+                  height: "12px",
+                  animationDelay: `${i * 0.15}s`,
+                }}
+              />
+            ))}
+          </div>
+          <span className="text-white/40 text-xs">Jake is speaking</span>
         </div>
       )}
 

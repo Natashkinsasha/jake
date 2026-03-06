@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { TutorAvatar } from "./TutorAvatar";
 import { ChatHistory } from "./ChatHistory";
 import { LessonConnecting } from "./LessonConnecting";
 import { LessonWaiting } from "./LessonWaiting";
@@ -137,19 +136,16 @@ export function LessonScreen({ token }: LessonScreenProps) {
     <div className="h-screen lesson-gradient flex flex-col overflow-hidden">
       <LessonHeader elapsed={elapsed} onEndLesson={handleEndLesson} />
 
-      <div className="flex-shrink-0 flex flex-col items-center py-4">
-        <TutorAvatar isSpeaking={isTutorActive} />
-        <p className="text-white/80 text-sm mt-2 font-medium">Jake</p>
-      </div>
-
       <ChatHistory
         messages={messages}
         isThinking={status === "thinking"}
+        isTutorActive={isTutorActive}
       />
 
+      {/* Live transcript preview */}
       {liveTranscript && (
-        <div className="px-4 pb-2">
-          <p className="text-white/50 text-sm italic text-center">{liveTranscript}</p>
+        <div className="flex-shrink-0 px-4 pb-2">
+          <p className="text-white/40 text-sm italic text-center truncate">{liveTranscript}</p>
         </div>
       )}
 

@@ -4,6 +4,9 @@ const config: Config = {
   content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
+      fontFamily: {
+        body: ["var(--font-body)", "system-ui", "sans-serif"],
+      },
       colors: {
         primary: {
           50: "#eff6ff",
@@ -16,6 +19,7 @@ const config: Config = {
           700: "#1d4ed8",
           800: "#1e40af",
           900: "#1e3a8a",
+          950: "#172554",
         },
         accent: {
           50: "#fdf4ff",
@@ -34,11 +38,21 @@ const config: Config = {
         "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         "bounce-slow": "bounce 2s infinite",
         "wave": "wave 1.5s ease-in-out infinite",
+        "fade-in": "fade-in 0.5s ease-out forwards",
+        "slide-up": "slide-up 0.5s ease-out forwards",
       },
       keyframes: {
         wave: {
           "0%, 100%": { transform: "scaleY(0.5)" },
           "50%": { transform: "scaleY(1.5)" },
+        },
+        "fade-in": {
+          from: { opacity: "0" },
+          to: { opacity: "1" },
+        },
+        "slide-up": {
+          from: { opacity: "0", transform: "translateY(1rem)" },
+          to: { opacity: "1", transform: "translateY(0)" },
         },
       },
     },

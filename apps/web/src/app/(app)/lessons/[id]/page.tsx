@@ -37,7 +37,7 @@ export default function LessonHistoryPage() {
         >
           &larr; Back to dashboard
         </button>
-        <h1 className="text-xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-gray-900">
           Lesson {lesson.lessonNumber}
           {lesson.topic ? `: ${lesson.topic}` : ""}
         </h1>
