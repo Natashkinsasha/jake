@@ -1,5 +1,5 @@
 import { useRef, useCallback, useEffect, useMemo } from "react";
-import { LESSON_CONFIG } from "@/lib/config";
+import { getSilenceDuration } from "@/lib/silence-duration";
 
 interface UseSpeechBufferOptions {
   onFlush: (text: string) => void;
@@ -23,7 +23,8 @@ export function useSpeechBuffer({ onFlush, onSpeechDone }: UseSpeechBufferOption
   const push = useCallback((segment: string) => {
     bufferRef.current.push(segment);
     if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(flush, LESSON_CONFIG.SILENCE_MS);
+    const silenceMs = getSilenceDuration(segment);
+    timerRef.current = setTimeout(flush, silenceMs);
   }, [flush]);
 
   const clear = useCallback(() => {

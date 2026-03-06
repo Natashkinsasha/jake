@@ -34,6 +34,7 @@ export function useLessonState(token?: string | null) {
   const ttsModelRef = useRef<string | undefined>(undefined);
   const systemPromptRef = useRef<string | null>(null);
   const streamStartedRef = useRef(false);
+  const greetingPlayingRef = useRef(false);
 
   const streamTextRef = useRef<string>("");
   const pendingRevealTextRef = useRef<string | null>(null);
@@ -43,9 +44,11 @@ export function useLessonState(token?: string | null) {
   const tts = useTutorTts({
     onError: (message) => {
       log("TTS error:", message);
+      greetingPlayingRef.current = false;
       setTtsError(message);
     },
     onAllDone: () => {
+      greetingPlayingRef.current = false;
       // Use server's authoritative fullText for the final snap (corrected punctuation etc.)
       const text = finalFullTextRef.current ?? pendingRevealTextRef.current;
       if (text) {
@@ -114,6 +117,7 @@ export function useLessonState(token?: string | null) {
       if (d.speechSpeed != null) speechSpeedRef.current = d.speechSpeed;
       if (d.ttsModel) ttsModelRef.current = d.ttsModel;
       if (d.systemPrompt) systemPromptRef.current = d.systemPrompt;
+      greetingPlayingRef.current = true;
     }
 
     if (event === "speed_updated") {
@@ -300,6 +304,7 @@ export function useLessonState(token?: string | null) {
   }, [emit]);
 
   const interruptTutor = useCallback(() => {
+    if (greetingPlayingRef.current) return;
     tts.stop();
     emit("interrupt", {});
     activeMessageIdRef.current = null;
