@@ -101,16 +101,17 @@ export class LessonMaintainer {
       { role: "user", content: pickGreetingPrompt() },
     ], "lesson.greeting");
 
+    const { cleanText: greetingText, speed: greetingSpeed } = stripSpeedTags(greeting.text);
+
     const lesson = await this.lessonRepository.createWithGreeting(
       {
         userId,
         tutorId: context.tutorId,
         lessonNumber: context.lessonNumber,
       },
-      greeting.text,
+      greetingText,
     );
-
-    const speechSpeed = toSpeechSpeed(context.preferences.speakingSpeed);
+    const speechSpeed = toSpeechSpeed(greetingSpeed ?? context.preferences.speakingSpeed);
 
     return {
       lessonId: lesson.id,
@@ -118,7 +119,7 @@ export class LessonMaintainer {
       voiceId: context.tutorVoiceId,
       speechSpeed,
       ttsModel: context.preferences.ttsModel,
-      greeting: { text: greeting.text },
+      greeting: { text: greetingText },
     };
   }
 
