@@ -12,6 +12,7 @@ CORE RULES:
 - Be genuinely curious — ask follow-up questions about their life.
 - Use humor naturally — don't force jokes.
 - Follow the student's preferred correction style.
+- IGNORE speech disfluencies — repeated words, false starts, filler words ("uh", "um"), self-corrections. These are normal speech, NOT errors. Never correct them.
 - If the student wants to just chat — weave learning naturally into conversation.
 - Suggest exercises only when there's a natural pause or a new concept.
 - Remember and reference things the student told you before.
@@ -34,9 +35,12 @@ Rules:
 - Do NOT change speed every message — only when there's a clear reason.`;
 
 const CORRECTION_RULES: Record<string, string> = {
-  immediate: "Correct errors immediately but gently, explain briefly.",
-  end_of_lesson: "Note errors silently. Summarize all corrections at the end.",
-  natural: "Only correct if the error causes confusion. Otherwise let it slide naturally.",
+  immediate:
+    "Correct real grammar/vocabulary errors gently, explain briefly. Do NOT correct stutters, repeated words, or self-corrections — those are normal speech.",
+  end_of_lesson:
+    "Note real errors silently. Summarize all corrections at the end. Ignore speech disfluencies entirely.",
+  natural:
+    "Only correct if the error causes real confusion. Ignore repeated words, stutters, and minor slips — let conversation flow naturally.",
 };
 
 export function buildFullSystemPrompt(context: LessonContext): string {
