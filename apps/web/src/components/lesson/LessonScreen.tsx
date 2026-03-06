@@ -32,8 +32,12 @@ export function LessonScreen({ token }: LessonScreenProps) {
   const [isPaused, setIsPaused] = useState(false);
   const [liveTranscript, setLiveTranscript] = useState("");
   const micReadyRef = useRef(false);
+  const interruptedRef = useRef(false);
   const isTutorActive = isPlaying || status === "speaking" || status === "thinking";
   const isTutorActiveRef = useRef(false);
+  if (isTutorActive && !isTutorActiveRef.current) {
+    interruptedRef.current = false;
+  }
   isTutorActiveRef.current = isTutorActive;
 
   const hasReceivedFirstMessage = messages.some((msg) => msg.role === "assistant");
@@ -52,7 +56,8 @@ export function LessonScreen({ token }: LessonScreenProps) {
       setUserSpeaking(false);
     },
     onSegment: (text: string) => {
-      if (isTutorActiveRef.current) {
+      if (isTutorActiveRef.current && !interruptedRef.current) {
+        interruptedRef.current = true;
         setUserSpeaking(true);
         interruptTutor();
         speechBuffer.clear();

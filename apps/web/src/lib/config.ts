@@ -24,7 +24,7 @@ export const STT_CONFIG = {
   LANGUAGE: "en",
   SMART_FORMAT: true,
   INTERIM_RESULTS: true,
-  ENDPOINTING_MS: 200,
+  ENDPOINTING_MS: 300,
   VAD_EVENTS: true,
 } as const;
 
