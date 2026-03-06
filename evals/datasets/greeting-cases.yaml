@@ -52,8 +52,9 @@
       value: "AI"
     - type: llm-rubric
       value: >
-        Response starts with a fun or light comment and asks what the student
-        wants to talk about. It's very short and casual.
+        Response starts with a fun or light comment and asks a question that
+        invites conversation — either about what they want to talk about, or about
+        their life/interests. It's very short and casual.
 
 - description: "Greeting — friendly check-in"
   vars:
