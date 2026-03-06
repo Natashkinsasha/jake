@@ -6,6 +6,16 @@ import { createLogger } from "./logger";
 import { api } from "@/lib/api";
 import { TTS_CONFIG } from "@/lib/config";
 
+function pcmToAudioBuffer(ctx: AudioContext, raw: ArrayBuffer): AudioBuffer {
+  const int16 = new Int16Array(raw);
+  const audioBuffer = ctx.createBuffer(1, int16.length, TTS_CONFIG.SAMPLE_RATE);
+  const channel = audioBuffer.getChannelData(0);
+  for (const [i, sample] of int16.entries()) {
+    channel[i] = sample / 32768;
+  }
+  return audioBuffer;
+}
+
 interface UseTutorTtsOptions {
   onAllDone?: () => void;
   onPlaybackStart?: () => void;
@@ -35,7 +45,6 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   const decodedQueueRef = useRef<AudioBuffer[]>([]);
   const currentSourceRef = useRef<AudioBufferSourceNode | null>(null);
   const playingRef = useRef(false);
-  const pendingDecodesRef = useRef(0);
   const allReceivedRef = useRef(false);
   const audioGenRef = useRef(0);
 
@@ -66,7 +75,6 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   const checkDone = useCallback(() => {
     if (
       allReceivedRef.current &&
-      pendingDecodesRef.current === 0 &&
       decodedQueueRef.current.length === 0 &&
       !currentSourceRef.current
     ) {
@@ -128,34 +136,25 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   }, [ensureAudioCtx, checkDone, optionsRef]);
 
   const enqueueAudio = useCallback(
-    (blob: Blob) => {
+    (raw: ArrayBuffer) => {
       if (!playingRef.current) {
         playingRef.current = true;
         setIsSpeaking(true);
       }
 
-      const gen = audioGenRef.current;
-      pendingDecodesRef.current++;
       const ctx = ensureAudioCtx();
 
-      void blob
-        .arrayBuffer()
-        .then((buf) => ctx.decodeAudioData(buf))
-        .then((audioBuffer) => {
-          if (audioGenRef.current !== gen) return;
-          pendingDecodesRef.current--;
-          totalDecodedDurRef.current += audioBuffer.duration;
-          decodedQueueRef.current.push(audioBuffer);
-          if (!currentSourceRef.current) {
-            playNextBuffer();
-          }
-        })
-        .catch((err: unknown) => {
-          if (audioGenRef.current !== gen) return;
-          log("audio decode error:", err);
-          pendingDecodesRef.current--;
-          checkDone();
-        });
+      try {
+        const audioBuffer = pcmToAudioBuffer(ctx, raw);
+        totalDecodedDurRef.current += audioBuffer.duration;
+        decodedQueueRef.current.push(audioBuffer);
+        if (!currentSourceRef.current) {
+          playNextBuffer();
+        }
+      } catch (err: unknown) {
+        log("PCM decode error:", err);
+        checkDone();
+      }
     },
     [ensureAudioCtx, playNextBuffer, checkDone],
   );
@@ -175,7 +174,6 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
       currentSourceRef.current = null;
     }
     decodedQueueRef.current = [];
-    pendingDecodesRef.current = 0;
     allReceivedRef.current = false;
     playingRef.current = false;
     totalDecodedDurRef.current = 0;
@@ -290,11 +288,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
           if (msg.audio) {
             const buf = decodeBase64(msg.audio);
             log("received audio chunk:", buf.byteLength, "bytes, isFinal:", msg.isFinal);
-            // Skip tiny chunks that aren't valid MP3 frames
-            if (buf.byteLength > 200) {
-              const blob = new Blob([buf], { type: "audio/mpeg" });
-              enqueueAudio(blob);
-            }
+            enqueueAudio(buf);
           } else {
             log("received message (no audio), isFinal:", msg.isFinal);
           }

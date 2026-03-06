@@ -24,7 +24,7 @@ export const STT_CONFIG = {
   LANGUAGE: "en",
   SMART_FORMAT: true,
   INTERIM_RESULTS: true,
-  ENDPOINTING_MS: 300,
+  ENDPOINTING_MS: 200,
   VAD_EVENTS: true,
 } as const;
 
@@ -47,6 +47,7 @@ export const TOAST_CONFIG = {
 // TTS (ElevenLabs)
 export const TTS_CONFIG = {
   MODEL: "eleven_turbo_v2_5",
-  OUTPUT_FORMAT: "mp3_22050_32",
-  VOICE_SETTINGS: { stability: 0.35, similarity_boost: 0.75, style: 0.55 },
+  OUTPUT_FORMAT: "pcm_22050",
+  SAMPLE_RATE: 22050,
+  VOICE_SETTINGS: { stability: 0.5, similarity_boost: 0.75, style: 0.4 },
 } as const;
