@@ -150,7 +150,7 @@ jobs:
           host: ${{ secrets.DROPLET_HOST }}
           username: root
           key: ${{ secrets.DROPLET_SSH_KEY }}
-          source: "docker-compose.prod.yml"
+          source: "docker-compose.prod.yml,infra/nginx.conf"
           target: "/root/jake/"
           overwrite: true
       - name: Deploy to Droplet
