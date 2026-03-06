@@ -79,8 +79,8 @@ export class LessonMaintainer {
     };
   }
 
-  async listLessons(userId: string) {
-    const lessons = await this.lessonRepository.findRecentByUser(userId);
+  async listLessons(userId: string, offset = 0, limit = 10) {
+    const lessons = await this.lessonRepository.findRecentByUser(userId, limit, offset);
     return lessons.map((l) => ({
       id: l.id,
       status: l.status,

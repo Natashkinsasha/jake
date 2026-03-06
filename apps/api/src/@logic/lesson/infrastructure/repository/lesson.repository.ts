@@ -46,13 +46,14 @@ export class LessonRepository {
     return result?.count ?? 0;
   }
 
-  async findRecentByUser(userId: string, limit = 10): Promise<LessonEntity[]> {
+  async findRecentByUser(userId: string, limit = 10, offset = 0): Promise<LessonEntity[]> {
     const rows = await this.txHost.tx
       .select()
       .from(lessonTable)
       .where(eq(lessonTable.userId, userId))
       .orderBy(desc(lessonTable.startedAt))
-      .limit(limit);
+      .limit(limit)
+      .offset(offset);
     return LessonFactory.createMany(rows);
   }
 

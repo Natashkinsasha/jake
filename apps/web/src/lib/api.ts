@@ -52,7 +52,7 @@ export const api = {
       request<{ id: string; name: string; personality: string; accent: string; avatarUrl: string | null; traits: string[] }[]>("/tutors"),
   },
   lessons: {
-    list: () => request<LessonListItem[]>("/lessons"),
+    list: (offset = 0, limit = 10) => request<LessonListItem[]>(`/lessons?offset=${offset}&limit=${limit}`),
     get: (id: string) => request<LessonDetail>(`/lessons/${id}`),
     end: (id: string, history: { role: string; content: string }[]) =>
       request<{ success: boolean }>(`/lessons/end/${id}`, {

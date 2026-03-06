@@ -1,12 +1,15 @@
 "use client";
 
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { formatLessonDate } from "@/lib/utils";
 import { useBackendSession } from "@/hooks/useBackendSession";
-import { useApiQuery } from "@/hooks/useApiQuery";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
+import type { LessonListItem } from "@/types";
+
+const PAGE_SIZE = 10;
 
 function getGreeting(): string {
   const hour = new Date().getHours();
@@ -18,9 +21,55 @@ function getGreeting(): string {
 export default function DashboardPage() {
   const { user } = useBackendSession();
   const router = useRouter();
-  const { data: recentLessons, isLoading, error, refetch } = useApiQuery(
-    () => api.lessons.list(),
-  );
+
+  const [lessons, setLessons] = useState<LessonListItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  const fetchLessons = useCallback(async (offset: number) => {
+    const isInitial = offset === 0;
+    if (isInitial) setIsLoading(true);
+    else setIsLoadingMore(true);
+    setError(null);
+
+    try {
+      const data = await api.lessons.list(offset, PAGE_SIZE);
+      setLessons((prev) => isInitial ? data : [...prev, ...data]);
+      setHasMore(data.length === PAGE_SIZE);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Something went wrong";
+      setError(message);
+    } finally {
+      if (isInitial) setIsLoading(false);
+      else setIsLoadingMore(false);
+    }
+  }, []);
+
+  // Initial load
+  useEffect(() => {
+    void fetchLessons(0);
+  }, [fetchLessons]);
+
+  // Infinite scroll via IntersectionObserver
+  useEffect(() => {
+    const sentinel = sentinelRef.current;
+    if (!sentinel || !hasMore || isLoading || isLoadingMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          void fetchLessons(lessons.length);
+        }
+      },
+      { rootMargin: "200px" },
+    );
+
+    observer.observe(sentinel);
+    return () => { observer.disconnect(); };
+  }, [hasMore, isLoading, isLoadingMore, lessons.length, fetchLessons]);
 
   const firstName = user?.name.split(" ")[0];
 
@@ -68,27 +117,26 @@ export default function DashboardPage() {
         </div>
       </button>
 
-      {/* Recent Lessons */}
+      {/* Lessons */}
       {isLoading && <LoadingSpinner className="h-32" />}
-      {error && <ErrorMessage message={error} onRetry={refetch} />}
-      {recentLessons && recentLessons.length > 0 && (
+      {error && !isLoadingMore && <ErrorMessage message={error} onRetry={() => { void fetchLessons(lessons.length > 0 ? lessons.length : 0); }} />}
+
+      {!isLoading && lessons.length > 0 && (
         <div className="opacity-0 animate-slide-up animate-stagger-4">
           <h3 className="text-2xl font-bold text-gray-900 mb-4">Your lessons</h3>
           <div className="space-y-3">
-            {recentLessons.slice(0, 10).map((lesson, i) => (
+            {lessons.map((lesson, i) => (
               <button
                 type="button"
                 key={lesson.id}
                 onClick={() => { router.push(`/lessons/${lesson.id}`); }}
-                style={{ animationDelay: `${(i + 5) * 0.05}s` }}
-                className="opacity-0 animate-slide-up w-full text-left group flex items-center gap-4 bg-white rounded-2xl border border-gray-100 p-4 hover:border-primary-200 hover:shadow-md hover:shadow-primary-900/5 transition-all duration-200"
+                style={i < PAGE_SIZE ? { animationDelay: `${(i + 5) * 0.05}s` } : undefined}
+                className={`${i < PAGE_SIZE ? "opacity-0 animate-slide-up" : ""} w-full text-left group flex items-center gap-4 bg-white rounded-2xl border border-gray-100 p-4 hover:border-primary-200 hover:shadow-md hover:shadow-primary-900/5 transition-all duration-200`}
               >
-                {/* Lesson number badge */}
                 <div className="flex-shrink-0 w-11 h-11 rounded-xl bg-primary-50 text-primary-700 font-semibold text-lg flex items-center justify-center group-hover:bg-primary-100 transition-colors">
                   {lesson.lessonNumber}
                 </div>
 
-                {/* Content */}
                 <div className="min-w-0 flex-1">
                   <p className="text-sm font-medium text-gray-800 group-hover:text-primary-700 transition-colors">
                     {lesson.topic ?? "Conversation with Jake"}
@@ -100,7 +148,6 @@ export default function DashboardPage() {
                   )}
                 </div>
 
-                {/* Meta */}
                 <div className="flex-shrink-0 text-right">
                   <p className="text-xs text-gray-400">
                     {lesson.createdAt ? formatLessonDate(lesson.createdAt) : ""}
@@ -110,18 +157,21 @@ export default function DashboardPage() {
                   </p>
                 </div>
 
-                {/* Arrow */}
                 <svg className="w-4 h-4 text-gray-300 group-hover:text-primary-500 group-hover:translate-x-0.5 transition-all flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                 </svg>
               </button>
             ))}
           </div>
+
+          {/* Infinite scroll sentinel */}
+          {hasMore && <div ref={sentinelRef} className="h-1" />}
+          {isLoadingMore && <LoadingSpinner className="h-16 mt-4" />}
         </div>
       )}
 
       {/* Empty state */}
-      {recentLessons && recentLessons.length === 0 && (
+      {!isLoading && lessons.length === 0 && !error && (
         <div className="opacity-0 animate-fade-in animate-stagger-4 text-center py-12">
           <p className="text-2xl font-bold text-gray-300 mb-2">No lessons yet</p>
           <p className="text-gray-400 text-sm">Start your first conversation with Jake above</p>

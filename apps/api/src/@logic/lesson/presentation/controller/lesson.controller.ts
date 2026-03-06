@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post, Body, UseGuards, NotFoundException, HttpException } from "@nestjs/common";
+import { Controller, Get, Param, Post, Body, Query, UseGuards, NotFoundException, HttpException } from "@nestjs/common";
 import { JwtAuthGuard } from "@shared/shared-auth/jwt-auth.guard";
 import { CurrentUserId } from "@shared/shared-auth/current-user.decorator";
 import { EnvService } from "@shared/shared-config/env.service";
@@ -19,8 +19,14 @@ export class LessonController {
   ) {}
 
   @Get()
-  async listLessons(@CurrentUserId() userId: string) {
-    return this.lessonMaintainer.listLessons(userId);
+  async listLessons(
+    @CurrentUserId() userId: string,
+    @Query("offset") rawOffset?: string,
+    @Query("limit") rawLimit?: string,
+  ) {
+    const offset = Math.max(0, Number(rawOffset) || 0);
+    const limit = Math.min(50, Math.max(1, Number(rawLimit) || 10));
+    return this.lessonMaintainer.listLessons(userId, offset, limit);
   }
 
   @Get("stt/token")
