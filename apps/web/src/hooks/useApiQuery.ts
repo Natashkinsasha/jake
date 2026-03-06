@@ -37,12 +37,12 @@ export function useApiQuery<T>(
         setError(message);
       })
       .finally(() => { setIsLoading(false); });
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- fetcherRef is a stable ref, deps is forwarded from caller
-  }, deps ?? []);
+  }, [fetcherRef]);
 
+  const depsKey = deps !== undefined ? JSON.stringify(deps) : "@@none";
   useEffect(() => {
     execute();
-  }, [execute]);
+  }, [depsKey, execute]);
 
   return { data, isLoading, error, refetch: execute };
 }

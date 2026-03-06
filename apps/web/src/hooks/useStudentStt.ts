@@ -237,8 +237,7 @@ export function useStudentStt(
       setError(message);
       cleanup();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- callback refs are stable
-  }, [cleanup]);
+  }, [cleanup, onSpeechStartRef, onSpeechEndRef, onSegmentRef]);
 
   const enable = useCallback(() => {
     void startStreaming();

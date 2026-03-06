@@ -81,8 +81,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
       log("all audio done");
       optionsRef.current?.onAllDone?.();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [optionsRef]);
 
   const playNextBuffer = useCallback(() => {
     if (decodedQueueRef.current.length === 0) {
@@ -125,8 +124,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
       playedDurRef.current += audioBuffer.duration;
       playNextBuffer();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ensureAudioCtx, checkDone]);
+  }, [ensureAudioCtx, checkDone, optionsRef]);
 
   const enqueueAudio = useCallback(
     (blob: Blob) => {
@@ -158,7 +156,6 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
           checkDone();
         });
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [ensureAudioCtx, playNextBuffer, checkDone],
   );
 
@@ -342,7 +339,6 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
         closeWs();
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [enqueueAudio, closeWs, sendTextToWs, sendEos, checkDone],
   );
 

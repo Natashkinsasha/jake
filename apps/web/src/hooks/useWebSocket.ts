@@ -38,8 +38,7 @@ export function useWebSocket({ url, token, onEvent }: UseWebSocketOptions) {
 
     socketRef.current = socket;
     return () => { socket.disconnect(); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- onEventRef is a stable ref
-  }, [url, token]);
+  }, [url, token, onEventRef]);
 
   const emit = useCallback((event: string, data: Record<string, unknown>) => {
     socketRef.current?.emit(event, data);

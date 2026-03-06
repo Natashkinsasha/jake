@@ -243,7 +243,6 @@ export function useLessonState(token?: string | null) {
         }
         break;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const { emit, connected } = useWebSocket({

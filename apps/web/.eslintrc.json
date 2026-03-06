@@ -4,7 +4,7 @@
     "project": "tsconfig.json",
     "tsconfigRootDir": "."
   },
-  "plugins": ["@typescript-eslint"],
+  "plugins": ["@typescript-eslint", "react-compiler"],
   "extends": [
     "plugin:@typescript-eslint/strict-type-checked",
     "plugin:@eslint-react/recommended-type-checked-legacy",
@@ -46,7 +46,8 @@
     ],
     "@next/next/no-img-element": "off",
     "react/no-unescaped-entities": "off",
-    "@eslint-react/hooks-extra/no-direct-set-state-in-use-effect": "off"
+    "@eslint-react/hooks-extra/no-direct-set-state-in-use-effect": "off",
+    "react-compiler/react-compiler": "error"
   },
   "overrides": [
     {
