@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { LlmProvider } from "../../../../@lib/provider/src";
-import type { LlmMessage, LlmResponse } from "../../../../@lib/provider/src";
+import { LlmProvider } from "@lib/provider/src";
+import type { LlmMessage, LlmResponse } from "@lib/provider/src";
 import { SentenceBuffer } from "./sentence-buffer";
 
 export interface StreamChunk {

@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { FactExtractionResultSchema, type FactExtractionResult } from "@jake/shared";
-import { LlmProvider } from "../../../../@lib/provider/src";
-import type { LlmMessage } from "../../../../@lib/provider/src";
+import { LlmProvider } from "@lib/provider/src";
+import type { LlmMessage } from "@lib/provider/src";
 import { MemoryFactRepository } from "../../infrastructure/repository/memory-fact.repository";
 
 const FACT_EXTRACTION_PROMPT = `

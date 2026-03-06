@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { z } from "zod";
-import { LlmProvider } from "../../../../@lib/provider/src";
+import { LlmProvider } from "@lib/provider/src";
 import { withSpan } from "../llm-tracing";
 import { quickInjectionCheck } from "./injection-patterns";
 

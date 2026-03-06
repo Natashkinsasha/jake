@@ -1,11 +1,11 @@
 import { Controller, Get, Param, Post, Body, UseGuards, NotFoundException, HttpException } from "@nestjs/common";
+import { JwtAuthGuard } from "@shared/shared-auth/jwt-auth.guard";
+import { CurrentUserId } from "@shared/shared-auth/current-user.decorator";
+import { EnvService } from "@shared/shared-config/env.service";
 import { LessonMaintainer } from "../../application/maintainer/lesson.maintainer";
-import { JwtAuthGuard } from "../../../../@shared/shared-auth/jwt-auth.guard";
-import { CurrentUserId } from "../../../../@shared/shared-auth/current-user.decorator";
 import { EndLessonBody } from "../dto/body/end-lesson.body";
 import { SttMetricsBody } from "../dto/body/stt-metrics.body";
 import { withSpan } from "../../../llm/src/llm-tracing";
-import { EnvService } from "../../../../@shared/shared-config/env.service";
 
 @Controller("lessons")
 @UseGuards(JwtAuthGuard)

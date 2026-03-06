@@ -1,10 +1,10 @@
 import { Module } from "@nestjs/common";
-import { LlmModule } from "../llm/src/llm.module";
+import { SharedDrizzlePgModule } from "@shared/shared-drizzle-pg/shared-drizzle-pg.module";
+import { SharedClsModule } from "@shared/shared-cls/shared-cls.module";
+import { JobModule } from "@lib/job/src";
+import { QUEUE_NAMES } from "@shared/shared-job/queue-names";
 import { EmbeddingModule } from "../embedding/src/embedding.module";
-import { SharedDrizzlePgModule } from "../../@shared/shared-drizzle-pg/shared-drizzle-pg.module";
-import { SharedClsModule } from "../../@shared/shared-cls/shared-cls.module";
-import { JobModule } from "../../@lib/job/src";
-import { QUEUE_NAMES } from "../../@shared/shared-job/queue-names";
+import { LlmModule } from "../llm/src/llm.module";
 import { MemoryMaintainer } from "./application/maintainer/memory.maintainer";
 import { FactExtractionService } from "./application/service/fact-extraction.service";
 import { MemoryRetrievalService } from "./application/service/memory-retrieval.service";

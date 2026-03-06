@@ -49,13 +49,7 @@
     "@eslint-react/hooks-extra/no-direct-set-state-in-use-effect": "off",
     "react-compiler/react-compiler": "error",
     "import-x/no-duplicates": "error",
-    "import-x/order": [
-      "error",
-      {
-        "groups": ["builtin", "external", "internal", "parent", "sibling", "index"],
-        "newlines-between": "ignore"
-      }
-    ],
+    "import-x/order": ["error", { "newlines-between": "ignore" }],
     "unicorn/prefer-array-find": "error",
     "unicorn/prefer-array-some": "error",
     "unicorn/prefer-string-replace-all": "error",

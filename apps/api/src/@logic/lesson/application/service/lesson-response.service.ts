@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import { LlmProvider } from "../../../../@lib/provider/src";
-import type { LlmMessage } from "../../../../@lib/provider/src";
+import { LlmProvider } from "@lib/provider/src";
+import type { LlmMessage } from "@lib/provider/src";
 
 @Injectable()
 export class LessonResponseService {

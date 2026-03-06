@@ -2,9 +2,9 @@ import { Inject, Injectable, Logger } from "@nestjs/common";
 import Anthropic from "@anthropic-ai/sdk";
 import type { ZodSchema } from "zod";
 import { zodToJsonSchema } from "zod-to-json-schema";
-import { ANTHROPIC_CLIENT } from "../../../@lib/anthropic/src";
-import { LlmProvider } from "../../../@lib/provider/src";
-import type { LlmMessage, LlmResponse, LlmStreamCallbacks } from "../../../@lib/provider/src";
+import { ANTHROPIC_CLIENT } from "@lib/anthropic/src";
+import { LlmProvider } from "@lib/provider/src";
+import type { LlmMessage, LlmResponse, LlmStreamCallbacks } from "@lib/provider/src";
 import { withSpan } from "./llm-tracing";
 
 @Injectable()

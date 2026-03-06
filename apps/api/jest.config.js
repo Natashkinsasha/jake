@@ -9,4 +9,9 @@ module.exports = {
   collectCoverageFrom: ["**/*.ts", "!**/*.module.ts", "!main.ts", "!worker.ts", "!seed.ts"],
   coverageDirectory: "../coverage",
   testEnvironment: "node",
+  moduleNameMapper: {
+    "^@shared/(.*)$": "<rootDir>/@shared/$1",
+    "^@lib/(.*)$": "<rootDir>/@lib/$1",
+    "^@logic/(.*)$": "<rootDir>/@logic/$1",
+  },
 };

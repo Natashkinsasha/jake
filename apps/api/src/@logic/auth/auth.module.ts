@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
-import { SharedDrizzlePgModule } from "../../@shared/shared-drizzle-pg/shared-drizzle-pg.module";
-import { SharedAuthModule } from "../../@shared/shared-auth/shared-auth.module";
+import { SharedDrizzlePgModule } from "@shared/shared-drizzle-pg/shared-drizzle-pg.module";
+import { SharedAuthModule } from "@shared/shared-auth/shared-auth.module";
 import { TutorModule } from "../tutor/tutor.module";
 import { AuthController } from "./presentation/controller/auth.controller";
 import { AuthMaintainer } from "./application/maintainer/auth.maintainer";

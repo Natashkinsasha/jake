@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type Anthropic from "@anthropic-ai/sdk";
-import type { LlmMessage } from "../../../@lib/provider/src";
+import type { LlmMessage } from "@lib/provider/src";
 import { AnthropicLlmProvider } from "./anthropic-llm.provider";
 
 describe("AnthropicLlmProvider", () => {

@@ -11,7 +11,7 @@ import { Logger, UseGuards } from "@nestjs/common";
 import { Server, Socket } from "socket.io";
 import { JwtService } from "@nestjs/jwt";
 import { z } from "zod";
-import { WsAuthGuard } from "../../../../@shared/shared-ws/ws-auth.guard";
+import { WsAuthGuard } from "@shared/shared-ws/ws-auth.guard";
 import { LessonMaintainer, toSpeechSpeed } from "../../application/maintainer/lesson.maintainer";
 import { LessonSessionService } from "../../application/service/lesson-session.service";
 

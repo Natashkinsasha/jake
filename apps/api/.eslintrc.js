@@ -47,13 +47,7 @@ module.exports = {
     "drizzle/enforce-update-with-where": ["error", { drizzleObjectName: ["db", "tx"] }],
     // import-x
     "import-x/no-duplicates": "error",
-    "import-x/order": [
-      "error",
-      {
-        groups: ["builtin", "external", "internal", "parent", "sibling", "index"],
-        "newlines-between": "ignore",
-      },
-    ],
+    "import-x/order": ["error", { "newlines-between": "ignore" }],
     // unicorn
     "unicorn/prefer-array-find": "error",
     "unicorn/prefer-array-some": "error",

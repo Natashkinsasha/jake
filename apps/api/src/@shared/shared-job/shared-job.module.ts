@@ -1,7 +1,7 @@
 import { RedisService } from '@liaoliaots/nestjs-redis';
 import { Module } from '@nestjs/common';
+import { JobModule } from '@lib/job/src';
 import { SharedRedisModule } from "../shared-redis/shared-redis.module";
-import { JobModule } from '../../@lib/job/src';
 
 @Module({
   imports: [
