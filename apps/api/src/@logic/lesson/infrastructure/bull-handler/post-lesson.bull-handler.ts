@@ -17,7 +17,7 @@ const SUMMARY_PROMPT = `Analyze the full lesson conversation and generate a stru
 Return ONLY valid JSON:
 {
   "summary": "2-3 sentence summary",
-  "topics": ["grammar_topics"],
+  "topics": ["Human-readable topic names, e.g. Present Tense, Food Vocabulary, Travel Phrases"],
   "newWords": ["vocabulary"],
   "errorsFound": [{"text": "error", "correction": "correct", "topic": "topic"}],
   "emotionalSummary": "student mood description",
