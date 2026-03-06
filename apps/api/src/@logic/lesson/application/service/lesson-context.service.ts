@@ -25,12 +25,14 @@ export class LessonContextService {
       recentVocab,
       activeTutor,
       lessonCount,
+      recentLessons,
     ] = await Promise.all([
       this.authContract.findByIdWithPreferences(userId),
       this.progressContract.findByUser(userId),
       this.vocabularyContract.findRecentByUser(userId, 20),
       this.tutorContract.findActiveUserTutor(userId),
       this.lessonRepository.countByUser(userId),
+      this.lessonRepository.findRecentByUser(userId, 1),
     ]);
 
     if (!user || !activeTutor) throw new NotFoundException("User or tutor not found");
@@ -63,6 +65,7 @@ export class LessonContextService {
       studentName: user.users.name,
       level: user.users.currentLevel,
       lessonNumber: lessonCount + 1,
+      lastLessonAt: recentLessons[0]?.startedAt ?? null,
       tutorSystemPrompt: activeTutor.tutor.systemPrompt,
       tutorVoiceId: activeTutor.tutor.voiceId,
       tutorId: activeTutor.userTutor.tutorId,

@@ -1,5 +1,19 @@
 import { type LessonContext } from "../dto/lesson-context";
 
+function formatTimeSince(date: Date): string {
+  const diffMs = Date.now() - date.getTime();
+  const diffMinutes = Math.floor(diffMs / 60_000);
+  const diffHours = Math.floor(diffMinutes / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffMinutes < 60) return `${diffMinutes} minutes ago`;
+  if (diffHours < 24) return `${diffHours} hours ago`;
+  if (diffDays === 1) return "yesterday";
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+  return `${Math.floor(diffDays / 30)} months ago`;
+}
+
 const JAKE_BASE_PROMPT = `You are Jake, a friendly Australian English tutor in your late 20s.
 You're laid-back, funny, and genuinely interested in your students' lives.
 You speak natural, clear English — avoid slang, regional expressions, or overly casual vocabulary.
@@ -19,6 +33,7 @@ CORE RULES:
 - React to emotions — if they're tired, keep it light.
 - NEVER use roleplay markers like *grins*, *laughs*, *smiles*, etc. Your output is spoken aloud — write only what you'd actually say.
 - Don't repeat the same personal stories or details (e.g. your dog, your ex, your hobbies) across messages. Mention them once when relevant, then move on.
+- Be aware of the time since the last lesson (shown in STUDENT PROFILE). If it's been a while, welcome them back warmly. If they just had a lesson recently, acknowledge continuity naturally.
 - At the end, summarize what was practiced and tease next lesson.
 
 === SPEECH SPEED CONTROL ===
@@ -54,7 +69,8 @@ export function buildFullSystemPrompt(context: LessonContext): string {
   parts.push(`\n=== STUDENT PROFILE ===
 Name: ${context.studentName}
 Level: ${context.level ?? "Unknown (assess during conversation)"}
-Lesson number: ${context.lessonNumber}`);
+Lesson number: ${context.lessonNumber}
+Last lesson: ${context.lastLessonAt ? formatTimeSince(context.lastLessonAt) : "this is the first lesson"}`);
 
   parts.push(`\n=== PREFERENCES ===
 Correction: ${context.preferences.correctionStyle} — ${CORRECTION_RULES[context.preferences.correctionStyle] ?? ""}

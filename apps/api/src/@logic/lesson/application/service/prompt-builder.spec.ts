@@ -6,6 +6,7 @@ function createMockContext(overrides: Partial<LessonContext> = {}): LessonContex
     studentName: "Yuki",
     level: "B1",
     lessonNumber: 5,
+    lastLessonAt: null,
     tutorSystemPrompt: "",
     tutorVoiceId: "voice-1",
     tutorId: "tutor-1",
@@ -183,6 +184,23 @@ describe("buildFullSystemPrompt", () => {
     // The empty string is falsy, so it should not appear as a separate section
     // Ensure no blank section between Jake base prompt and student profile
     expect(baseResult).toContain("=== STUDENT PROFILE ===");
+  });
+
+  it("should show 'this is the first lesson' when lastLessonAt is null", () => {
+    const result = buildFullSystemPrompt(createMockContext({ lastLessonAt: null }));
+    expect(result).toContain("Last lesson: this is the first lesson");
+  });
+
+  it("should show time since last lesson when lastLessonAt is set", () => {
+    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000);
+    const result = buildFullSystemPrompt(createMockContext({ lastLessonAt: twoDaysAgo }));
+    expect(result).toContain("Last lesson: 2 days ago");
+  });
+
+  it("should show 'yesterday' when last lesson was 1 day ago", () => {
+    const yesterday = new Date(Date.now() - 1 * 24 * 60 * 60 * 1000);
+    const result = buildFullSystemPrompt(createMockContext({ lastLessonAt: yesterday }));
+    expect(result).toContain("Last lesson: yesterday");
   });
 
   it("should apply correct correction style description", () => {

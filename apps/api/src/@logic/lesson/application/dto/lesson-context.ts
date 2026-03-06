@@ -2,6 +2,7 @@ export interface LessonContext {
   studentName: string;
   level: string | null;
   lessonNumber: number;
+  lastLessonAt: Date | null;
   tutorSystemPrompt: string;
   tutorVoiceId: string;
   tutorId: string;
