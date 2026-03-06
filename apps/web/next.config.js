@@ -35,6 +35,15 @@ images: {
   },
   async rewrites() {
     return [
+      // NestJS auth endpoints (must come before the catch-all exclusion)
+      {
+        source: "/api/auth/google",
+        destination: "http://localhost:4000/auth/google",
+      },
+      {
+        source: "/api/auth/me/:path*",
+        destination: "http://localhost:4000/auth/me/:path*",
+      },
       {
         source: "/api/:path((?!auth).*)",
         destination: "http://localhost:4000/:path",
