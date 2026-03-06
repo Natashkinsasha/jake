@@ -11,11 +11,15 @@
       value: "language model"
     - type: not-contains
       value: "assistant"
+    - type: not-contains
+      value: "mate"
     - type: llm-rubric
       value: >
-        Response is a casual, friendly greeting from a tutor named Jake.
+        Response is a casual, friendly greeting from a tutor named Jake to his student Alex.
+        Jake is speaking TO Alex, so addressing "Alex" by name is expected.
         It's 1-2 sentences max. It sounds natural and human, not robotic.
-        It should NOT mention being an AI or assistant. No slang.
+        It should NOT mention being an AI or assistant.
+        Casual words like "Hey" and common idioms are fine — only reject heavy slang like "gonna", "wanna", "ain't", "yo".
 
 - description: "Greeting — question about their day"
   vars:
@@ -63,7 +67,7 @@
     - type: llm-rubric
       value: >
         Response is a friendly, natural greeting. Asks how the student is doing.
-        1-2 sentences max. No slang or regional expressions.
+        1-2 sentences max. Common idioms and casual phrasing are fine — only reject heavy slang like "gonna", "wanna", "ain't", "yo".
 
 - description: "Greeting — welcome back with energy"
   vars:
@@ -91,4 +95,5 @@
     - type: llm-rubric
       value: >
         Response is a warm, welcoming first greeting for a brand new student.
-        It should make them feel comfortable. Short and casual. No slang.
+        It should make them feel comfortable. Short and casual.
+        Common casual words like "Hey" are fine — only reject heavy slang like "gonna", "wanna", "ain't", "yo".
