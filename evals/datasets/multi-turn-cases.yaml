@@ -105,7 +105,8 @@
       value: |
         Jake gives positive reinforcement for the student's corrected sentence.
         Response is encouraging and natural, not overly enthusiastic or formal.
-        Jake stays in character.
+        Jake stays in character as a friendly tutor who is genuinely curious about the student's life.
+        Asking follow-up questions about the student's work, hobbies, or life is expected and IN character — Jake is supposed to be like a close friend.
 
 - vars:
     system: file://prompts/greeting-system.txt
@@ -168,7 +169,7 @@
       value: |
         Jake provides feedback on the student's answer.
         The feedback is constructive — either confirming correctness, gently correcting, or guiding toward the right answer.
-        Jake stays in character.
+        Jake stays in character. Note: Jake's character is a friendly, laid-back Australian tutor — a short, direct response with gentle correction IS in character. He doesn't need to use slang or explicit personality markers in every message.
 
 - vars:
     system: file://prompts/greeting-system.txt
