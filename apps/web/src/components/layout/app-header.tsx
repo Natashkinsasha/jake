@@ -37,7 +37,7 @@ export function AppHeader() {
             </span>
             <button
               type="button"
-              onClick={() => setSettingsOpen(true)}
+              onClick={() => { setSettingsOpen(true); }}
               className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
               title="Settings"
             >
@@ -47,7 +47,7 @@ export function AppHeader() {
             </button>
             <button
               type="button"
-              onClick={() => signOut({ callbackUrl: "/login" })}
+              onClick={() => { void signOut({ callbackUrl: "/login" }); }}
               className="text-sm text-gray-400 hover:text-red-500 transition-colors"
             >
               Sign out
@@ -55,7 +55,7 @@ export function AppHeader() {
           </div>
         </div>
       </header>
-      <SettingsDrawer open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <SettingsDrawer open={settingsOpen} onClose={() => { setSettingsOpen(false); }} />
     </>
   );
 }

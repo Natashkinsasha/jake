@@ -37,10 +37,10 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
   useEffect(() => {
     if (!open) return;
     setLoading(true);
-    api.auth.me().then((res) => {
+    void api.auth.me().then((res) => {
       setPrefs(res.user_preferences ?? {});
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch(() => { setLoading(false); });
   }, [open]);
 
   const save = useCallback(async (patch: Partial<UserPreferences>) => {
@@ -86,13 +86,13 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
                   label="TTS Model"
                   value={prefs?.ttsModel ?? "eleven_turbo_v2_5"}
                   options={TTS_MODELS.map((m) => ({ value: m.value, label: `${m.label} (${m.desc})` }))}
-                  onChange={(v) => save({ ttsModel: v })}
+                  onChange={(v) => { void save({ ttsModel: v }); }}
                 />
                 <SelectField
                   label="Speaking Speed"
                   value={prefs?.speakingSpeed ?? "very_slow"}
                   options={SPEEDS.map((s) => ({ value: s.value, label: s.label }))}
-                  onChange={(v) => save({ speakingSpeed: v })}
+                  onChange={(v) => { void save({ speakingSpeed: v }); }}
                 />
               </div>
             </section>
@@ -104,17 +104,17 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
                   label="Correction Style"
                   value={prefs?.correctionStyle ?? "immediate"}
                   options={CORRECTION_STYLES.map((c) => ({ value: c.value, label: c.label }))}
-                  onChange={(v) => save({ correctionStyle: v })}
+                  onChange={(v) => { void save({ correctionStyle: v }); }}
                 />
                 <ToggleField
                   label="Explain Grammar"
                   checked={prefs?.explainGrammar ?? true}
-                  onChange={(v) => save({ explainGrammar: v })}
+                  onChange={(v) => { void save({ explainGrammar: v }); }}
                 />
                 <ToggleField
                   label="Use Native Language"
                   checked={prefs?.useNativeLanguage ?? false}
-                  onChange={(v) => save({ useNativeLanguage: v })}
+                  onChange={(v) => { void save({ useNativeLanguage: v }); }}
                 />
               </div>
             </section>
@@ -136,7 +136,7 @@ function SelectField({ label, value, options, onChange }: {
       <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
       <select
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(e) => { onChange(e.target.value); }}
         className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-colors"
       >
         {options.map((o) => (
@@ -159,7 +159,7 @@ function ToggleField({ label, checked, onChange }: {
         type="button"
         role="switch"
         aria-checked={checked}
-        onClick={() => onChange(!checked)}
+        onClick={() => { onChange(!checked); }}
         className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${checked ? "bg-primary-600" : "bg-gray-200"}`}
       >
         <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${checked ? "translate-x-4" : "translate-x-0.5"}`} />
