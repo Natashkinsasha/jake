@@ -22,6 +22,7 @@ export default function DashboardPage() {
   const { user } = useBackendSession();
   const router = useRouter();
 
+  const [greeting, setGreeting] = useState("");
   const [lessons, setLessons] = useState<LessonListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -50,6 +51,7 @@ export default function DashboardPage() {
 
   // Initial load
   useEffect(() => {
+    setGreeting(getGreeting());
     void fetchLessons(0);
   }, [fetchLessons]);
 
@@ -78,7 +80,7 @@ export default function DashboardPage() {
       {/* Greeting */}
       <div className="pt-2 opacity-0 animate-fade-in">
         <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 tracking-tight">
-          {getGreeting()}{firstName ? `, ${firstName}` : ""}
+          {greeting}{firstName ? `, ${firstName}` : ""}
         </h1>
         <p className="text-gray-400 mt-2 text-lg">
           Ready for today&apos;s session?
