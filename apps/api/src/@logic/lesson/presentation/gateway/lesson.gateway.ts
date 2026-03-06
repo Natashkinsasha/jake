@@ -200,7 +200,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: Socket,
     @MessageBody() data: { audio: string },
   ) {
-    if (!data?.audio) return;
+    if (!data.audio) return;
 
     const socketData = client.data as SocketData;
     if (socketData.voiceSampleProcessed) return;
