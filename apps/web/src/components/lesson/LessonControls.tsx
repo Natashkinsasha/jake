@@ -1,6 +1,7 @@
 interface LessonControlsProps {
   isPaused: boolean;
   isMuted: boolean;
+  sttError: string | null;
   onTogglePause: () => void;
   onToggleMute: () => void;
 }
@@ -8,6 +9,7 @@ interface LessonControlsProps {
 export function LessonControls({
   isPaused,
   isMuted,
+  sttError,
   onTogglePause,
   onToggleMute,
 }: LessonControlsProps) {
@@ -42,22 +44,32 @@ export function LessonControls({
           onClick={onToggleMute}
           disabled={isPaused}
           className="group relative"
-          aria-label={isMuted ? "Unmute microphone" : "Mute microphone"}
+          aria-label={sttError ? "Retry microphone" : isMuted ? "Unmute microphone" : "Mute microphone"}
         >
           {/* Pulsing ring when listening */}
-          {!isMuted && !isPaused && (
+          {!isMuted && !isPaused && !sttError && (
             <div className="absolute inset-[-4px] rounded-full bg-white/20 animate-ping" style={{ animationDuration: "2s" }} />
           )}
           <div
             className={`relative w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 ${
               isPaused
                 ? "bg-white/10 opacity-40"
-                : isMuted
-                  ? "bg-red-500 shadow-lg shadow-red-500/30 hover:bg-red-400"
-                  : "bg-white shadow-lg shadow-white/20 hover:scale-105 active:scale-95"
+                : sttError
+                  ? "bg-yellow-500 shadow-lg shadow-yellow-500/30 hover:bg-yellow-400"
+                  : isMuted
+                    ? "bg-red-500 shadow-lg shadow-red-500/30 hover:bg-red-400"
+                    : "bg-white shadow-lg shadow-white/20 hover:scale-105 active:scale-95"
             }`}
           >
-            {isMuted || isPaused ? (
+            {isPaused ? (
+              <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.55-.9l4.17 4.18L21 19.73 4.27 3z"/>
+              </svg>
+            ) : sttError ? (
+              <svg className="w-7 h-7 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+            ) : isMuted ? (
               <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M19 11h-1.7c0 .74-.16 1.43-.43 2.05l1.23 1.23c.56-.98.9-2.09.9-3.28zm-4.02.17c0-.06.02-.11.02-.17V5c0-1.66-1.34-3-3-3S9 3.34 9 5v.18l5.98 5.99zM4.27 3L3 4.27l6.01 6.01V11c0 1.66 1.33 3 2.99 3 .22 0 .44-.03.65-.08l1.66 1.66c-.71.33-1.5.52-2.31.52-2.76 0-5.3-2.1-5.3-5.1H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c.91-.13 1.77-.45 2.55-.9l4.17 4.18L21 19.73 4.27 3z"/>
               </svg>
@@ -73,7 +85,7 @@ export function LessonControls({
 
       {/* Status text */}
       <p className="text-white/30 text-xs text-center mt-3">
-        {isPaused ? "Lesson paused" : isMuted ? "Microphone off" : "Listening..."}
+        {isPaused ? "Lesson paused" : sttError ? "Mic error — tap to retry" : isMuted ? "Microphone off" : "Listening..."}
       </p>
     </div>
   );

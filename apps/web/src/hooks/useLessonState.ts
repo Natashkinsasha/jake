@@ -25,6 +25,7 @@ export function useLessonState(token?: string | null) {
     error: null,
   });
 
+  const [ttsError, setTtsError] = useState<string | null>(null);
   const userSpeakingRef = useRef(false);
   const pendingTurnsRef = useRef(0);
   const activeMessageIdRef = useRef<string | null>(null);
@@ -38,6 +39,10 @@ export function useLessonState(token?: string | null) {
   const revealedLenRef = useRef(0);
 
   const tts = useTutorTts({
+    onError: (message) => {
+      log("TTS error:", message);
+      setTtsError(message);
+    },
     onAllDone: () => {
       // Use server's authoritative fullText for the final snap (corrected punctuation etc.)
       const text = finalFullTextRef.current ?? pendingRevealTextRef.current;
@@ -315,6 +320,7 @@ export function useLessonState(token?: string | null) {
     ...state,
     connected,
     isPlaying: tts.isSpeaking,
+    ttsError,
     sendText,
     endLesson,
     interruptTutor,

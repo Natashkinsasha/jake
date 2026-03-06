@@ -10,6 +10,7 @@ interface UseTutorTtsOptions {
   onAllDone?: () => void;
   onPlaybackStart?: () => void;
   onPlaybackProgress?: (playedSeconds: number, totalDecodedSeconds: number, allReceived: boolean) => void;
+  onError?: (message: string) => void;
 }
 
 interface UseTutorTtsReturn {
@@ -315,6 +316,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
 
         ws.onerror = () => {
           log("WS error");
+          optionsRef.current?.onError?.("Voice temporarily unavailable");
           if (wsRef.current === ws) {
             closeWs();
           }
@@ -336,6 +338,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
       } catch (error) {
         log("failed to open TTS WS:", error);
         connectingRef.current = false;
+        optionsRef.current?.onError?.("Voice temporarily unavailable");
         closeWs();
       }
     },

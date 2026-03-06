@@ -7,6 +7,7 @@ import { LessonConnecting } from "./LessonConnecting";
 import { LessonWaiting } from "./LessonWaiting";
 import { LessonHeader } from "./LessonHeader";
 import { LessonControls } from "./LessonControls";
+import { useToast } from "@/components/ui/Toast";
 import { useLessonState } from "@/hooks/useLessonState";
 import { useStudentStt } from "@/hooks/useStudentStt";
 import { useSpeechBuffer } from "@/hooks/useSpeechBuffer";
@@ -19,9 +20,10 @@ interface LessonScreenProps {
 
 export function LessonScreen({ token }: LessonScreenProps) {
   const router = useRouter();
+  const { showToast } = useToast();
   const {
     messages, status, connected, isPlaying,
-    lessonEnded: serverLessonEnded, error: lessonError, sendText,
+    lessonEnded: serverLessonEnded, error: lessonError, ttsError, sendText,
     endLesson, interruptTutor, stopAllAudio,
     setUserSpeaking,
   } = useLessonState(token);
@@ -116,18 +118,34 @@ export function LessonScreen({ token }: LessonScreenProps) {
     if (serverLessonEnded) {
       stt.disable();
       stopAllAudio();
+      showToast("Lesson ended", "info");
       router.push("/dashboard");
     }
-  }, [serverLessonEnded, stt, router, stopAllAudio]);
+  }, [serverLessonEnded, stt, router, stopAllAudio, showToast]);
+
+  // TTS error — show toast
+  useEffect(() => {
+    if (ttsError) {
+      showToast(ttsError, "error");
+    }
+  }, [ttsError, showToast]);
+
+  // STT error — show toast
+  useEffect(() => {
+    if (stt.error) {
+      showToast(stt.error, "error");
+    }
+  }, [stt.error, showToast]);
 
   // Error — go back to dashboard
   useEffect(() => {
     if (lessonError) {
       stt.disable();
       stopAllAudio();
+      showToast(lessonError, "error");
       router.push("/dashboard");
     }
-  }, [lessonError, stt, stopAllAudio, router]);
+  }, [lessonError, stt, stopAllAudio, router, showToast]);
 
   if (!connected) return <LessonConnecting />;
   if (!hasReceivedFirstMessage) return <LessonWaiting />;
@@ -152,6 +170,7 @@ export function LessonScreen({ token }: LessonScreenProps) {
       <LessonControls
         isPaused={isPaused}
         isMuted={isMuted}
+        sttError={stt.error}
         onTogglePause={handleTogglePause}
         onToggleMute={handleToggleMute}
       />
