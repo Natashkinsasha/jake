@@ -73,6 +73,8 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   const eosRequestedRef = useRef(false);
   const openGenRef = useRef(0);
   const connectingRef = useRef(false);
+  const nextStartTimeRef = useRef(0);
+  const preBufferMetRef = useRef(false);
 
 
   const ensureAudioCtx = useCallback(() => {
@@ -96,6 +98,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
         progressTimerRef.current = null;
       }
       playingRef.current = false;
+      preBufferMetRef.current = false;
       totalDecodedDurRef.current = 0;
       playedDurRef.current = 0;
       setIsSpeaking(false);
@@ -105,48 +108,50 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
     }
   }, [optionsRef]);
 
-  const playNextBuffer = useCallback(() => {
-    if (decodedQueueRef.current.length === 0) {
-      currentSourceRef.current = null;
-      checkDone();
-      return;
-    }
+  const scheduleBuffers = useCallback(() => {
+    const ctx = audioCtxRef.current;
+    if (!ctx) return;
 
-    const audioBuffer = decodedQueueRef.current.shift();
-    if (!audioBuffer) return;
-    const ctx = ensureAudioCtx();
-    const source = ctx.createBufferSource();
-    source.buffer = audioBuffer;
-    source.connect(ctx.destination);
-    source.start();
-    currentSourceRef.current = source;
-    bufStartCtxTimeRef.current = ctx.currentTime;
+    while (decodedQueueRef.current.length > 0) {
+      const audioBuffer = decodedQueueRef.current.shift();
+      if (!audioBuffer) break;
 
-    // Start progress reporting on first buffer
-    if (!progressTimerRef.current) {
-      optionsRef.current?.onPlaybackStart?.();
-      progressTimerRef.current = setInterval(() => {
-        const c = audioCtxRef.current;
-        if (!c || !currentSourceRef.current) return;
-        const elapsed = c.currentTime - bufStartCtxTimeRef.current;
-        optionsRef.current?.onPlaybackProgress?.(
-          playedDurRef.current + elapsed,
-          totalDecodedDurRef.current,
-          allReceivedRef.current,
-        );
-      }, 60);
-    }
+      const source = ctx.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(ctx.destination);
 
-    log(`playing chunk (${Math.round(audioBuffer.duration * 1000)}ms)`);
+      const startTime = Math.max(nextStartTimeRef.current, ctx.currentTime);
+      source.start(startTime);
+      nextStartTimeRef.current = startTime + audioBuffer.duration;
+      currentSourceRef.current = source;
+      bufStartCtxTimeRef.current = startTime;
 
-    source.onended = () => {
-      if (currentSourceRef.current === source) {
-        currentSourceRef.current = null;
+      // Start progress reporting on first buffer
+      if (!progressTimerRef.current) {
+        optionsRef.current?.onPlaybackStart?.();
+        progressTimerRef.current = setInterval(() => {
+          const c = audioCtxRef.current;
+          if (!c || !currentSourceRef.current) return;
+          const elapsed = c.currentTime - bufStartCtxTimeRef.current;
+          optionsRef.current?.onPlaybackProgress?.(
+            playedDurRef.current + elapsed,
+            totalDecodedDurRef.current,
+            allReceivedRef.current,
+          );
+        }, 60);
       }
-      playedDurRef.current += audioBuffer.duration;
-      playNextBuffer();
-    };
-  }, [ensureAudioCtx, checkDone, optionsRef]);
+
+      log(`scheduled chunk (${Math.round(audioBuffer.duration * 1000)}ms) at ${startTime.toFixed(3)}`);
+
+      source.onended = () => {
+        if (currentSourceRef.current === source) {
+          currentSourceRef.current = null;
+        }
+        playedDurRef.current += audioBuffer.duration;
+        checkDone();
+      };
+    }
+  }, [checkDone, optionsRef]);
 
   const enqueueAudio = useCallback(
     (raw: ArrayBuffer) => {
@@ -161,15 +166,24 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
         const audioBuffer = pcmToAudioBuffer(ctx, raw);
         totalDecodedDurRef.current += audioBuffer.duration;
         decodedQueueRef.current.push(audioBuffer);
-        if (!currentSourceRef.current) {
-          playNextBuffer();
+
+        // Pre-buffer: wait until we have enough audio before starting playback
+        if (!preBufferMetRef.current) {
+          const queuedDuration = decodedQueueRef.current.reduce((sum, b) => sum + b.duration, 0);
+          if (queuedDuration < TTS_CONFIG.PRE_BUFFER_MS / 1000 && !allReceivedRef.current) {
+            return;
+          }
+          preBufferMetRef.current = true;
+          nextStartTimeRef.current = ctx.currentTime;
         }
+
+        scheduleBuffers();
       } catch (err: unknown) {
         log("PCM decode error:", err);
         checkDone();
       }
     },
-    [ensureAudioCtx, playNextBuffer, checkDone],
+    [ensureAudioCtx, scheduleBuffers, checkDone],
   );
 
   const stopAudio = useCallback(() => {
@@ -189,6 +203,8 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
     decodedQueueRef.current = [];
     allReceivedRef.current = false;
     playingRef.current = false;
+    preBufferMetRef.current = false;
+    nextStartTimeRef.current = 0;
     totalDecodedDurRef.current = 0;
     playedDurRef.current = 0;
     setIsSpeaking(false);
@@ -267,7 +283,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
             JSON.stringify({
               text: " ",
               voice_settings: TTS_CONFIG.VOICE_SETTINGS,
-              generation_config: { chunk_length_schedule: [120] },
+              generation_config: { chunk_length_schedule: TTS_CONFIG.CHUNK_LENGTH_SCHEDULE },
               ...(speechSpeed !== 1.0 ? { speed: speechSpeed } : {}),
             }),
           );
@@ -308,6 +324,15 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
 
           if (msg.isFinal) {
             allReceivedRef.current = true;
+            // Flush pre-buffer if it hasn't been met yet (short messages)
+            if (!preBufferMetRef.current && decodedQueueRef.current.length > 0) {
+              preBufferMetRef.current = true;
+              const ctx = audioCtxRef.current;
+              if (ctx) {
+                nextStartTimeRef.current = ctx.currentTime;
+                scheduleBuffers();
+              }
+            }
             // Close this specific WS instance (not whatever is in wsRef)
             ws.onmessage = null;
             ws.onerror = null;
@@ -349,7 +374,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
         closeWs();
       }
     },
-    [enqueueAudio, closeWs, sendTextToWs, sendEos, checkDone],
+    [enqueueAudio, closeWs, sendTextToWs, sendEos, checkDone, scheduleBuffers],
   );
 
   /** Speak a single message (greeting, exercise feedback). Opens WS, sends text, closes. */
