@@ -13,6 +13,7 @@ export interface LessonContext {
     explainGrammar: boolean;
     preferredExercises: string[];
     interests: string[];
+    ttsModel: string;
   };
   facts: Array<{ category: string; fact: string }>;
   recentEmotionalContext: string[];

@@ -76,6 +76,7 @@ export class LessonContextService {
         explainGrammar: prefs?.explainGrammar ?? true,
         preferredExercises: prefs?.preferredExerciseTypes ?? [],
         interests: prefs?.interests ?? [],
+        ttsModel: prefs?.ttsModel ?? "eleven_turbo_v2_5",
       },
       facts: facts.map((f) => ({
         category: f.category,

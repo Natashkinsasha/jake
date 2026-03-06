@@ -17,6 +17,7 @@ function createMockContext(overrides: Partial<LessonContext> = {}): LessonContex
       explainGrammar: true,
       preferredExercises: ["fill_the_gap", "multiple_choice"],
       interests: ["travel", "cooking"],
+      ttsModel: "eleven_turbo_v2_5",
     },
     facts: [],
     recentEmotionalContext: [],

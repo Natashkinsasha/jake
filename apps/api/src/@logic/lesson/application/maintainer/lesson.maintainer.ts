@@ -117,6 +117,7 @@ export class LessonMaintainer {
       systemPrompt,
       voiceId: context.tutorVoiceId,
       speechSpeed,
+      ttsModel: context.preferences.ttsModel,
       greeting: { text: greeting.text },
     };
   }
