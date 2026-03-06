@@ -189,7 +189,7 @@ describe("buildFullSystemPrompt", () => {
     const immediateResult = buildFullSystemPrompt(
       createMockContext(),
     );
-    expect(immediateResult).toContain("Correct errors immediately but gently");
+    expect(immediateResult).toContain("Correct real grammar/vocabulary errors gently");
 
     const endResult = buildFullSystemPrompt(
       createMockContext({
@@ -209,6 +209,6 @@ describe("buildFullSystemPrompt", () => {
         },
       }),
     );
-    expect(naturalResult).toContain("Only correct if the error causes confusion");
+    expect(naturalResult).toContain("Only correct if the error causes real confusion");
   });
 });
