@@ -35,7 +35,7 @@ export const PostLessonLlmResponseSchema = z.object({
       topic: z.string(),
     }),
   ),
-  reviewedWords: z.array(z.string()).default([]),
+  reviewedWords: z.array(z.string()),
   errorsFound: z.array(ErrorFoundSchema),
   emotionalSummary: z.string().nullable(),
   levelAssessment: z.string().nullable(),

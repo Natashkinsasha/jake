@@ -81,8 +81,8 @@ export const api = {
       if (params?.status) query.set("status", params.status);
       if (params?.topic) query.set("topic", params.topic);
       if (params?.lessonId) query.set("lessonId", params.lessonId);
-      if (params?.offset) query.set("offset", String(params.offset));
-      if (params?.limit) query.set("limit", String(params.limit));
+      if (params?.offset != null) query.set("offset", String(params.offset));
+      if (params?.limit != null) query.set("limit", String(params.limit));
       const qs = query.toString();
       return request<VocabularyItem[]>(`/vocabulary${qs ? `?${qs}` : ""}`);
     },

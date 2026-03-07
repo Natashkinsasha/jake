@@ -132,16 +132,20 @@ export function useLessonState(token?: string | null) {
 
     if (event === "vocab_highlight") {
       const d = data as LessonEventData & { word?: string; translation?: string; topic?: string };
-      if (d.word && d.translation && d.topic) {
-        setVocabHighlights((prev) => [...prev, { word: d.word!, translation: d.translation!, topic: d.topic! }]);
+      const word = d.word;
+      const translation = d.translation;
+      const topic = d.topic;
+      if (word && translation && topic) {
+        setVocabHighlights((prev) => [...prev, { word, translation, topic }]);
       }
       return;
     }
 
     if (event === "vocab_reviewed") {
       const d = data as LessonEventData & { word?: string };
-      if (d.word) {
-        setReviewedWords((prev) => [...prev, d.word!]);
+      const word = d.word;
+      if (word) {
+        setReviewedWords((prev) => [...prev, word]);
       }
       return;
     }

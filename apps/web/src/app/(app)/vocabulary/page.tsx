@@ -38,7 +38,7 @@ export default function VocabularyPage() {
     setIsLoading(true);
     setError(null);
     try {
-      const filters: Record<string, string> = {};
+      const filters: { status?: string; topic?: string } = {};
       if (statusFilter) filters.status = statusFilter;
       if (topicFilter) filters.topic = topicFilter;
 
@@ -125,7 +125,7 @@ export default function VocabularyPage() {
       {!isLoading && words.length > 0 && (
         <div className="opacity-0 animate-slide-up animate-stagger-4 space-y-2">
           {words.map((word, i) => {
-            const statusInfo = STATUS_LABELS[word.status] ?? STATUS_LABELS.new!;
+            const statusInfo = STATUS_LABELS[word.status] ?? { label: "New", color: "bg-blue-100 text-blue-700" };
             return (
               <div
                 key={word.id}
