@@ -18,12 +18,22 @@ Return ONLY valid JSON:
 {
   "summary": "2-3 sentence summary",
   "topics": ["Human-readable topic names, e.g. Present Tense, Food Vocabulary, Travel Phrases"],
-  "newWords": ["vocabulary"],
+  "newWords": [{"word": "reluctant", "translation": "неохотный", "topic": "emotions"}],
+  "reviewedWords": ["words the student successfully recalled or used correctly from previous lessons"],
   "errorsFound": [{"text": "error", "correction": "correct", "topic": "topic"}],
   "emotionalSummary": "student mood description",
   "levelAssessment": "A1|A2|B1|B2|C1|C2 or null",
   "suggestedNextTopics": ["topics"]
-}`;
+}
+
+IMPORTANT for newWords:
+- Include the translation in the student's native language (shown in conversation context)
+- Assign a topic category (e.g. "emotions", "travel", "food", "business", "daily life", "grammar")
+- Only include words that were NEW to the student or that they asked about
+
+IMPORTANT for reviewedWords:
+- Include words the student successfully used or translated from their existing vocabulary
+- Only count it if the student demonstrated knowledge (not just heard the word)`;
 
 @Processor(QUEUE_NAMES.POST_LESSON)
 export class PostLessonBullHandler extends ClsWorkerHost {
@@ -76,7 +86,7 @@ export class PostLessonBullHandler extends ClsWorkerHost {
     await this.lessonRepository.complete(lessonId, {
       summary: summary.summary,
       topics: summary.topics,
-      newWords: summary.newWords,
+      newWords: summary.newWords.map((w) => w.word),
       errorsFound: summary.errorsFound,
       levelAssessment: summary.levelAssessment,
       durationMinutes: Math.max(1, Math.round(
@@ -99,14 +109,18 @@ export class PostLessonBullHandler extends ClsWorkerHost {
       });
     }
 
-    for (const word of summary.newWords) {
+    for (const wordEntry of summary.newWords) {
       await this.vocabularyContract.upsert({
         userId: lesson.userId,
-        word,
+        word: wordEntry.word,
+        translation: wordEntry.translation,
+        topic: wordEntry.topic,
         lessonId,
-        strength: 10,
-        nextReview: new Date(Date.now() + 24 * 60 * 60 * 1000),
       });
+    }
+
+    if (summary.reviewedWords.length > 0) {
+      await this.vocabularyContract.incrementReview(lesson.userId, summary.reviewedWords);
     }
 
     for (const error of summary.errorsFound) {
