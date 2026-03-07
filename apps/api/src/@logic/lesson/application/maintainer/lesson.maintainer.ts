@@ -13,6 +13,7 @@ import { buildFullSystemPrompt } from "../service/prompt-builder";
 import { ModerationService, SAFETY_RESPONSE } from "../../../llm/src/moderation/moderation.service";
 import { LessonSessionService } from "../service/lesson-session.service";
 import { parseEmotion } from "../service/emotion";
+import { extractVocabTags } from "../service/vocab-tags";
 
 const SET_SPEED_RE = /<set_speed>(very_slow|slow|natural|fast|very_fast)<\/set_speed>/g;
 
@@ -169,10 +170,15 @@ export class LessonMaintainer {
       updatedHistory,
       {
         onChunk: (chunk) => {
-          const { cleanText } = stripSpeedTags(chunk.text);
-          const { text: textWithoutEmotion } = parseEmotion(cleanText);
-          if (textWithoutEmotion) {
-            callbacks.onChunk({ ...chunk, text: textWithoutEmotion });
+          const { cleanText: noSpeed } = stripSpeedTags(chunk.text);
+          const { text: noEmotion } = parseEmotion(noSpeed);
+          const { cleanText, highlights, reviewedWords } = extractVocabTags(noEmotion);
+
+          for (const h of highlights) callbacks.onVocabHighlight?.(h);
+          for (const w of reviewedWords) callbacks.onVocabReviewed?.(w);
+
+          if (cleanText) {
+            callbacks.onChunk({ ...chunk, text: cleanText });
           }
         },
         onEnd: (result) => {
@@ -188,7 +194,8 @@ export class LessonMaintainer {
             }
 
             const { cleanText: textWithoutSpeed, speed } = stripSpeedTags(result.fullText);
-            const { text: cleanText } = parseEmotion(textWithoutSpeed);
+            const { text: textWithoutEmotion } = parseEmotion(textWithoutSpeed);
+            const { cleanText } = extractVocabTags(textWithoutEmotion);
 
             if (speed) {
               const numericSpeed = toSpeechSpeed(speed);
