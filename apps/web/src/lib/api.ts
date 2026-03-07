@@ -51,7 +51,7 @@ export const api = {
     profiles: () =>
       request<{ gender: string; nationality: string; description: string; traits: string[] }[]>("/tutor/profiles"),
     voices: (gender: string) =>
-      request<{ id: string; name: string; gender: string }[]>(`/tutor/voices?gender=${gender}`),
+      request<{ id: string; name: string; gender: string; previewUrl: string }[]>(`/tutor/voices?gender=${gender}`),
   },
   lessons: {
     list: (offset = 0, limit = 10) => request<LessonListItem[]>(`/lessons?offset=${offset}&limit=${limit}`),

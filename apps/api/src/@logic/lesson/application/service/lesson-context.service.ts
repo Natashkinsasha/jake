@@ -5,7 +5,7 @@ import { MemoryContract } from "../../../memory/contract/memory.contract";
 import { ProgressContract } from "../../../progress/contract/progress.contract";
 import { VocabularyContract } from "../../../vocabulary/contract/vocabulary.contract";
 import { getTutorProfile } from "../../../tutor/domain/tutor-profiles";
-import { getDefaultVoice } from "../../../tutor/domain/tutor-voices";
+import { getDefaultVoice, getVoicesByGender } from "../../../tutor/domain/tutor-voices";
 import type { TutorGender, TutorNationality } from "../../../tutor/domain/tutor-types";
 import { LessonContext } from "../dto/lesson-context";
 
@@ -40,7 +40,11 @@ export class LessonContextService {
 
     const gender = (prefs?.tutorGender ?? "male") as TutorGender;
     const nationality = (prefs?.tutorNationality ?? "australian") as TutorNationality;
-    const voiceId = prefs?.tutorVoiceId ?? getDefaultVoice(gender).id;
+    const storedVoiceId = prefs?.tutorVoiceId;
+    const validVoiceIds = getVoicesByGender(gender).map((v) => v.id);
+    const voiceId = storedVoiceId && validVoiceIds.includes(storedVoiceId)
+      ? storedVoiceId
+      : getDefaultVoice(gender).id;
     const profile = getTutorProfile(nationality, gender);
 
     const suggestedTopics: string[] = [];

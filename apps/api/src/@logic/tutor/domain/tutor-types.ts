@@ -13,4 +13,5 @@ export interface TutorVoice {
   id: string;
   name: string;
   gender: TutorGender;
+  previewUrl: string;
 }

@@ -196,6 +196,7 @@ export default function DashboardPage() {
 
       <TutorSetupModal
         open={showTutorSetup}
+        onClose={() => { setShowTutorSetup(false); }}
         onComplete={() => {
           setShowTutorSetup(false);
           router.push("/lesson");
