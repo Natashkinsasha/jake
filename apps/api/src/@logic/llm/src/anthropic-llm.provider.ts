@@ -212,13 +212,13 @@ export class AnthropicLlmProvider extends LlmProvider {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
     const copy = JSON.parse(JSON.stringify(obj));
     for (const path of paths) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment
       let target: any = copy;
       for (let i = 0; i < path.length - 1; i++) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
-        target = target?.[path[i]!];
+        target = target?.[path[i]!]; // eslint-disable-line @typescript-eslint/no-non-null-assertion
       }
-      const key = path[path.length - 1]!;
+      const key = path[path.length - 1]!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
       if (target != null && !Array.isArray(target[key])) {
         // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
