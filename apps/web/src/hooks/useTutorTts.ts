@@ -36,10 +36,12 @@ interface UseTutorTtsOptions {
   onError?: (message: string) => void;
 }
 
+type VoiceSettingsOverride = { stability: number; similarity_boost: number; style: number };
+
 interface UseTutorTtsReturn {
-  speak: (text: string, voiceId: string, speechSpeed?: number, model?: string) => void;
+  speak: (text: string, voiceId: string, speechSpeed?: number, model?: string, voiceSettings?: VoiceSettingsOverride) => void;
   preWarm: (voiceId: string, speechSpeed?: number, model?: string) => void;
-  startStream: (voiceId: string, speechSpeed?: number, model?: string) => void;
+  startStream: (voiceId: string, speechSpeed?: number, model?: string, voiceSettings?: VoiceSettingsOverride) => void;
   sendChunk: (text: string) => void;
   endStream: () => void;
   stop: () => void;
@@ -253,7 +255,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   }, []);
 
   const openWs = useCallback(
-    async (voiceId: string, speechSpeed: number, onReady: () => void, model?: string) => {
+    async (voiceId: string, speechSpeed: number, onReady: () => void, model?: string, voiceSettings?: VoiceSettingsOverride) => {
       // Close any existing WS before opening a new one
       closeWs();
       connectingRef.current = true;
@@ -287,7 +289,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
           ws.send(
             JSON.stringify({
               text: " ",
-              voice_settings: TTS_CONFIG.VOICE_SETTINGS,
+              voice_settings: voiceSettings ?? TTS_CONFIG.VOICE_SETTINGS,
               generation_config: { chunk_length_schedule: TTS_CONFIG.CHUNK_LENGTH_SCHEDULE },
               ...(speechSpeed !== 1.0 ? { speed: speechSpeed } : {}),
             }),
@@ -384,14 +386,14 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
 
   /** Speak a single message (greeting, exercise feedback). Opens WS, sends text, closes. */
   const speak = useCallback(
-    (text: string, voiceId: string, speechSpeed?: number, model?: string) => {
+    (text: string, voiceId: string, speechSpeed?: number, model?: string, voiceSettings?: VoiceSettingsOverride) => {
       if (!text.trim()) return;
       log("speak:", text.slice(0, 50), "voiceId:", voiceId);
 
       void openWs(voiceId, speechSpeed ?? 1.0, () => {
         sendTextToWs(text, true);
         sendEos();
-      }, model);
+      }, model, voiceSettings);
     },
     [openWs, sendTextToWs, sendEos],
   );
@@ -409,10 +411,17 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
 
   /** Start a streaming TTS session. Call sendChunk() for each sentence, then endStream(). */
   const startStream = useCallback(
-    (voiceId: string, speechSpeed?: number, model?: string) => {
+    (voiceId: string, speechSpeed?: number, model?: string, voiceSettings?: VoiceSettingsOverride) => {
       log("startStream, voiceId:", voiceId);
       isStreamingRef.current = true;
       eosRequestedRef.current = false;
+
+      // If voice settings provided, close pre-warmed WS (it has default settings)
+      // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+      if (voiceSettings && (wsRef.current || connectingRef.current)) {
+        log("startStream: closing pre-warmed WS for emotion-specific settings");
+        closeWs();
+      }
 
       // If WS already exists or token fetch in progress (pre-warmed), reuse it
       // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
@@ -423,9 +432,9 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
 
       // No pre-warm, open normally
       pendingTextRef.current = [];
-      void openWs(voiceId, speechSpeed ?? 1.0, () => {}, model);
+      void openWs(voiceId, speechSpeed ?? 1.0, () => {}, model, voiceSettings);
     },
-    [openWs],
+    [openWs, closeWs],
   );
 
   /** Send a text chunk (sentence) during a streaming session. No flush — let ElevenLabs maintain consistent prosody. */

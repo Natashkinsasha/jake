@@ -12,6 +12,7 @@ import type { StreamCallbacks } from "../service/streaming-pipeline.service";
 import { buildFullSystemPrompt } from "../service/prompt-builder";
 import { ModerationService, SAFETY_RESPONSE } from "../../../llm/src/moderation/moderation.service";
 import { LessonSessionService } from "../service/lesson-session.service";
+import { parseEmotion } from "../service/emotion";
 
 const SET_SPEED_RE = /<set_speed>(very_slow|slow|natural|fast|very_fast)<\/set_speed>/g;
 
@@ -102,13 +103,14 @@ export class LessonMaintainer {
     ], "lesson.greeting");
 
     const { cleanText: greetingText, speed: greetingSpeed } = stripSpeedTags(greeting.text);
+    const { emotion: greetingEmotion, text: greetingCleanText } = parseEmotion(greetingText);
 
     const lesson = await this.lessonRepository.createWithGreeting(
       {
         userId,
         lessonNumber: context.lessonNumber,
       },
-      greetingText,
+      greetingCleanText,
     );
     const speechSpeed = toSpeechSpeed(greetingSpeed ?? context.preferences.speakingSpeed);
 
@@ -118,7 +120,7 @@ export class LessonMaintainer {
       voiceId: context.tutorVoiceId,
       speechSpeed,
       ttsModel: context.preferences.ttsModel,
-      greeting: { text: greetingText },
+      greeting: { text: greetingCleanText, emotion: greetingEmotion },
     };
   }
 
@@ -168,8 +170,9 @@ export class LessonMaintainer {
       {
         onChunk: (chunk) => {
           const { cleanText } = stripSpeedTags(chunk.text);
-          if (cleanText) {
-            callbacks.onChunk({ ...chunk, text: cleanText });
+          const { text: textWithoutEmotion } = parseEmotion(cleanText);
+          if (textWithoutEmotion) {
+            callbacks.onChunk({ ...chunk, text: textWithoutEmotion });
           }
         },
         onEnd: (result) => {
@@ -184,7 +187,8 @@ export class LessonMaintainer {
               return;
             }
 
-            const { cleanText, speed } = stripSpeedTags(result.fullText);
+            const { cleanText: textWithoutSpeed, speed } = stripSpeedTags(result.fullText);
+            const { text: cleanText } = parseEmotion(textWithoutSpeed);
 
             if (speed) {
               const numericSpeed = toSpeechSpeed(speed);
@@ -210,6 +214,9 @@ export class LessonMaintainer {
 
             callbacks.onEnd({ ...result, fullText: cleanText });
           })();
+        },
+        onEmotion: (emotion) => {
+          callbacks.onEmotion?.(emotion);
         },
         onError: (error) => {
           callbacks.onError(error);

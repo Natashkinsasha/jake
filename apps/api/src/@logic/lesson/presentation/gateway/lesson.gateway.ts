@@ -91,6 +91,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
         speechSpeed: result.speechSpeed,
         ttsModel: result.ttsModel,
         systemPrompt: result.systemPrompt,
+        emotion: result.greeting.emotion,
       });
 
       client.emit("tutor_chunk", { chunkIndex: 0, text: result.greeting.text });
@@ -176,6 +177,9 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
         },
         onSpeedChange: (speed) => {
           client.emit("speed_updated", { speed });
+        },
+        onEmotion: (emotion) => {
+          client.emit("tutor_emotion", { emotion, messageId });
         },
       },
       { signal: abortController.signal },
