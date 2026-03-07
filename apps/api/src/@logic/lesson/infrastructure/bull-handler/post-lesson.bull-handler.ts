@@ -28,8 +28,10 @@ Return ONLY valid JSON:
 
 IMPORTANT for newWords:
 - Include the translation in the student's native language (shown in conversation context)
+- Translation MUST be a real word — NEVER use "<UNKNOWN>", "unknown", or empty strings. If unsure, skip the word.
 - Assign a topic category (e.g. "emotions", "travel", "food", "business", "daily life", "grammar")
 - Only include words that were NEW to the student or that they asked about
+- Do NOT include common/basic words the student clearly already knows
 
 IMPORTANT for reviewedWords:
 - Include words the student successfully used or translated from their existing vocabulary

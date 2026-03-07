@@ -13,7 +13,7 @@ import { buildFullSystemPrompt } from "../service/prompt-builder";
 import { ModerationService, SAFETY_RESPONSE } from "../../../llm/src/moderation/moderation.service";
 import { LessonSessionService } from "../service/lesson-session.service";
 import { parseEmotion } from "../service/emotion";
-import { extractVocabTags } from "../service/vocab-tags";
+import { extractVocabTags, VocabTagBuffer } from "../service/vocab-tags";
 
 const SET_SPEED_RE = /<set_speed>(very_slow|slow|natural|fast|very_fast)<\/set_speed>/g;
 
@@ -165,6 +165,8 @@ export class LessonMaintainer {
         return { isSafe: true as const, reason: null };
       });
 
+    const vocabBuffer = new VocabTagBuffer();
+
     await this.streamingPipeline.stream(
       systemPrompt,
       updatedHistory,
@@ -172,8 +174,11 @@ export class LessonMaintainer {
         onChunk: (chunk) => {
           const { cleanText: noSpeed } = stripSpeedTags(chunk.text);
           const { text: noEmotion } = parseEmotion(noSpeed);
-          const { cleanText, highlights, reviewedWords } = extractVocabTags(noEmotion);
+          const { cleanText, highlights, reviewedWords } = vocabBuffer.push(noEmotion);
 
+          if (highlights.length > 0) {
+            this.logger.log(`Vocab highlights extracted: ${highlights.map(h => h.word).join(", ")}`);
+          }
           for (const h of highlights) callbacks.onVocabHighlight?.(h);
           for (const w of reviewedWords) callbacks.onVocabReviewed?.(w);
 
@@ -182,6 +187,17 @@ export class LessonMaintainer {
           }
         },
         onEnd: (result) => {
+          // Flush any remaining buffered vocab tags
+          const remaining = vocabBuffer.flush();
+          if (remaining.highlights.length > 0) {
+            this.logger.log(`Vocab flush highlights: ${remaining.highlights.map(h => h.word).join(", ")}`);
+          }
+          for (const h of remaining.highlights) callbacks.onVocabHighlight?.(h);
+          for (const w of remaining.reviewedWords) callbacks.onVocabReviewed?.(w);
+          if (remaining.cleanText) {
+            callbacks.onChunk({ chunkIndex: -1, text: remaining.cleanText });
+          }
+
           void (async () => {
             const modResult = await moderationPromise;
 

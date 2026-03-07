@@ -26,10 +26,17 @@ export interface UserPreferences {
 
 export type LessonStatus = "idle" | "connecting" | "listening" | "thinking" | "speaking";
 
+export interface VocabHighlight {
+  word: string;
+  translation: string;
+  topic: string;
+}
+
 export interface ChatMessage {
   role: "user" | "assistant";
   text: string;
   timestamp: number;
+  vocabHighlights?: VocabHighlight[];
 }
 
 export interface LessonListItem {

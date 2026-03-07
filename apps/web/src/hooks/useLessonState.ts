@@ -26,8 +26,7 @@ export function useLessonState(token?: string | null) {
   });
 
   const [ttsError, setTtsError] = useState<string | null>(null);
-  const [vocabHighlights, setVocabHighlights] = useState<Array<{ word: string; translation: string; topic: string }>>([]);
-  const [reviewedWords, setReviewedWords] = useState<string[]>([]);
+  const pendingVocabRef = useRef<Array<{ word: string; translation: string; topic: string }>>([]);
   const userSpeakingRef = useRef(false);
   const pendingTurnsRef = useRef(0);
   const activeMessageIdRef = useRef<string | null>(null);
@@ -54,12 +53,15 @@ export function useLessonState(token?: string | null) {
       greetingPlayingRef.current = false;
       // Use server's authoritative fullText for the final snap (corrected punctuation etc.)
       const text = finalFullTextRef.current ?? pendingRevealTextRef.current;
+      const vocabHighlights = pendingVocabRef.current.length > 0 ? [...pendingVocabRef.current] : undefined;
+      log("onAllDone — attaching vocab:", vocabHighlights?.length ?? 0, "highlights");
+      pendingVocabRef.current = [];
       if (text) {
         setState((prev) => {
           const messages = [...prev.messages];
           const last = messages[messages.length - 1];
           if (last?.role === "assistant") {
-            messages[messages.length - 1] = { ...last, text };
+            messages[messages.length - 1] = { ...last, text, vocabHighlights };
           }
           return { ...prev, messages, status: "idle" };
         });
@@ -132,21 +134,15 @@ export function useLessonState(token?: string | null) {
 
     if (event === "vocab_highlight") {
       const d = data as LessonEventData & { word?: string; translation?: string; topic?: string };
-      const word = d.word;
-      const translation = d.translation;
-      const topic = d.topic;
-      if (word && translation && topic) {
-        setVocabHighlights((prev) => [...prev, { word, translation, topic }]);
+      log("vocab_highlight received:", d.word, d.translation, d.topic);
+      if (d.word && d.translation && d.topic) {
+        pendingVocabRef.current = [...pendingVocabRef.current, { word: d.word, translation: d.translation, topic: d.topic }];
+        log("pendingVocab now:", pendingVocabRef.current.length, "items");
       }
       return;
     }
 
     if (event === "vocab_reviewed") {
-      const d = data as LessonEventData & { word?: string };
-      const word = d.word;
-      if (word) {
-        setReviewedWords((prev) => [...prev, word]);
-      }
       return;
     }
 
@@ -374,8 +370,6 @@ export function useLessonState(token?: string | null) {
     connected,
     isPlaying: tts.isSpeaking,
     ttsError,
-    vocabHighlights,
-    reviewedWords,
     sendText,
     sendVoiceSample,
     endLesson,

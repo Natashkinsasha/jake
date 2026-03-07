@@ -11,11 +11,12 @@ import { API_URL } from "@/lib/config";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const token = getBackendToken();
+  const hasBody = options?.body != null;
 
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+      ...(hasBody ? { "Content-Type": "application/json" } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options?.headers,
     },

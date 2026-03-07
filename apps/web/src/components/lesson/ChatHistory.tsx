@@ -48,15 +48,34 @@ export function ChatHistory({
             </div>
           ) : msg.text ? (
             /* Tutor message — left aligned, white bubble */
-            <div className="flex justify-start">
-              <div className={cn(
-                "bg-white/95 backdrop-blur-sm rounded-2xl rounded-bl-md px-4 py-2.5 max-w-[80%] shadow-sm",
-                i === lastAssistantIdx && isLastAssistantNew ? "" : "opacity-80",
-              )}>
-                <p className="text-gray-800 text-[15px] leading-relaxed">
-                  {msg.text}
-                </p>
+            <div className="space-y-2">
+              <div className="flex justify-start">
+                <div className={cn(
+                  "bg-white/95 backdrop-blur-sm rounded-2xl rounded-bl-md px-4 py-2.5 max-w-[80%] shadow-sm",
+                  i === lastAssistantIdx && isLastAssistantNew ? "" : "opacity-80",
+                )}>
+                  <p className="text-gray-800 text-[15px] leading-relaxed">
+                    {msg.text}
+                  </p>
+                </div>
               </div>
+
+              {/* Vocab cards inline */}
+              {msg.vocabHighlights && msg.vocabHighlights.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pl-1">
+                  {msg.vocabHighlights.map((h, vi) => (
+                    <div
+                      key={`${h.word}-${vi}`}
+                      className="animate-fade-in inline-flex items-center gap-1.5 bg-white/80 backdrop-blur-sm border border-primary-200/60 rounded-lg px-2.5 py-1.5 shadow-sm"
+                    >
+                      <div className="w-1 h-1 rounded-full bg-primary-400 flex-shrink-0" />
+                      <span className="text-[13px] font-medium text-gray-900">{h.word}</span>
+                      <span className="text-[13px] text-gray-400">&mdash;</span>
+                      <span className="text-[13px] text-gray-500">{h.translation}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
             /* Empty assistant message = loading */

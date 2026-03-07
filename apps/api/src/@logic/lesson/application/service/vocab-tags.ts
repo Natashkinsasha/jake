@@ -27,3 +27,38 @@ export function extractVocabTags(text: string): {
 
   return { cleanText: cleanText.trim(), highlights, reviewedWords };
 }
+
+/**
+ * Streaming-safe vocab tag extractor. Buffers incomplete tags across chunks.
+ * Call `push()` for each chunk, `flush()` at stream end.
+ */
+export class VocabTagBuffer {
+  private buffer = "";
+
+  push(chunk: string): { cleanText: string; highlights: VocabHighlight[]; reviewedWords: string[] } {
+    this.buffer += chunk;
+
+    // Check if there's an incomplete tag at the end (starts with < but no closing />)
+    const lastOpenBracket = this.buffer.lastIndexOf("<");
+    let safeText = this.buffer;
+    let remainder = "";
+
+    if (lastOpenBracket !== -1) {
+      const afterOpen = this.buffer.slice(lastOpenBracket);
+      // If it looks like a vocab tag starting but not closed yet
+      if (/^<vocab/.test(afterOpen) && !/>/.test(afterOpen)) {
+        safeText = this.buffer.slice(0, lastOpenBracket);
+        remainder = afterOpen;
+      }
+    }
+
+    this.buffer = remainder;
+    return extractVocabTags(safeText);
+  }
+
+  flush(): { cleanText: string; highlights: VocabHighlight[]; reviewedWords: string[] } {
+    const result = extractVocabTags(this.buffer);
+    this.buffer = "";
+    return result;
+  }
+}
