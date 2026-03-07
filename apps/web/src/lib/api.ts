@@ -89,6 +89,11 @@ export const api = {
     },
     stats: () => request<VocabularyStats>("/vocabulary/stats"),
     topics: () => request<string[]>("/vocabulary/topics"),
+    add: (data: { word: string; translation: string; topic: string; lessonId?: string }) =>
+      request<{ success: boolean; id: string }>("/vocabulary", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
     delete: (id: string) => request<{ success: boolean }>(`/vocabulary/${id}`, { method: "DELETE" }),
   },
 };

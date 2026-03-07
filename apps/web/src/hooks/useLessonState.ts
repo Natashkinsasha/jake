@@ -26,7 +26,7 @@ export function useLessonState(token?: string | null) {
   });
 
   const [ttsError, setTtsError] = useState<string | null>(null);
-  const pendingVocabRef = useRef<Array<{ word: string; translation: string; topic: string }>>([]);
+  const seenVocabRef = useRef<Set<string>>(new Set());
   const userSpeakingRef = useRef(false);
   const pendingTurnsRef = useRef(0);
   const activeMessageIdRef = useRef<string | null>(null);
@@ -53,15 +53,12 @@ export function useLessonState(token?: string | null) {
       greetingPlayingRef.current = false;
       // Use server's authoritative fullText for the final snap (corrected punctuation etc.)
       const text = finalFullTextRef.current ?? pendingRevealTextRef.current;
-      const vocabHighlights = pendingVocabRef.current.length > 0 ? [...pendingVocabRef.current] : undefined;
-      log("onAllDone — attaching vocab:", vocabHighlights?.length ?? 0, "highlights");
-      pendingVocabRef.current = [];
       if (text) {
         setState((prev) => {
           const messages = [...prev.messages];
           const last = messages[messages.length - 1];
           if (last?.role === "assistant") {
-            messages[messages.length - 1] = { ...last, text, vocabHighlights };
+            messages[messages.length - 1] = { ...last, text };
           }
           return { ...prev, messages, status: "idle" };
         });
@@ -136,8 +133,28 @@ export function useLessonState(token?: string | null) {
       const d = data as LessonEventData & { word?: string; translation?: string; topic?: string };
       log("vocab_highlight received:", d.word, d.translation, d.topic);
       if (d.word && d.translation && d.topic) {
-        pendingVocabRef.current = [...pendingVocabRef.current, { word: d.word, translation: d.translation, topic: d.topic }];
-        log("pendingVocab now:", pendingVocabRef.current.length, "items");
+        const key = d.word.toLowerCase();
+        if (seenVocabRef.current.has(key)) {
+          log("vocab_highlight skipped (duplicate):", d.word);
+          return;
+        }
+        seenVocabRef.current.add(key);
+        const highlight = { word: d.word, translation: d.translation, topic: d.topic, saved: true };
+        setState((prev) => {
+          const messages = [...prev.messages];
+          const last = messages[messages.length - 1];
+          if (last?.role === "assistant") {
+            const existing = last.vocabHighlights ?? [];
+            messages[messages.length - 1] = {
+              ...last,
+              vocabHighlights: [...existing, highlight],
+            };
+          } else {
+            // vocab_highlight arrived before first tutor_chunk — create assistant message
+            messages.push({ role: "assistant", text: "", timestamp: Date.now(), vocabHighlights: [highlight] });
+          }
+          return { ...prev, messages };
+        });
       }
       return;
     }

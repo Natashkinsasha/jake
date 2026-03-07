@@ -1,4 +1,4 @@
-import { Controller, Get, Delete, Param, Query, UseGuards, NotFoundException } from "@nestjs/common";
+import { Controller, Get, Post, Delete, Param, Query, Body, UseGuards, NotFoundException } from "@nestjs/common";
 import { JwtAuthGuard } from "@shared/shared-auth/jwt-auth.guard";
 import { CurrentUserId } from "@shared/shared-auth/current-user.decorator";
 import { VocabularyContract } from "../../contract/vocabulary.contract";
@@ -35,6 +35,21 @@ export class VocabularyController {
   @Get("topics")
   async topics(@CurrentUserId() userId: string) {
     return this.vocabularyContract.getTopics(userId);
+  }
+
+  @Post()
+  async add(
+    @CurrentUserId() userId: string,
+    @Body() body: { word: string; translation: string; topic: string; lessonId?: string },
+  ) {
+    const entry = await this.vocabularyContract.upsert({
+      userId,
+      word: body.word,
+      translation: body.translation,
+      topic: body.topic,
+      lessonId: body.lessonId,
+    });
+    return { success: true, id: entry.id };
   }
 
   @Delete(":id")

@@ -30,6 +30,7 @@ export interface VocabHighlight {
   word: string;
   translation: string;
   topic: string;
+  saved?: boolean;
 }
 
 export interface ChatMessage {

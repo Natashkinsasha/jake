@@ -4,8 +4,12 @@ export interface VocabHighlight {
   topic: string;
 }
 
-const VOCAB_TAG_RE = /<vocab\s+word="([^"]+)"\s+translation="([^"]+)"\s+topic="([^"]+)"\s*\/>/g;
+// Flexible regex: matches <vocab> with word/translation/topic attributes in ANY order
+const VOCAB_TAG_RE = /<vocab\s+(?=.*?\bword="([^"]+)")(?=.*?\btranslation="([^"]+)")(?=.*?\btopic="([^"]+)")[^/]*\/>/g;
 const VOCAB_REVIEWED_RE = /<vocab_reviewed\s+word="([^"]+)"\s*\/>/g;
+
+// Fallback: strict order regex in case the lookahead one misses edge cases
+const VOCAB_TAG_STRICT_RE = /<vocab\s+word="([^"]+)"\s+translation="([^"]+)"\s+topic="([^"]+)"\s*\/>/g;
 
 export function extractVocabTags(text: string): {
   cleanText: string;
@@ -15,10 +19,20 @@ export function extractVocabTags(text: string): {
   const highlights: VocabHighlight[] = [];
   const reviewedWords: string[] = [];
 
+  // Try flexible regex first, fallback to strict if no matches
+  let matched = false;
   let cleanText = text.replaceAll(VOCAB_TAG_RE, (_, word: string, translation: string, topic: string) => {
     highlights.push({ word, translation, topic });
+    matched = true;
     return "";
   });
+
+  if (!matched) {
+    cleanText = text.replaceAll(VOCAB_TAG_STRICT_RE, (_, word: string, translation: string, topic: string) => {
+      highlights.push({ word, translation, topic });
+      return "";
+    });
+  }
 
   cleanText = cleanText.replaceAll(VOCAB_REVIEWED_RE, (_, word: string) => {
     reviewedWords.push(word);

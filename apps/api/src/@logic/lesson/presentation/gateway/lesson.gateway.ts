@@ -182,9 +182,11 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
           client.emit("tutor_emotion", { emotion, messageId });
         },
         onVocabHighlight: (highlight) => {
+          this.logger.log(`Emitting vocab_highlight to client: ${JSON.stringify(highlight)}`);
           client.emit("vocab_highlight", highlight);
         },
         onVocabReviewed: (word) => {
+          this.logger.log(`Emitting vocab_reviewed to client: ${word}`);
           client.emit("vocab_reviewed", { word });
         },
       },
