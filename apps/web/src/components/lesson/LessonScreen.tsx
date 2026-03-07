@@ -8,6 +8,7 @@ import { LessonWaiting } from "./LessonWaiting";
 import { LessonHeader } from "./LessonHeader";
 import { LessonControls } from "./LessonControls";
 import { DebugModal } from "./DebugModal";
+import { VocabCard } from "./VocabCard";
 import { useToast } from "@/components/ui/Toast";
 import { useLessonState } from "@/hooks/useLessonState";
 import { useStudentStt } from "@/hooks/useStudentStt";
@@ -28,7 +29,7 @@ export function LessonScreen({ token }: LessonScreenProps) {
     messages, status, connected, isPlaying,
     lessonEnded: serverLessonEnded, error: lessonError, ttsError, sendText,
     sendVoiceSample, endLesson, interruptTutor, stopAllAudio,
-    setUserSpeaking, debugInfo,
+    setUserSpeaking, debugInfo, vocabHighlights, reviewedWords,
   } = useLessonState(token);
 
   const [isMuted, setIsMuted] = useState(false);
@@ -204,6 +205,8 @@ export function LessonScreen({ token }: LessonScreenProps) {
           <p className="text-white/40 text-sm italic text-center truncate">{liveTranscript}</p>
         </div>
       )}
+
+      <VocabCard highlights={vocabHighlights} reviewedWords={reviewedWords} />
 
       <LessonControls
         isPaused={isPaused}

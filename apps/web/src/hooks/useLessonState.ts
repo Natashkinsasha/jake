@@ -26,6 +26,8 @@ export function useLessonState(token?: string | null) {
   });
 
   const [ttsError, setTtsError] = useState<string | null>(null);
+  const [vocabHighlights, setVocabHighlights] = useState<Array<{ word: string; translation: string; topic: string }>>([]);
+  const [reviewedWords, setReviewedWords] = useState<string[]>([]);
   const userSpeakingRef = useRef(false);
   const pendingTurnsRef = useRef(0);
   const activeMessageIdRef = useRef<string | null>(null);
@@ -125,6 +127,22 @@ export function useLessonState(token?: string | null) {
     if (event === "tutor_emotion") {
       const d = data as LessonEventData & { emotion?: string };
       if (d.emotion) emotionRef.current = d.emotion;
+      return;
+    }
+
+    if (event === "vocab_highlight") {
+      const d = data as LessonEventData & { word?: string; translation?: string; topic?: string };
+      if (d.word && d.translation && d.topic) {
+        setVocabHighlights((prev) => [...prev, { word: d.word!, translation: d.translation!, topic: d.topic! }]);
+      }
+      return;
+    }
+
+    if (event === "vocab_reviewed") {
+      const d = data as LessonEventData & { word?: string };
+      if (d.word) {
+        setReviewedWords((prev) => [...prev, d.word!]);
+      }
       return;
     }
 
@@ -352,6 +370,8 @@ export function useLessonState(token?: string | null) {
     connected,
     isPlaying: tts.isSpeaking,
     ttsError,
+    vocabHighlights,
+    reviewedWords,
     sendText,
     sendVoiceSample,
     endLesson,
