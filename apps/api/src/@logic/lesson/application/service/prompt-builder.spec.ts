@@ -167,6 +167,22 @@ describe("buildFullSystemPrompt", () => {
     expect(result).toContain("Assess their level");
   });
 
+  it("should include emotion instructions with all 10 emotions", () => {
+    const result = buildFullSystemPrompt(createMockContext());
+    expect(result).toContain("=== EMOTIONAL EXPRESSION ===");
+    expect(result).toContain("<emotion>");
+    expect(result).toContain("neutral");
+    expect(result).toContain("happy");
+    expect(result).toContain("encouraging");
+    expect(result).toContain("empathetic");
+    expect(result).toContain("excited");
+    expect(result).toContain("curious");
+    expect(result).toContain("playful");
+    expect(result).toContain("proud");
+    expect(result).toContain("thoughtful");
+    expect(result).toContain("surprised");
+  });
+
   it("should not include first lesson instructions for subsequent lessons", () => {
     const result = buildFullSystemPrompt(createMockContext({ lessonNumber: 2 }));
     expect(result).not.toContain("=== FIRST LESSON INSTRUCTIONS ===");

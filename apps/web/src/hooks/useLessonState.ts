@@ -3,7 +3,7 @@ import { useWebSocket } from "./useWebSocket";
 import { useTutorTts } from "./useTutorTts";
 import { handleLessonEvent, type LessonEventData } from "./lesson/handleLessonEvent";
 import { createLogger } from "./logger";
-import { WS_URL } from "@/lib/config";
+import { WS_URL, EMOTION_VOICE_SETTINGS } from "@/lib/config";
 import type { ChatMessage, LessonStatus } from "@/types";
 
 const log = createLogger("Lesson");
@@ -35,6 +35,7 @@ export function useLessonState(token?: string | null) {
   const systemPromptRef = useRef<string | null>(null);
   const streamStartedRef = useRef(false);
   const greetingPlayingRef = useRef(false);
+  const emotionRef = useRef<string>("neutral");
 
   const streamTextRef = useRef<string>("");
   const pendingRevealTextRef = useRef<string | null>(null);
@@ -112,12 +113,19 @@ export function useLessonState(token?: string | null) {
     log("event:", event, data.text ? `"${data.text.slice(0, 50)}..."` : "");
 
     if (event === "lesson_started") {
-      const d = data as LessonEventData & { voiceId?: string; speechSpeed?: number; ttsModel?: string; systemPrompt?: string };
+      const d = data as LessonEventData & { voiceId?: string; speechSpeed?: number; ttsModel?: string; systemPrompt?: string; emotion?: string };
       if (d.voiceId) voiceIdRef.current = d.voiceId;
       if (d.speechSpeed != null) speechSpeedRef.current = d.speechSpeed;
       if (d.ttsModel) ttsModelRef.current = d.ttsModel;
       if (d.systemPrompt) systemPromptRef.current = d.systemPrompt;
+      if (d.emotion) emotionRef.current = d.emotion;
       greetingPlayingRef.current = true;
+    }
+
+    if (event === "tutor_emotion") {
+      const d = data as LessonEventData & { emotion?: string };
+      if (d.emotion) emotionRef.current = d.emotion;
+      return;
     }
 
     if (event === "speed_updated") {
@@ -159,7 +167,10 @@ export function useLessonState(token?: string | null) {
             messages: [...prev.messages, { role: "assistant" as const, text: "", timestamp: Date.now() }],
             status: "speaking",
           }));
-          ttsRef.current.speak(action.text, voiceIdRef.current, speechSpeedRef.current, ttsModelRef.current);
+          const voiceSettings = emotionRef.current !== "neutral"
+            ? EMOTION_VOICE_SETTINGS[emotionRef.current]
+            : undefined;
+          ttsRef.current.speak(action.text, voiceIdRef.current, speechSpeedRef.current, ttsModelRef.current, voiceSettings);
         } else {
           // No TTS — show text immediately
           setState((prev) => ({
@@ -183,7 +194,10 @@ export function useLessonState(token?: string | null) {
 
         if (!streamStartedRef.current && voiceIdRef.current) {
           streamStartedRef.current = true;
-          ttsRef.current.startStream(voiceIdRef.current, speechSpeedRef.current, ttsModelRef.current);
+          const voiceSettings = emotionRef.current !== "neutral"
+            ? EMOTION_VOICE_SETTINGS[emotionRef.current]
+            : undefined;
+          ttsRef.current.startStream(voiceIdRef.current, speechSpeedRef.current, ttsModelRef.current, voiceSettings);
         }
 
         ttsRef.current.sendChunk(action.text);
@@ -268,6 +282,7 @@ export function useLessonState(token?: string | null) {
     (text: string) => {
       if (!text.trim()) return;
       pendingTurnsRef.current++;
+      emotionRef.current = "neutral";
       const trimmed = text.trim();
       const messageId = crypto.randomUUID();
       activeMessageIdRef.current = messageId;
