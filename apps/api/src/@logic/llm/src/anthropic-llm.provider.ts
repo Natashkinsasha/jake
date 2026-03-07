@@ -168,8 +168,21 @@ export class AnthropicLlmProvider extends LlmProvider {
         this.logger.debug(`LLM tool_use response: inputTokens=${response.usage.input_tokens}, outputTokens=${response.usage.output_tokens}`);
 
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        const sanitized = this.sanitizeNullStrings(toolBlock.input);
-        const result = schema.safeParse(sanitized);
+        let sanitized = this.sanitizeNullStrings(toolBlock.input);
+        let result = schema.safeParse(sanitized);
+
+        // LLMs sometimes return a bare value instead of a single-element array
+        if (!result.success) {
+          const arrayIssues = result.error.issues.filter(
+            (i) => i.code === "invalid_type" && i.expected === "array",
+          );
+          if (arrayIssues.length > 0) {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            sanitized = this.coerceToArrays(sanitized, arrayIssues.map((i) => i.path));
+            result = schema.safeParse(sanitized);
+          }
+        }
+
         if (!result.success) {
           this.logger.error(
             `LLM tool_use validation failed: ${JSON.stringify(result.error.issues)}`,
@@ -191,6 +204,29 @@ export class AnthropicLlmProvider extends LlmProvider {
       { provider: "anthropic", model: this.MODEL, method: "generateJson" },
       doGenerateJson,
     );
+  }
+
+  // Wrap bare values in arrays at the specified paths
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private coerceToArrays(obj: any, paths: (string | number)[][]): any {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+    const copy = JSON.parse(JSON.stringify(obj));
+    for (const path of paths) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      let target: any = copy;
+      for (let i = 0; i < path.length - 1; i++) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+        target = target?.[path[i]!];
+      }
+      const key = path[path.length - 1]!;
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+      if (target != null && !Array.isArray(target[key])) {
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+        target[key] = target[key] == null ? [] : [target[key]];
+      }
+    }
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+    return copy;
   }
 
   // LLMs sometimes return "null" string instead of JSON null
