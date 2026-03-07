@@ -8,6 +8,7 @@ function createMockContext(overrides: Partial<LessonContext> = {}): LessonContex
     lessonNumber: 5,
     lastLessonAt: null,
     tutorPromptFragment: "",
+    onboardingCompleted: true,
     tutorVoiceId: "voice-1",
     preferences: {
       correctionStyle: "immediate",
@@ -159,12 +160,10 @@ describe("buildFullSystemPrompt", () => {
     expect(result).not.toContain("2.");
   });
 
-  it("should include first lesson instructions for lesson 1", () => {
-    const result = buildFullSystemPrompt(createMockContext({ lessonNumber: 1 }));
-    expect(result).toContain("=== FIRST LESSON INSTRUCTIONS ===");
-    expect(result).toContain("FIRST lesson");
-    expect(result).toContain("Make them feel comfortable");
-    expect(result).toContain("Assess their level");
+  it("should include onboarding mode when onboardingCompleted is false", () => {
+    const result = buildFullSystemPrompt(createMockContext({ onboardingCompleted: false }));
+    expect(result).toContain("=== ONBOARDING MODE ===");
+    expect(result).toContain("<onboarding");
   });
 
   it("should include emotion instructions with all 10 emotions", () => {
@@ -183,9 +182,14 @@ describe("buildFullSystemPrompt", () => {
     expect(result).toContain("surprised");
   });
 
-  it("should not include first lesson instructions for subsequent lessons", () => {
-    const result = buildFullSystemPrompt(createMockContext({ lessonNumber: 2 }));
-    expect(result).not.toContain("=== FIRST LESSON INSTRUCTIONS ===");
+  it("should not include onboarding mode when onboardingCompleted is true", () => {
+    const result = buildFullSystemPrompt(createMockContext({ onboardingCompleted: true }));
+    expect(result).not.toContain("=== ONBOARDING MODE ===");
+  });
+
+  it("should include onboarding mode regardless of lessonNumber when onboardingCompleted is false", () => {
+    const result = buildFullSystemPrompt(createMockContext({ onboardingCompleted: false, lessonNumber: 5 }));
+    expect(result).toContain("=== ONBOARDING MODE ===");
   });
 
   it("should include tutor system prompt when provided", () => {

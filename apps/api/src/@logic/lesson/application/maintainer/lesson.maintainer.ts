@@ -5,6 +5,7 @@ import type { LlmMessage } from "@lib/provider/src";
 import { QUEUE_NAMES } from "@shared/shared-job/queue-names";
 import { LessonRepository } from "../../infrastructure/repository/lesson.repository";
 import { LessonMessageRepository } from "../../infrastructure/repository/lesson-message.repository";
+import { AuthContract } from "../../../auth/contract/auth.contract";
 import { LessonContextService } from "../service/lesson-context.service";
 import { LessonResponseService } from "../service/lesson-response.service";
 import { StreamingPipelineService } from "../service/streaming-pipeline.service";
@@ -15,6 +16,21 @@ import { LessonSessionService } from "../service/lesson-session.service";
 import { parseEmotion } from "../service/emotion";
 
 const SET_SPEED_RE = /<set_speed>(very_slow|slow|natural|fast|very_fast)<\/set_speed>/g;
+
+const ONBOARDING_RE = /<onboarding\s+status="(complete|in_progress)"(?:\s+level="(A1|A2|B1|B2|C1|C2)")?\s*\/>/g;
+
+function stripOnboardingTags(text: string): { cleanText: string; onboardingComplete: boolean; level: string | null } {
+  let onboardingComplete = false;
+  let level: string | null = null;
+  const cleanText = text.replaceAll(ONBOARDING_RE, (_, status: string, lvl: string | undefined) => {
+    if (status === "complete" && lvl) {
+      onboardingComplete = true;
+      level = lvl;
+    }
+    return "";
+  }).trim();
+  return { cleanText, onboardingComplete, level };
+}
 
 function stripSpeedTags(text: string): { cleanText: string; speed: string | null } {
   let speed: string | null = null;
@@ -49,6 +65,7 @@ export class LessonMaintainer {
   private readonly logger = new Logger(LessonMaintainer.name);
 
   constructor(
+    private authContract: AuthContract,
     private lessonRepository: LessonRepository,
     private messageRepository: LessonMessageRepository,
     private contextService: LessonContextService,
@@ -96,6 +113,11 @@ export class LessonMaintainer {
   async startLesson(userId: string) {
     const context = await this.contextService.build(userId);
 
+    const isOnboarding = !context.onboardingCompleted;
+    if (isOnboarding) {
+      context.preferences.speakingSpeed = "very_slow";
+    }
+
     const systemPrompt = buildFullSystemPrompt(context);
 
     const greeting = await this.responseService.generate(systemPrompt, [
@@ -103,7 +125,8 @@ export class LessonMaintainer {
     ], "lesson.greeting");
 
     const { cleanText: greetingText, speed: greetingSpeed } = stripSpeedTags(greeting.text);
-    const { emotion: greetingEmotion, text: greetingCleanText } = parseEmotion(greetingText);
+    const { emotion: greetingEmotion, text: greetingTextNoEmotion } = parseEmotion(greetingText);
+    const { cleanText: greetingCleanText } = stripOnboardingTags(greetingTextNoEmotion);
 
     const lesson = await this.lessonRepository.createWithGreeting(
       {
@@ -121,6 +144,7 @@ export class LessonMaintainer {
       speechSpeed,
       ttsModel: context.preferences.ttsModel,
       greeting: { text: greetingCleanText, emotion: greetingEmotion },
+      isOnboarding,
     };
   }
 
@@ -188,7 +212,13 @@ export class LessonMaintainer {
             }
 
             const { cleanText: textWithoutSpeed, speed } = stripSpeedTags(result.fullText);
-            const { text: cleanText } = parseEmotion(textWithoutSpeed);
+            const { text: textWithoutEmotion } = parseEmotion(textWithoutSpeed);
+            const { cleanText: textWithoutOnboarding, onboardingComplete, level: onboardingLevel } = stripOnboardingTags(textWithoutEmotion);
+            if (onboardingComplete && onboardingLevel) {
+              await this.authContract.completeOnboarding(userId, onboardingLevel);
+              callbacks.onOnboardingComplete?.({ level: onboardingLevel });
+            }
+            const cleanText = textWithoutOnboarding;
 
             if (speed) {
               const numericSpeed = toSpeechSpeed(speed);

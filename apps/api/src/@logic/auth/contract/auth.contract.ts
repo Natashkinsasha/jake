@@ -13,4 +13,8 @@ export class AuthContract {
   async updateLevel(userId: string, level: string): Promise<void> {
     return this.userRepository.updateLevel(userId, level);
   }
+
+  async completeOnboarding(userId: string, level: string): Promise<void> {
+    return this.userRepository.completeOnboarding(userId, level);
+  }
 }

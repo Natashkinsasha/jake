@@ -21,6 +21,7 @@ export interface StreamCallbacks {
   onDiscard?(safetyText: string): void;
   onSpeedChange?(speed: string): void;
   onEmotion?(emotion: string): void;
+  onOnboardingComplete?: (data: { level: string }) => void;
 }
 
 const MAX_BUFFER_AGE_MS = 500;

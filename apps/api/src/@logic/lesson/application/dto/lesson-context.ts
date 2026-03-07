@@ -1,6 +1,7 @@
 export interface LessonContext {
   studentName: string;
   level: string | null;
+  onboardingCompleted: boolean;
   lessonNumber: number;
   lastLessonAt: Date | null;
   tutorPromptFragment: string;
