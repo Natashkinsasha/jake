@@ -159,6 +159,7 @@ jobs:
           host: ${{ secrets.DROPLET_HOST }}
           username: root
           key: ${{ secrets.DROPLET_SSH_KEY }}
+          command_timeout: 5m
           envs: GITHUB_TOKEN,POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,JWT_SECRET,GOOGLE_CLIENT_ID,GOOGLE_CLIENT_SECRET,ANTHROPIC_API_KEY,DEEPGRAM_API_KEY,ELEVENLABS_API_KEY,NEXTAUTH_SECRET,FRONTEND_URL,NEXTAUTH_URL,OPENAI_API_KEY,LANGFUSE_PUBLIC_KEY,LANGFUSE_SECRET_KEY,LANGFUSE_BASE_URL
           script: |
             echo "$GITHUB_TOKEN" | docker login ghcr.io -u github --password-stdin
@@ -192,7 +193,7 @@ jobs:
             API_OLD=$(docker inspect --format='{{.Image}}' jake-api-1 2>/dev/null || echo "")
             WEB_OLD=$(docker inspect --format='{{.Image}}' jake-web-1 2>/dev/null || echo "")
 
-            docker compose -f docker-compose.prod.yml up -d
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
             docker compose -f docker-compose.prod.yml restart nginx
 
             # Wait for API health check
@@ -214,7 +215,7 @@ jobs:
               if [ -n "$API_OLD" ]; then
                 docker tag "$API_OLD" ghcr.io/natashkinsasha/jake-api:latest 2>/dev/null || true
                 docker tag "$WEB_OLD" ghcr.io/natashkinsasha/jake-web:latest 2>/dev/null || true
-                docker compose -f docker-compose.prod.yml up -d
+                docker compose -f docker-compose.prod.yml up -d --remove-orphans
                 docker compose -f docker-compose.prod.yml restart nginx
               fi
               exit 1

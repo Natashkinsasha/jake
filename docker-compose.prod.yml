@@ -69,3 +69,5 @@ volumes:
   redisdata:
   certbot-webroot:
   letsencrypt:
+    name: jake_letsencrypt
+    external: true
