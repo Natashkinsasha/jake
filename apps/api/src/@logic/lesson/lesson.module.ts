@@ -24,6 +24,7 @@ import { LessonContextService } from "./application/service/lesson-context.servi
 import { LessonMaintainer } from "./application/maintainer/lesson.maintainer";
 import { VoicePrintService } from "./application/service/voice-print.service";
 import { VoicePrintRepository } from "./infrastructure/repository/voice-print.repository";
+import { LessonContract } from "./contract/lesson.contract";
 import { LessonGateway } from "./presentation/gateway/lesson.gateway";
 import { LessonController } from "./presentation/controller/lesson.controller";
 
@@ -58,7 +59,8 @@ import { LessonController } from "./presentation/controller/lesson.controller";
     PostLessonBullHandler,
     VoicePrintService,
     VoicePrintRepository,
+    LessonContract,
   ],
-  exports: [LessonRepository],
+  exports: [LessonContract],
 })
 export class LessonModule {}

@@ -48,6 +48,7 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
   const [voices, setVoices] = useState<{ id: string; name: string; gender: string }[]>([]);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [resetting, setResetting] = useState(false);
+  const [resetError, setResetError] = useState(false);
   const backdropRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -76,6 +77,7 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
 
   const handleReset = useCallback(async () => {
     setResetting(true);
+    setResetError(false);
     try {
       await api.auth.resetAccount();
       setShowResetConfirm(false);
@@ -83,6 +85,7 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
       window.location.reload();
     } catch {
       setResetting(false);
+      setResetError(true);
     }
   }, [onClose]);
 
@@ -232,10 +235,13 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
             <p className="text-sm text-gray-500 mb-4">
               All lessons, progress, vocabulary, and memory will be permanently deleted. Your settings will be reset to defaults.
             </p>
+            {resetError && (
+              <p className="text-sm text-red-600 mb-3">Something went wrong. Please try again.</p>
+            )}
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => { setShowResetConfirm(false); }}
+                onClick={() => { setShowResetConfirm(false); setResetError(false); }}
                 className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
                 disabled={resetting}
               >

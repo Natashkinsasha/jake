@@ -1,6 +1,7 @@
-import { Module, forwardRef } from "@nestjs/common";
+import { forwardRef, Module } from "@nestjs/common";
 import { SharedDrizzlePgModule } from "@shared/shared-drizzle-pg/shared-drizzle-pg.module";
 import { SharedAuthModule } from "@shared/shared-auth/shared-auth.module";
+import { SharedClsModule } from "@shared/shared-cls/shared-cls.module";
 import { LessonModule } from "../lesson/lesson.module";
 import { MemoryModule } from "../memory/memory.module";
 import { ProgressModule } from "../progress/progress.module";
@@ -15,10 +16,11 @@ import { AuthController } from "./presentation/controller/auth.controller";
   imports: [
     SharedDrizzlePgModule,
     SharedAuthModule,
+    SharedClsModule,
+    forwardRef(() => LessonModule),
     MemoryModule,
     VocabularyModule,
     ProgressModule,
-    forwardRef(() => LessonModule),
   ],
   controllers: [AuthController],
   providers: [AuthMaintainer, JwtTokenService, UserRepository, AuthContract],

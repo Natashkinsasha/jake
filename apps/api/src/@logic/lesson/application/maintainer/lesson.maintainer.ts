@@ -195,8 +195,9 @@ export class LessonMaintainer {
         onChunk: (chunk) => {
           const { cleanText } = stripSpeedTags(chunk.text);
           const { text: textWithoutEmotion } = parseEmotion(cleanText);
-          if (textWithoutEmotion) {
-            callbacks.onChunk({ ...chunk, text: textWithoutEmotion });
+          const { cleanText: chunkText } = stripOnboardingTags(textWithoutEmotion);
+          if (chunkText) {
+            callbacks.onChunk({ ...chunk, text: chunkText });
           }
         },
         onEnd: (result) => {
