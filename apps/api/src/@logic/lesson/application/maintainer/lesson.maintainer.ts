@@ -106,7 +106,6 @@ export class LessonMaintainer {
     const lesson = await this.lessonRepository.createWithGreeting(
       {
         userId,
-        tutorId: context.tutorId,
         lessonNumber: context.lessonNumber,
       },
       greetingText,

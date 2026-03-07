@@ -8,7 +8,7 @@ const cspDirectives = [
   "style-src 'self' 'unsafe-inline'",
   `connect-src 'self' wss://api.deepgram.com https://api.deepgram.com wss://api.elevenlabs.io https://api.elevenlabs.io${isDev ? " ws://localhost:4000 http://localhost:4000" : ""}`,
   "img-src 'self' https://lh3.googleusercontent.com data:",
-  "media-src 'self' blob:",
+  "media-src 'self' blob: https://storage.googleapis.com",
   "frame-ancestors 'none'",
 ];
 

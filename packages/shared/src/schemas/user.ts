@@ -4,6 +4,8 @@ export const CefrLevel = z.enum(["A1", "A2", "B1", "B2", "C1", "C2"]);
 
 export const CorrectionStyle = z.enum(["immediate", "end_of_lesson", "natural"]);
 export const SpeakingSpeed = z.enum(["very_slow", "slow", "natural", "fast", "very_fast"]);
+export const TutorGender = z.enum(["male", "female"]);
+export const TutorNationality = z.enum(["australian", "british", "scottish", "american"]);
 
 export const UserPreferencesSchema = z.object({
   correctionStyle: CorrectionStyle.default("immediate"),
@@ -12,6 +14,9 @@ export const UserPreferencesSchema = z.object({
   useNativeLanguage: z.boolean().default(false),
   preferredExerciseTypes: z.array(z.string()).default([]),
   interests: z.array(z.string()).default([]),
+  tutorGender: TutorGender.nullable().default(null),
+  tutorNationality: TutorNationality.nullable().default(null),
+  tutorVoiceId: z.string().nullable().default(null),
 });
 
 export const UserSchema = z.object({

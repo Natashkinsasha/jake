@@ -13,5 +13,8 @@ export const userPreferenceTable = pgTable("user_preferences", {
   ttsModel: varchar("tts_model", { length: 50 }).default("eleven_turbo_v2_5"),
   preferredExerciseTypes: jsonb("preferred_exercise_types").$type<string[]>().default([]),
   interests: jsonb("interests").$type<string[]>().default([]),
+  tutorGender: varchar("tutor_gender", { length: 10 }),
+  tutorNationality: varchar("tutor_nationality", { length: 20 }),
+  tutorVoiceId: varchar("tutor_voice_id", { length: 255 }),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });

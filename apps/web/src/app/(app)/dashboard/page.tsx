@@ -7,7 +7,8 @@ import { formatLessonDate } from "@/lib/utils";
 import { useBackendSession } from "@/hooks/useBackendSession";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
-import type { LessonListItem } from "@/types";
+import { TutorSetupModal } from "@/components/TutorSetupModal";
+import type { LessonListItem, UserPreferences } from "@/types";
 
 const PAGE_SIZE = 10;
 
@@ -28,6 +29,8 @@ export default function DashboardPage() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(true);
+  const [showTutorSetup, setShowTutorSetup] = useState(false);
+  const [preferences, setPreferences] = useState<UserPreferences | null>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
   const fetchLessons = useCallback(async (offset: number) => {
@@ -53,7 +56,18 @@ export default function DashboardPage() {
   useEffect(() => {
     setGreeting(getGreeting());
     void fetchLessons(0);
+    void api.auth.me().then((data) => {
+      setPreferences(data.user_preferences ?? null);
+    });
   }, [fetchLessons]);
+
+  const handleStartLesson = () => {
+    if (!preferences?.tutorGender) {
+      setShowTutorSetup(true);
+    } else {
+      router.push("/lesson");
+    }
+  };
 
   // Infinite scroll via IntersectionObserver
   useEffect(() => {
@@ -90,7 +104,7 @@ export default function DashboardPage() {
       {/* Start Lesson CTA */}
       <button
         type="button"
-        onClick={() => { router.push("/lesson"); }}
+        onClick={handleStartLesson}
         className="opacity-0 animate-slide-up animate-stagger-2 w-full text-left group relative overflow-hidden rounded-3xl gradient-bg p-8 transition-all duration-300 hover:shadow-xl hover:shadow-primary-900/20 hover:scale-[1.01] active:scale-[0.99]"
       >
         <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
@@ -179,6 +193,15 @@ export default function DashboardPage() {
           <p className="text-gray-400 text-sm">Start your first conversation with Jake above</p>
         </div>
       )}
+
+      <TutorSetupModal
+        open={showTutorSetup}
+        onClose={() => { setShowTutorSetup(false); }}
+        onComplete={() => {
+          setShowTutorSetup(false);
+          router.push("/lesson");
+        }}
+      />
     </div>
   );
 }

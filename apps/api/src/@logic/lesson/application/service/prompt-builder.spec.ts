@@ -7,9 +7,8 @@ function createMockContext(overrides: Partial<LessonContext> = {}): LessonContex
     level: "B1",
     lessonNumber: 5,
     lastLessonAt: null,
-    tutorSystemPrompt: "",
+    tutorPromptFragment: "",
     tutorVoiceId: "voice-1",
-    tutorId: "tutor-1",
     preferences: {
       correctionStyle: "immediate",
       speakingSpeed: "normal",
@@ -35,7 +34,7 @@ describe("buildFullSystemPrompt", () => {
   it("should include base Jake prompt", () => {
     const result = buildFullSystemPrompt(createMockContext());
     expect(result).toContain("You are Jake");
-    expect(result).toContain("friendly Australian English tutor");
+    expect(result).toContain("friendly English tutor");
   });
 
   it("should include student profile section", () => {
@@ -175,13 +174,13 @@ describe("buildFullSystemPrompt", () => {
 
   it("should include tutor system prompt when provided", () => {
     const result = buildFullSystemPrompt(
-      createMockContext({ tutorSystemPrompt: "Focus on business English." }),
+      createMockContext({ tutorPromptFragment: "Focus on business English." }),
     );
     expect(result).toContain("Focus on business English.");
   });
 
   it("should not include tutor system prompt when empty", () => {
-    const baseResult = buildFullSystemPrompt(createMockContext({ tutorSystemPrompt: "" }));
+    const baseResult = buildFullSystemPrompt(createMockContext({ tutorPromptFragment: "" }));
     // The empty string is falsy, so it should not appear as a separate section
     // Ensure no blank section between Jake base prompt and student profile
     expect(baseResult).toContain("=== STUDENT PROFILE ===");

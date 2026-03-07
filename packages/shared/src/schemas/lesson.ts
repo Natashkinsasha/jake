@@ -12,7 +12,6 @@ export const ErrorFoundSchema = z.object({
 export const LessonSummarySchema = z.object({
   id: z.string().uuid(),
   userId: z.string().uuid(),
-  tutorId: z.string().uuid(),
   status: LessonStatusSchema,
   startedAt: z.date(),
   endedAt: z.date().nullable(),

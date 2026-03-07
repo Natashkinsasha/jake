@@ -32,11 +32,11 @@ describe("api", () => {
     });
   });
 
-  describe("tutors.list", () => {
-    it("fetches /tutors", async () => {
-      await api.tutors.list();
+  describe("tutor.profiles", () => {
+    it("fetches /tutor/profiles", async () => {
+      await api.tutor.profiles();
       expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining("/tutors"),
+        expect.stringContaining("/tutor/profiles"),
         expect.any(Object),
       );
     });
@@ -48,11 +48,11 @@ describe("api", () => {
       status: 401,
       json: () => Promise.resolve({ message: "Unauthorized" }),
     });
-    await expect(api.tutors.list()).rejects.toThrow("API Error 401 /tutors: Unauthorized");
+    await expect(api.tutor.profiles()).rejects.toThrow("API Error 401 /tutor/profiles: Unauthorized");
   });
 
   it("includes authorization header", async () => {
-    await api.tutors.list();
+    await api.tutor.profiles();
     expect(mockFetch).toHaveBeenCalledWith(
       expect.any(String),
       expect.objectContaining({

@@ -4,6 +4,18 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { api } from "@/lib/api";
 import type { BackendUser, UserPreferences } from "@/types";
 
+const NATIONALITIES = [
+  { value: "australian", label: "Australian" },
+  { value: "british", label: "British" },
+  { value: "scottish", label: "Scottish" },
+  { value: "american", label: "American" },
+] as const;
+
+const GENDERS = [
+  { value: "male", label: "Male" },
+  { value: "female", label: "Female" },
+] as const;
+
 interface SettingsDrawerProps {
   open: boolean;
   onClose: () => void;
@@ -33,14 +45,20 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
   const [user, setUser] = useState<BackendUser | null>(null);
   const [prefs, setPrefs] = useState<UserPreferences | null>(null);
   const [loading, setLoading] = useState(true);
+  const [voices, setVoices] = useState<{ id: string; name: string; gender: string }[]>([]);
   const backdropRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
     setLoading(true);
-    void api.auth.me().then((res) => {
+    void api.auth.me().then(async (res) => {
       setUser(res.users);
-      setPrefs(res.user_preferences ?? {});
+      const p = res.user_preferences ?? {};
+      setPrefs(p);
+      if (p.tutorGender) {
+        const v = await api.tutor.voices(p.tutorGender);
+        setVoices(v);
+      }
       setLoading(false);
     }).catch(() => { setLoading(false); });
   }, [open]);
@@ -104,6 +122,40 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
                 </div>
               </section>
             )}
+
+            <section>
+              <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Tutor</h3>
+              <div className="space-y-4">
+                <SelectField
+                  label="Gender"
+                  value={prefs?.tutorGender ?? ""}
+                  options={[{ value: "", label: "Not set" }, ...GENDERS.map((g) => ({ value: g.value, label: g.label }))]}
+                  onChange={(v) => {
+                    void save({ tutorGender: v || null });
+                    if (v) {
+                      void api.tutor.voices(v).then((newVoices) => {
+                        setVoices(newVoices);
+                        if (newVoices[0]) void save({ tutorVoiceId: newVoices[0].id });
+                      });
+                    }
+                  }}
+                />
+                <SelectField
+                  label="Nationality"
+                  value={prefs?.tutorNationality ?? ""}
+                  options={[{ value: "", label: "Not set" }, ...NATIONALITIES.map((n) => ({ value: n.value, label: n.label }))]}
+                  onChange={(v) => { void save({ tutorNationality: v || null }); }}
+                />
+                {voices.length > 0 && (
+                  <SelectField
+                    label="Voice"
+                    value={prefs?.tutorVoiceId ?? ""}
+                    options={voices.map((v) => ({ value: v.id, label: v.name }))}
+                    onChange={(v) => { void save({ tutorVoiceId: v }); }}
+                  />
+                )}
+              </div>
+            </section>
 
             <section>
               <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Voice</h3>

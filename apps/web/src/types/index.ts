@@ -17,6 +17,9 @@ export interface UserPreferences {
   useNativeLanguage?: boolean;
   speakingSpeed?: string;
   ttsModel?: string;
+  tutorGender?: string | null;
+  tutorNationality?: string | null;
+  tutorVoiceId?: string | null;
 }
 
 // Lesson types

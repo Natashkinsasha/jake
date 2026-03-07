@@ -1,25 +1,24 @@
 import { Injectable } from "@nestjs/common";
-import { TutorRepository } from "../infrastructure/repository/tutor.repository";
-import { UserTutorRepository } from "../infrastructure/repository/user-tutor.repository";
-import { TutorEntity } from "../domain/entity/tutor.entity";
-import { UserTutorEntity, UserTutorWithTutor } from "../domain/entity/user-tutor.entity";
+import { TutorService } from "../application/service/tutor.service";
+import type { TutorGender, TutorNationality, TutorProfile, TutorVoice } from "../domain/tutor-types";
 
 @Injectable()
 export class TutorContract {
-  constructor(
-    private tutorRepository: TutorRepository,
-    private userTutorRepository: UserTutorRepository,
-  ) {}
+  constructor(private readonly tutorService: TutorService) {}
 
-  async findActiveTutors(): Promise<TutorEntity[]> {
-    return this.tutorRepository.findActive();
+  getProfiles(): TutorProfile[] {
+    return this.tutorService.getProfiles();
   }
 
-  async findActiveUserTutor(userId: string): Promise<UserTutorWithTutor | null> {
-    return this.userTutorRepository.findActiveByUser(userId);
+  getProfile(nationality: TutorNationality, gender: TutorGender): TutorProfile {
+    return this.tutorService.getProfile(nationality, gender);
   }
 
-  async selectTutor(userId: string, tutorId: string): Promise<UserTutorEntity> {
-    return this.userTutorRepository.selectTutor(userId, tutorId);
+  getVoices(gender: TutorGender): TutorVoice[] {
+    return this.tutorService.getVoices(gender);
+  }
+
+  getDefaultVoiceId(gender: TutorGender): string {
+    return this.tutorService.getDefaultVoiceId(gender);
   }
 }
