@@ -23,13 +23,13 @@ export class LessonContextService {
     const [
       user,
       grammarProgress,
-      recentVocab,
+      vocabToReview,
       lessonCount,
       recentLessons,
     ] = await Promise.all([
       this.authContract.findByIdWithPreferences(userId),
       this.progressContract.findByUser(userId),
-      this.vocabularyContract.findRecentByUser(userId, 20),
+      this.vocabularyContract.findNotLearned(userId, 30),
       this.lessonRepository.countByUser(userId),
       this.lessonRepository.findRecentByUser(userId, 1),
     ]);
@@ -76,6 +76,7 @@ export class LessonContextService {
       lastLessonAt: recentLessons[0]?.startedAt ?? null,
       tutorPromptFragment: profile.promptFragment,
       tutorVoiceId: voiceId,
+      nativeLanguage: user.users.nativeLanguage ?? "Russian",
       preferences: {
         correctionStyle: prefs?.correctionStyle ?? "immediate",
         speakingSpeed: prefs?.speakingSpeed ?? "very_slow",
@@ -95,8 +96,13 @@ export class LessonContextService {
       learningFocus: {
         weakAreas: grammarProgress.filter((g) => g.level < 50).map((g) => g.topic),
         strongAreas: grammarProgress.filter((g) => g.level >= 70).map((g) => g.topic),
-        recentWords: recentVocab.map((v) => v.word),
+        recentWords: vocabToReview.map((v) => v.word),
         suggestedTopics,
+        vocabularyToReview: vocabToReview.map((v) => ({
+          word: v.word,
+          translation: v.translation ?? "",
+          reviewCount: v.reviewCount,
+        })),
       },
     };
   }

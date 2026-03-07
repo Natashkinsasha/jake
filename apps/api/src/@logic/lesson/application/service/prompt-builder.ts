@@ -81,7 +81,26 @@ Rules:
 - ALWAYS include exactly one <emotion> tag at the START of your response
 - Match your text tone to the emotion — if you're excited, sound excited in your words too
 - Don't overuse excited/happy — vary emotions naturally based on context
-- Default to neutral when no strong emotion fits`;
+- Default to neutral when no strong emotion fits
+
+=== VOCABULARY TAGS ===
+When you introduce a new word, explain a word, or the student asks for a translation, use this tag:
+<vocab word="reluctant" translation="неохотный" topic="emotions"/>
+
+Rules:
+- ALWAYS include word, translation (in student's native language), and topic
+- topic is a category: emotions, travel, food, business, daily_life, grammar, technology, health, education, culture, etc.
+- Before starting a new topic, suggest 3-5 key words using <vocab> tags
+- When student asks "what does X mean?" or "how do you say X?" — use <vocab> tag
+- Place tags INLINE in your response, right where you mention the word
+- The tag will be stripped from speech — the student will see a visual card
+
+When a student successfully recalls or correctly uses a word from their vocabulary, use:
+<vocab_reviewed word="reluctant"/>
+
+Rules:
+- Only use when the student demonstrates knowledge (used correctly in a sentence, translated correctly)
+- Don't use when YOU say the word — only when the STUDENT does`;
 
 const CORRECTION_RULES: Record<string, string> = {
   immediate:
@@ -127,6 +146,16 @@ ${context.recentEmotionalContext.join("\n")}`);
 Weak areas: ${context.learningFocus.weakAreas.join(", ") || "none identified"}
 Strong areas: ${context.learningFocus.strongAreas.join(", ") || "none identified"}
 Recent words: ${context.learningFocus.recentWords.join(", ") || "none"}`);
+
+  if (context.learningFocus.vocabularyToReview.length > 0) {
+    const vocabList = context.learningFocus.vocabularyToReview
+      .map((v) => `- ${v.word} (${v.translation}) — reviewed ${v.reviewCount}/5 times`)
+      .join("\n");
+    parts.push(`\n=== VOCABULARY TO REVIEW ===
+The student is learning these words. Periodically check if they remember them (ask translation, use in context).
+Student's native language: ${context.nativeLanguage}
+${vocabList}`);
+  }
 
   if (context.learningFocus.suggestedTopics.length > 0) {
     const topicList = context.learningFocus.suggestedTopics
