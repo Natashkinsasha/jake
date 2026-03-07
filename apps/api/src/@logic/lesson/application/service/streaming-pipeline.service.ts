@@ -21,6 +21,8 @@ export interface StreamCallbacks {
   onDiscard?(safetyText: string): void;
   onSpeedChange?(speed: string): void;
   onEmotion?(emotion: string): void;
+  onVocabHighlight?(highlight: { word: string; translation: string; topic: string }): void;
+  onVocabReviewed?(word: string): void;
 }
 
 const MAX_BUFFER_AGE_MS = 500;

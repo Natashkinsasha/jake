@@ -1,13 +1,80 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-import type { ChatMessage } from "@/types";
+import { useEffect, useRef, useState, useCallback } from "react";
+import type { ChatMessage, VocabHighlight } from "@/types";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
 
 interface ChatHistoryProps {
   messages: ChatMessage[];
   isThinking: boolean;
   isTutorActive?: boolean;
+  lessonId?: string | null;
+  onVocabSaved?: (word: string) => void;
+}
+
+function VocabCard({
+  highlight,
+  lessonId,
+  onSaved,
+}: {
+  highlight: VocabHighlight;
+  lessonId?: string | null;
+  onSaved?: (word: string) => void;
+}) {
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(highlight.saved ?? false);
+
+  const handleSave = useCallback(async () => {
+    if (saved || saving) return;
+    setSaving(true);
+    try {
+      await api.vocabulary.add({
+        word: highlight.word,
+        translation: highlight.translation,
+        topic: highlight.topic,
+        lessonId: lessonId ?? undefined,
+      });
+      setSaved(true);
+      onSaved?.(highlight.word);
+    } catch {
+      // silently fail
+    } finally {
+      setSaving(false);
+    }
+  }, [highlight, lessonId, saved, saving, onSaved]);
+
+  return (
+    <div
+      className={cn(
+        "animate-fade-in inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 shadow-sm transition-all",
+        saved
+          ? "bg-emerald-50/90 border border-emerald-200/60"
+          : "bg-white/80 backdrop-blur-sm border border-primary-200/60 hover:border-primary-300",
+      )}
+    >
+      <span className="text-[13px] font-medium text-gray-900">{highlight.word}</span>
+      <span className="text-[13px] text-gray-400">&mdash;</span>
+      <span className="text-[13px] text-gray-500">{highlight.translation}</span>
+      {saved ? (
+        <svg className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+        </svg>
+      ) : (
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving}
+          className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-primary-100 hover:bg-primary-200 text-primary-600 transition-colors disabled:opacity-50"
+          title="Add to vocabulary"
+        >
+          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+          </svg>
+        </button>
+      )}
+    </div>
+  );
 }
 
 function ThinkingDots() {
@@ -24,6 +91,8 @@ export function ChatHistory({
   messages,
   isThinking,
   isTutorActive = false,
+  lessonId,
+  onVocabSaved,
 }: ChatHistoryProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const lastAssistantIdx = messages.length - 1 - [...messages].reverse().findIndex((m) => m.role === "assistant");
@@ -48,15 +117,31 @@ export function ChatHistory({
             </div>
           ) : msg.text ? (
             /* Tutor message — left aligned, white bubble */
-            <div className="flex justify-start">
-              <div className={cn(
-                "bg-white/95 backdrop-blur-sm rounded-2xl rounded-bl-md px-4 py-2.5 max-w-[80%] shadow-sm",
-                i === lastAssistantIdx && isLastAssistantNew ? "" : "opacity-80",
-              )}>
-                <p className="text-gray-800 text-[15px] leading-relaxed">
-                  {msg.text}
-                </p>
+            <div className="space-y-2">
+              <div className="flex justify-start">
+                <div className={cn(
+                  "bg-white/95 backdrop-blur-sm rounded-2xl rounded-bl-md px-4 py-2.5 max-w-[80%] shadow-sm",
+                  i === lastAssistantIdx && isLastAssistantNew ? "" : "opacity-80",
+                )}>
+                  <p className="text-gray-800 text-[15px] leading-relaxed">
+                    {msg.text}
+                  </p>
+                </div>
               </div>
+
+              {/* Vocab cards inline */}
+              {msg.vocabHighlights && msg.vocabHighlights.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pl-1">
+                  {msg.vocabHighlights.map((h, vi) => (
+                    <VocabCard
+                      key={`${h.word}-${vi}`}
+                      highlight={h}
+                      lessonId={lessonId}
+                      onSaved={onVocabSaved}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
             /* Empty assistant message = loading */

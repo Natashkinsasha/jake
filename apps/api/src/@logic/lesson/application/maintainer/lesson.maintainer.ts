@@ -13,6 +13,8 @@ import { buildFullSystemPrompt } from "../service/prompt-builder";
 import { ModerationService, SAFETY_RESPONSE } from "../../../llm/src/moderation/moderation.service";
 import { LessonSessionService } from "../service/lesson-session.service";
 import { parseEmotion } from "../service/emotion";
+import { extractVocabTags, VocabTagBuffer } from "../service/vocab-tags";
+import { VocabularyContract } from "../../../vocabulary/contract/vocabulary.contract";
 
 const SET_SPEED_RE = /<set_speed>(very_slow|slow|natural|fast|very_fast)<\/set_speed>/g;
 
@@ -56,6 +58,7 @@ export class LessonMaintainer {
     private streamingPipeline: StreamingPipelineService,
     private sessionService: LessonSessionService,
     private moderationService: ModerationService,
+    private vocabularyContract: VocabularyContract,
     @InjectQueue(QUEUE_NAMES.POST_LESSON) private postLessonQueue: Queue,
     @InjectQueue(QUEUE_NAMES.FACT_EXTRACTION) private factQueue: Queue,
   ) {}
@@ -164,18 +167,62 @@ export class LessonMaintainer {
         return { isSafe: true as const, reason: null };
       });
 
+    const vocabBuffer = new VocabTagBuffer();
+
     await this.streamingPipeline.stream(
       systemPrompt,
       updatedHistory,
       {
         onChunk: (chunk) => {
-          const { cleanText } = stripSpeedTags(chunk.text);
-          const { text: textWithoutEmotion } = parseEmotion(cleanText);
-          if (textWithoutEmotion) {
-            callbacks.onChunk({ ...chunk, text: textWithoutEmotion });
+          this.logger.debug(`RAW chunk: "${chunk.text}"`);
+          const { cleanText: noSpeed } = stripSpeedTags(chunk.text);
+          const { text: noEmotion } = parseEmotion(noSpeed);
+          const { cleanText, highlights, reviewedWords } = vocabBuffer.push(noEmotion);
+
+          if (highlights.length > 0) {
+            this.logger.log(`Vocab highlights extracted: ${highlights.map(h => h.word).join(", ")}`);
+            for (const h of highlights) {
+              void this.vocabularyContract.upsert({
+                userId,
+                word: h.word,
+                translation: h.translation,
+                topic: h.topic,
+                lessonId: session.lessonId,
+              }).catch((err: unknown) => {
+                this.logger.error(`Failed to save vocab "${h.word}": ${err instanceof Error ? err.message : String(err)}`);
+              });
+            }
+          }
+          for (const h of highlights) callbacks.onVocabHighlight?.(h);
+          for (const w of reviewedWords) callbacks.onVocabReviewed?.(w);
+
+          if (cleanText) {
+            callbacks.onChunk({ ...chunk, text: cleanText });
           }
         },
         onEnd: (result) => {
+          // Flush any remaining buffered vocab tags
+          const remaining = vocabBuffer.flush();
+          if (remaining.highlights.length > 0) {
+            this.logger.log(`Vocab flush highlights: ${remaining.highlights.map(h => h.word).join(", ")}`);
+            for (const h of remaining.highlights) {
+              void this.vocabularyContract.upsert({
+                userId,
+                word: h.word,
+                translation: h.translation,
+                topic: h.topic,
+                lessonId: session.lessonId,
+              }).catch((err: unknown) => {
+                this.logger.error(`Failed to save vocab "${h.word}": ${err instanceof Error ? err.message : String(err)}`);
+              });
+            }
+          }
+          for (const h of remaining.highlights) callbacks.onVocabHighlight?.(h);
+          for (const w of remaining.reviewedWords) callbacks.onVocabReviewed?.(w);
+          if (remaining.cleanText) {
+            callbacks.onChunk({ chunkIndex: -1, text: remaining.cleanText });
+          }
+
           void (async () => {
             const modResult = await moderationPromise;
 
@@ -187,8 +234,13 @@ export class LessonMaintainer {
               return;
             }
 
+            this.logger.log(`RAW fullText: "${result.fullText}"`);
             const { cleanText: textWithoutSpeed, speed } = stripSpeedTags(result.fullText);
-            const { text: cleanText } = parseEmotion(textWithoutSpeed);
+            const { text: textWithoutEmotion } = parseEmotion(textWithoutSpeed);
+            const { cleanText, highlights: endHighlights } = extractVocabTags(textWithoutEmotion);
+            if (endHighlights.length > 0) {
+              this.logger.log(`Vocab from fullText: ${endHighlights.map(h => h.word).join(", ")}`);
+            }
 
             if (speed) {
               const numericSpeed = toSpeechSpeed(speed);

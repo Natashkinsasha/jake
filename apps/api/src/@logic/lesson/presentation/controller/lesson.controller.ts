@@ -72,7 +72,7 @@ export class LessonController {
 
     if (entry && now < entry.resetAt) {
       entry.count++;
-      if (entry.count > 30) {
+      if (entry.count > 100) {
         throw new HttpException("Too many requests", 429);
       }
     } else {
