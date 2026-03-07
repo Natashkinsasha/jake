@@ -29,4 +29,11 @@ export class AuthController {
     await this.authMaintainer.updatePreferences(userId, body);
     return { success: true };
   }
+
+  @Post("me/reset")
+  @UseGuards(JwtAuthGuard)
+  async resetAccount(@CurrentUserId() userId: string) {
+    await this.authMaintainer.resetAccount(userId);
+    return { success: true };
+  }
 }

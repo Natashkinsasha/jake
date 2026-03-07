@@ -54,6 +54,10 @@ export class VocabularyRepository {
     return VocabularyFactory.createMany(rows);
   }
 
+  async deleteByUser(userId: string): Promise<void> {
+    await this.txHost.tx.delete(vocabularyTable).where(eq(vocabularyTable.userId, userId));
+  }
+
   async findDueForReview(userId: string): Promise<VocabularyEntity[]> {
     const rows = await this.txHost.tx
       .select()

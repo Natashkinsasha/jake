@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { SharedAuthModule } from "@shared/shared-auth/shared-auth.module";
 import { SharedDrizzlePgModule } from "@shared/shared-drizzle-pg/shared-drizzle-pg.module";
 import { SharedWsModule } from "@shared/shared-ws/shared-ws.module";
@@ -38,7 +38,7 @@ import { LessonController } from "./presentation/controller/lesson.controller";
     SharedClsModule,
     JobModule.registerQueue({ name: QUEUE_NAMES.POST_LESSON }),
     JobModule.registerQueue({ name: QUEUE_NAMES.FACT_EXTRACTION }),
-    AuthModule,
+    forwardRef(() => AuthModule),
     MemoryModule,
     VocabularyModule,
     ProgressModule,
@@ -59,5 +59,6 @@ import { LessonController } from "./presentation/controller/lesson.controller";
     VoicePrintService,
     VoicePrintRepository,
   ],
+  exports: [LessonRepository],
 })
 export class LessonModule {}

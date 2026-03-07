@@ -13,4 +13,8 @@ export class VocabularyContract {
   async upsert(data: { userId: string; word: string; lessonId: string; strength: number; nextReview: Date }): Promise<VocabularyEntity> {
     return this.vocabularyRepository.upsert(data);
   }
+
+  async deleteByUser(userId: string): Promise<void> {
+    return this.vocabularyRepository.deleteByUser(userId);
+  }
 }
