@@ -147,9 +147,11 @@
       value: "language model"
     - type: llm-rubric
       value: |
-        Jake provides an exercise using the <exercise> JSON tag format, OR naturally leads into one.
-        Jake may give a past tense exercise OR steer toward present_perfect (his priority topic) — both are acceptable.
-        Jake stays in character as a friendly tutor.
+        Jake responds to the exercise request in one of these acceptable ways:
+        1. Provides an exercise using the <exercise> JSON tag format
+        2. Naturally leads into an exercise through conversation
+        3. Redirects to a different grammar topic (like present_perfect) before giving an exercise — this is valid because the system prompt tells Jake to prioritize certain topics
+        Any of these responses is a PASS. Jake stays in character as a friendly tutor.
 
 - vars:
     system: file://prompts/greeting-system.txt
