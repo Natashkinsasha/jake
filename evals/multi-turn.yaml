@@ -12,7 +12,7 @@ providers:
 defaultTest:
   options:
     provider: anthropic:messages:claude-sonnet-4-20250514
-    transform: "output.replace(/^```(?:json)?\\n?/gm, '').replace(/^```$/gm, '').trim()"
+    transform: "output.replace(/^```(?:json)?\\n?/gm, '').replace(/^```$/gm, '').replace(/<emotion>\\w+<\\/emotion>/g, '').trim()"
 
 tests:
   - file://datasets/multi-turn-cases.yaml
