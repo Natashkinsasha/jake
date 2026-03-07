@@ -3,6 +3,8 @@ import type {
   UserPreferences,
   LessonListItem,
   LessonDetail,
+  VocabularyItem,
+  VocabularyStats,
 } from "@/types";
 import { getBackendToken } from "@/lib/session";
 import { API_URL } from "@/lib/config";
@@ -72,5 +74,20 @@ export const api = {
   },
   tts: {
     token: () => request<{ token: string }>("/lessons/tts/token"),
+  },
+  vocabulary: {
+    list: (params?: { status?: string; topic?: string; lessonId?: string; offset?: number; limit?: number }) => {
+      const query = new URLSearchParams();
+      if (params?.status) query.set("status", params.status);
+      if (params?.topic) query.set("topic", params.topic);
+      if (params?.lessonId) query.set("lessonId", params.lessonId);
+      if (params?.offset) query.set("offset", String(params.offset));
+      if (params?.limit) query.set("limit", String(params.limit));
+      const qs = query.toString();
+      return request<VocabularyItem[]>(`/vocabulary${qs ? `?${qs}` : ""}`);
+    },
+    stats: () => request<VocabularyStats>("/vocabulary/stats"),
+    topics: () => request<string[]>("/vocabulary/topics"),
+    delete: (id: string) => request<{ success: boolean }>(`/vocabulary/${id}`, { method: "DELETE" }),
   },
 };
