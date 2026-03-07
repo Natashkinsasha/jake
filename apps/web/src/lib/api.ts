@@ -46,6 +46,10 @@ export const api = {
         method: "PUT",
         body: JSON.stringify(data),
       }),
+    resetAccount: () =>
+      request<{ success: boolean }>("/auth/me/reset", {
+        method: "POST",
+      }),
   },
   tutor: {
     profiles: () =>

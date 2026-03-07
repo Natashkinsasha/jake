@@ -46,6 +46,8 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
   const [prefs, setPrefs] = useState<UserPreferences | null>(null);
   const [loading, setLoading] = useState(true);
   const [voices, setVoices] = useState<{ id: string; name: string; gender: string }[]>([]);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [resetting, setResetting] = useState(false);
   const backdropRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -71,6 +73,18 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
       // Silently fail — preference will be stale until next reload
     }
   }, []);
+
+  const handleReset = useCallback(async () => {
+    setResetting(true);
+    try {
+      await api.auth.resetAccount();
+      setShowResetConfirm(false);
+      onClose();
+      window.location.reload();
+    } catch {
+      setResetting(false);
+    }
+  }, [onClose]);
 
   if (!open) return null;
 
@@ -196,9 +210,49 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
                 />
               </div>
             </section>
+
+            <section>
+              <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Account</h3>
+              <button
+                type="button"
+                onClick={() => { setShowResetConfirm(true); }}
+                className="w-full px-3 py-2 bg-red-50 text-red-600 text-sm font-medium rounded-lg hover:bg-red-100 transition-colors"
+              >
+                Reset Account
+              </button>
+            </section>
           </div>
         )}
       </div>
+
+      {showResetConfirm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl p-6 w-80 shadow-2xl">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Reset Account?</h3>
+            <p className="text-sm text-gray-500 mb-4">
+              All lessons, progress, vocabulary, and memory will be permanently deleted. Your settings will be reset to defaults.
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => { setShowResetConfirm(false); }}
+                className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                disabled={resetting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => { void handleReset(); }}
+                className="flex-1 px-3 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                disabled={resetting}
+              >
+                {resetting ? "Resetting..." : "Reset"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
