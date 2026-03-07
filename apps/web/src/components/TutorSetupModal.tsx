@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 import { api } from "@/lib/api";
 
 interface TutorProfile {
@@ -125,7 +126,7 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
       <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden animate-slide-up">
         {/* Header */}
@@ -275,6 +276,7 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
