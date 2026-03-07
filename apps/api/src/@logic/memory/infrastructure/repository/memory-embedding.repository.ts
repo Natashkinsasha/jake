@@ -23,6 +23,10 @@ export class MemoryEmbeddingRepository {
     return MemoryEmbeddingFactory.create(row);
   }
 
+  async deleteByUser(userId: string): Promise<void> {
+    await this.txHost.tx.delete(memoryEmbeddingTable).where(eq(memoryEmbeddingTable.userId, userId));
+  }
+
   async findRecentByUser(userId: string, limit = 5): Promise<MemoryEmbeddingEntity[]> {
     const rows = await this.txHost.tx
       .select()

@@ -57,6 +57,10 @@ export class LessonRepository {
     return LessonFactory.createMany(rows);
   }
 
+  async deleteByUser(userId: string): Promise<void> {
+    await this.txHost.tx.delete(lessonTable).where(eq(lessonTable.userId, userId));
+  }
+
   async complete(id: string, data: Partial<typeof lessonTable.$inferInsert>): Promise<void> {
     await this.txHost.tx
       .update(lessonTable)

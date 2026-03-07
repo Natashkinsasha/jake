@@ -1,4 +1,4 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { SharedAuthModule } from "@shared/shared-auth/shared-auth.module";
 import { SharedDrizzlePgModule } from "@shared/shared-drizzle-pg/shared-drizzle-pg.module";
 import { SharedWsModule } from "@shared/shared-ws/shared-ws.module";
@@ -24,6 +24,7 @@ import { LessonContextService } from "./application/service/lesson-context.servi
 import { LessonMaintainer } from "./application/maintainer/lesson.maintainer";
 import { VoicePrintService } from "./application/service/voice-print.service";
 import { VoicePrintRepository } from "./infrastructure/repository/voice-print.repository";
+import { LessonContract } from "./contract/lesson.contract";
 import { LessonGateway } from "./presentation/gateway/lesson.gateway";
 import { LessonController } from "./presentation/controller/lesson.controller";
 
@@ -38,7 +39,7 @@ import { LessonController } from "./presentation/controller/lesson.controller";
     SharedClsModule,
     JobModule.registerQueue({ name: QUEUE_NAMES.POST_LESSON }),
     JobModule.registerQueue({ name: QUEUE_NAMES.FACT_EXTRACTION }),
-    AuthModule,
+    forwardRef(() => AuthModule),
     MemoryModule,
     VocabularyModule,
     ProgressModule,
@@ -58,6 +59,8 @@ import { LessonController } from "./presentation/controller/lesson.controller";
     PostLessonBullHandler,
     VoicePrintService,
     VoicePrintRepository,
+    LessonContract,
   ],
+  exports: [LessonContract],
 })
 export class LessonModule {}

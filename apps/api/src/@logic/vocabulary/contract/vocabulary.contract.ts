@@ -33,6 +33,10 @@ export class VocabularyContract {
     return this.vocabularyRepository.upsert(data);
   }
 
+  async deleteByUser(userId: string): Promise<void> {
+    return this.vocabularyRepository.deleteByUser(userId);
+  }
+
   async incrementReview(userId: string, words: string[]): Promise<void> {
     return this.vocabularyRepository.incrementReview(userId, words);
   }

@@ -72,6 +72,7 @@ export class LessonContextService {
     return {
       studentName: user.users.name,
       level: user.users.currentLevel,
+      onboardingCompleted: user.users.onboardingCompleted ?? false,
       lessonNumber: lessonCount + 1,
       lastLessonAt: recentLessons[0]?.startedAt ?? null,
       tutorPromptFragment: profile.promptFragment,

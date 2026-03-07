@@ -1,5 +1,10 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
+import { Transaction } from "@shared/shared-cls/transaction";
+import { LessonContract } from "../../../lesson/contract/lesson.contract";
+import { MemoryContract } from "../../../memory/contract/memory.contract";
+import { ProgressContract } from "../../../progress/contract/progress.contract";
+import { VocabularyContract } from "../../../vocabulary/contract/vocabulary.contract";
 import { UserRepository } from "../../infrastructure/repository/user.repository";
 import { GoogleAuthBody } from "../../presentation/dto/body/google-auth.body";
 import { UpdatePreferencesBody } from "../../presentation/dto/body/update-preferences.body";
@@ -9,6 +14,10 @@ export class AuthMaintainer {
   constructor(
     private userRepository: UserRepository,
     private jwtService: JwtService,
+    private lessonContract: LessonContract,
+    private memoryContract: MemoryContract,
+    private vocabularyContract: VocabularyContract,
+    private progressContract: ProgressContract,
   ) {}
 
   async googleAuth(googleUser: GoogleAuthBody) {
@@ -39,5 +48,14 @@ export class AuthMaintainer {
 
   async updatePreferences(userId: string, data: UpdatePreferencesBody) {
     await this.userRepository.updatePreferences(userId, data);
+  }
+
+  @Transaction()
+  async resetAccount(userId: string): Promise<void> {
+    await this.vocabularyContract.deleteByUser(userId);
+    await this.memoryContract.deleteByUser(userId);
+    await this.progressContract.deleteByUser(userId);
+    await this.lessonContract.deleteByUser(userId);
+    await this.userRepository.resetUserFields(userId);
   }
 }

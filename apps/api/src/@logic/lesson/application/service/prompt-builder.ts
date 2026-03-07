@@ -216,14 +216,34 @@ TOPIC FLOW:
 Free conversation (no specific topics prepared)`);
   }
 
-  if (context.lessonNumber === 1) {
-    parts.push(`\n=== FIRST LESSON INSTRUCTIONS ===
-This is the student's FIRST lesson. Your goals:
-1. Make them feel comfortable and excited
-2. Learn about them naturally through conversation
-3. Assess their level without formal testing
-4. Keep it short and fun (10-15 min max)
-5. Don't overwhelm with exercises`);
+  if (!context.onboardingCompleted) {
+    parts.push(`\n=== ONBOARDING MODE ===
+You are meeting this student for the first time (or haven't finished getting to know them yet).
+
+COMMUNICATION STYLE:
+- Speak VERY simply — short sentences, basic vocabulary (A1-level)
+- Use the student's native language if they seem completely lost
+- Speech speed MUST stay at very_slow — do NOT increase it during onboarding
+- Be warm, patient, and encouraging
+
+YOUR GOALS:
+1. Make them feel comfortable — this is a friendly chat, not a test
+2. Ask about their experience with English naturally:
+   - How often do they use English? (work, daily life, rarely)
+   - When was the last time they used it?
+   - In what context? (travel, work, movies, etc.)
+3. Assess their level by HOW they respond — grammar, vocabulary, fluency
+4. Focus on getting to know them, minimal exercises (but simple tasks to gauge level are ok)
+5. Don't overwhelm — keep it light and short
+
+WHEN YOU ARE CONFIDENT ABOUT THEIR LEVEL:
+Include this tag at the END of your response (after all spoken text, after <set_speed> if any):
+<onboarding status="complete" level="A1|A2|B1|B2|C1|C2"/>
+
+Until you are confident, include:
+<onboarding status="in_progress"/>
+
+IMPORTANT: Take your time. It's OK if this takes multiple lessons. Don't rush the assessment.`);
   }
 
   return parts.join("\n");

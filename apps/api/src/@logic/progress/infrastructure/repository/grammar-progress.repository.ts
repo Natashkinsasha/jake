@@ -17,6 +17,10 @@ export class GrammarProgressRepository {
     return GrammarProgressFactory.createMany(rows);
   }
 
+  async deleteByUser(userId: string): Promise<void> {
+    await this.txHost.tx.delete(grammarProgressTable).where(eq(grammarProgressTable.userId, userId));
+  }
+
   async upsertError(userId: string, topic: string): Promise<void> {
     const existing = await this.txHost.tx
       .select()
