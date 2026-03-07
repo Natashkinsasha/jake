@@ -54,3 +54,17 @@ export const TTS_CONFIG = {
   CROSSFADE_MS: 5,
   PRE_BUFFER_MS: 150,
 } as const;
+
+// Emotion → ElevenLabs voice_settings map
+export const EMOTION_VOICE_SETTINGS: Record<string, { stability: number; similarity_boost: number; style: number }> = {
+  neutral:      { stability: 0.5,  similarity_boost: 0.75, style: 0.0 },
+  happy:        { stability: 0.35, similarity_boost: 0.75, style: 0.6 },
+  encouraging:  { stability: 0.4,  similarity_boost: 0.75, style: 0.5 },
+  empathetic:   { stability: 0.55, similarity_boost: 0.8,  style: 0.3 },
+  excited:      { stability: 0.3,  similarity_boost: 0.7,  style: 0.8 },
+  curious:      { stability: 0.45, similarity_boost: 0.75, style: 0.4 },
+  playful:      { stability: 0.35, similarity_boost: 0.7,  style: 0.7 },
+  proud:        { stability: 0.35, similarity_boost: 0.75, style: 0.65 },
+  thoughtful:   { stability: 0.55, similarity_boost: 0.8,  style: 0.2 },
+  surprised:    { stability: 0.3,  similarity_boost: 0.7,  style: 0.7 },
+};
