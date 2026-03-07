@@ -1,5 +1,9 @@
 # Jake — English Tutor App
 
+## Migration Rules
+
+**NEVER create migration SQL files manually.** Always use `pnpm --filter @jake/api db:generate` (drizzle-kit generate). Manual files cause timestamp ordering issues in `_journal.json` which makes drizzle silently skip migrations on prod.
+
 ## Commit Rules
 
 **Before every commit**, you MUST:
