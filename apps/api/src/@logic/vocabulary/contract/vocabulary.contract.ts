@@ -10,7 +10,7 @@ export class VocabularyContract {
     return this.vocabularyRepository.findRecentByUser(userId, limit);
   }
 
-  async upsert(data: { userId: string; word: string; lessonId: string; strength: number; nextReview: Date }): Promise<VocabularyEntity> {
+  async upsert(data: { userId: string; word: string; translation?: string; topic?: string; lessonId: string }): Promise<VocabularyEntity> {
     return this.vocabularyRepository.upsert(data);
   }
 

@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
-import { eq, desc, lte, and } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { vocabularyTable } from "../table/vocabulary.table";
 import { VocabularyEntity } from "../../domain/entity/vocabulary.entity";
 import { VocabularyFactory } from "../factory/vocabulary.factory";
@@ -9,7 +9,7 @@ import { VocabularyFactory } from "../factory/vocabulary.factory";
 export class VocabularyRepository {
   constructor(private readonly txHost: AppDrizzleTransactionHost<{ vocabulary: typeof vocabularyTable }>) {}
 
-  async upsert(data: { userId: string; word: string; lessonId: string; strength: number; nextReview: Date }): Promise<VocabularyEntity> {
+  async upsert(data: { userId: string; word: string; translation?: string; topic?: string; lessonId: string }): Promise<VocabularyEntity> {
     const existing = await this.txHost.tx
       .select()
       .from(vocabularyTable)
@@ -23,11 +23,14 @@ export class VocabularyRepository {
 
     const existingRow = existing[0];
     if (existingRow) {
+      const updates: Partial<typeof vocabularyTable.$inferInsert> = { updatedAt: new Date() };
+      if (data.translation) updates.translation = data.translation;
+      if (data.topic) updates.topic = data.topic;
       await this.txHost.tx
         .update(vocabularyTable)
-        .set({ strength: data.strength, nextReview: data.nextReview, updatedAt: new Date() })
+        .set(updates)
         .where(eq(vocabularyTable.id, existingRow.id));
-      return VocabularyFactory.create(existingRow);
+      return VocabularyFactory.create({ ...existingRow, ...updates } as typeof existingRow);
     }
 
     const [row] = await this.txHost.tx.insert(vocabularyTable).values(data).returning();
@@ -58,17 +61,9 @@ export class VocabularyRepository {
     await this.txHost.tx.delete(vocabularyTable).where(eq(vocabularyTable.userId, userId));
   }
 
-  async findDueForReview(userId: string): Promise<VocabularyEntity[]> {
-    const rows = await this.txHost.tx
-      .select()
-      .from(vocabularyTable)
-      .where(
-        and(
-          eq(vocabularyTable.userId, userId),
-          lte(vocabularyTable.nextReview, new Date()),
-        ),
-      )
-      .orderBy(vocabularyTable.nextReview);
-    return VocabularyFactory.createMany(rows);
+  async deleteById(id: string, userId: string): Promise<void> {
+    await this.txHost.tx
+      .delete(vocabularyTable)
+      .where(and(eq(vocabularyTable.id, id), eq(vocabularyTable.userId, userId)));
   }
 }

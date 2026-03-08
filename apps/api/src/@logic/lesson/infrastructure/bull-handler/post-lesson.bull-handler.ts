@@ -104,8 +104,6 @@ export class PostLessonBullHandler extends ClsWorkerHost {
         userId: lesson.userId,
         word,
         lessonId,
-        strength: 10,
-        nextReview: new Date(Date.now() + 24 * 60 * 60 * 1000),
       });
     }
 
