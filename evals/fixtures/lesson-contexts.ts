@@ -3,6 +3,7 @@ import type { LessonContext } from "../../apps/api/src/@logic/lesson/application
 export const returningStudentContext: LessonContext = {
   studentName: "Alex",
   level: "B1",
+  onboardingCompleted: true,
   lessonNumber: 5,
   lastLessonAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
   tutorPromptFragment: "",
@@ -36,6 +37,7 @@ export const returningStudentContext: LessonContext = {
 export const firstLessonContext: LessonContext = {
   studentName: "Alex",
   level: null,
+  onboardingCompleted: false,
   lessonNumber: 1,
   lastLessonAt: null,
   tutorPromptFragment: "",
@@ -43,7 +45,7 @@ export const firstLessonContext: LessonContext = {
   preferences: {
     correctionStyle: "natural",
     explainGrammar: true,
-    speakingSpeed: "natural",
+    speakingSpeed: "very_slow",
     useNativeLanguage: false,
     preferredExercises: [],
     interests: [],

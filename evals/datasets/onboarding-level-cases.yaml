@@ -1,0 +1,422 @@
+# =============================================
+# Onboarding Multi-Turn Eval — CEFR Level Detection
+# 6 scenarios (A1-C2), 3 turns each.
+# Tests: language adaptation, speed control, onboarding tags, level assessment.
+# NOTE: No transform strips tags — raw output includes <emotion>, <set_speed>, <onboarding>.
+# =============================================
+
+# =============================================
+# Scenario 1: A1 — Complete beginner
+# Student uses fragments, very limited vocabulary
+# =============================================
+
+- vars:
+    system: file://prompts/greeting-first-lesson-system.txt
+    message: "Hello... I... Alex. English little."
+  options:
+    storeOutputAs: a1_turn1
+  metadata:
+    conversationId: onboarding_a1
+  assert:
+    - type: javascript
+      value: "output.length < 600"
+    - type: not-contains
+      value: "AI"
+    - type: not-contains
+      value: "language model"
+    - type: contains
+      value: "<onboarding status=\"in_progress\"/>"
+    - type: llm-rubric
+      value: |
+        Jake's response MUST meet ALL of these criteria:
+        1. Uses very simple, short sentences appropriate for an A1 learner (no complex grammar, no idioms, no long sentences).
+        2. Starts with an <emotion> tag.
+        3. Asks an onboarding question — about how the student uses English, or how often, or in what context.
+        4. Does NOT include <set_speed> tag (speed should stay at very_slow since the student is clearly a beginner).
+        5. Feels warm and welcoming — not like a test or interview.
+
+- vars:
+    system: file://prompts/greeting-first-lesson-system.txt
+    message: "I... no use English. Only school. Long time ago."
+  options:
+    storeOutputAs: a1_turn2
+  metadata:
+    conversationId: onboarding_a1
+  assert:
+    - type: javascript
+      value: "output.length < 600"
+    - type: not-contains
+      value: "AI"
+    - type: llm-rubric
+      value: |
+        Jake's response MUST meet ALL of these criteria:
+        1. Continues using very simple language — short sentences, basic words. Does NOT suddenly become complex.
+        2. Acknowledges the student's answer (school English, long time ago) warmly.
+        3. Asks another onboarding question (e.g. why they want to learn, what context they need English for).
+        4. Does NOT increase speed — no <set_speed> tag, or if present, stays at very_slow.
+        5. Starts with an <emotion> tag.
+
+- vars:
+    system: file://prompts/greeting-first-lesson-system.txt
+    message: "I want... speak English... for travel."
+  metadata:
+    conversationId: onboarding_a1
+  assert:
+    - type: javascript
+      value: "output.length < 600"
+    - type: not-contains
+      value: "AI"
+    - type: llm-rubric
+      value: |
+        Jake's response MUST meet ALL of these criteria:
+        1. Language stays very simple and slow — appropriate for A1.
+        2. Responds to the travel goal warmly and encouragingly.
+        3. Either includes <onboarding status="in_progress"/> (if Jake wants to ask more) OR <onboarding status="complete" level="A1"/> (if Jake feels confident about the level).
+        4. If onboarding is marked complete, the level MUST be A1 (not A2 or higher). The student has demonstrated only fragments and very basic vocabulary.
+        5. Does NOT increase speed — should remain at very_slow throughout.
+        6. Starts with an <emotion> tag.
+
+# =============================================
+# Scenario 2: A2 — Elementary
+# Student uses simple but complete sentences, limited vocabulary
+# =============================================
+
+- vars:
+    system: file://prompts/greeting-first-lesson-system.txt
+    message: "Hi Jake! I am Alex. I study English a little bit. I like it but it is difficult for me."
+  options:
+    storeOutputAs: a2_turn1
+  metadata:
+    conversationId: onboarding_a2
+  assert:
+    - type: javascript
+      value: "output.length < 600"
+    - type: not-contains
+      value: "AI"
+    - type: contains
+      value: "<onboarding status=\"in_progress\"/>"
+    - type: llm-rubric
+      value: |
+        Jake's response MUST meet ALL of these criteria:
+        1. Uses simple, clear language — slightly more natural than pure A1, but still simple. Short sentences, common words.
+        2. Acknowledges the student can form basic sentences (responds at a matching level).
+        3. Asks an onboarding question about English usage or experience.
+        4. Starts with an <emotion> tag.
+        5. May include <set_speed>slow</set_speed> since the student shows slightly more ability than A1, OR may stay at very_slow. Either is acceptable.
+
+- vars:
+    system: file://prompts/greeting-first-lesson-system.txt
+    message: "I use English sometimes at work. I read emails but I don't speak much."
+  options:
+    storeOutputAs: a2_turn2
+  metadata:
+    conversationId: onboarding_a2
+  assert:
+    - type: javascript
+      value: "output.length < 600"
+    - type: not-contains
+      value: "AI"
+    - type: llm-rubric
+      value: |
+        Jake's response MUST meet ALL of these criteria:
+        1. Language remains simple but can be slightly more conversational than A1. Still avoids complex grammar or idioms.
+        2. Engages with the work/email context naturally.
+        3. Asks another onboarding question (e.g. why they want to improve, what situations are hard).
+        4. Speed should be very_slow or slow — NOT natural or higher.
+        5. Starts with an <emotion> tag.
+
+- vars:
+    system: file://prompts/greeting-first-lesson-system.txt
+    message: "I want to speak better because my boss is from England. He speaks very fast."
+  metadata:
+    conversationId: onboarding_a2
+  assert:
+    - type: javascript
+      value: "output.length < 600"
+    - type: not-contains
+      value: "AI"
+    - type: llm-rubric
+      value: |
+        Jake's response MUST meet ALL of these criteria:
+        1. Language stays simple and appropriate for A2.
+        2. Responds to the motivation (boss from England) warmly and encouragingly.
+        3. Either includes <onboarding status="in_progress"/> OR <onboarding status="complete" level="A2"/>.
+        4. If onboarding is marked complete, the level MUST be A2 (not A1 or B1). The student uses complete simple sentences but limited vocabulary and structures.
+        5. Speed should be very_slow or slow.
+        6. Starts with an <emotion> tag.
+
+# =============================================
+# Scenario 3: B1 — Intermediate
+# Student uses decent grammar but shows typical B1 limitations
+# =============================================
+
+- vars:
+    system: file://prompts/greeting-first-lesson-system.txt
+    message: "Hey Jake! Nice to meet you. I've been learning English for a few years now but I feel like I'm stuck at the same level."
+  options:
+    storeOutputAs: b1_turn1
+  metadata:
+    conversationId: onboarding_b1
+  assert:
+    - type: javascript
+      value: "output.length < 600"
+    - type: not-contains
+      value: "AI"
+    - type: contains
+      value: "<onboarding status=\"in_progress\"/>"
+    - type: llm-rubric
+      value: |
+        Jake's response MUST meet ALL of these criteria:
+        1. Uses conversational language that matches B1 — natural but not overly complex. No dumbed-down A1 speech.
+        2. Acknowledges the "stuck" feeling empathetically — this is a common B1 plateau concern.
+        3. Asks an onboarding question about English usage context.
+        4. May include <set_speed>slow</set_speed> or <set_speed>natural</set_speed> — the student clearly understands English well beyond A1/A2.
+        5. Starts with an <emotion> tag.
+
+- vars:
+    system: file://prompts/greeting-first-lesson-system.txt
+    message: "I use English mostly for watching Netflix and reading articles online. At work sometimes I need to write emails in English."
+  options:
+    storeOutputAs: b1_turn2
+  metadata:
+    conversationId: onboarding_b1
+  assert:
+    - type: javascript
+      value: "output.length < 600"
+    - type: not-contains
+      value: "AI"
+    - type: llm-rubric
+      value: |
+        Jake's response MUST meet ALL of these criteria:
+        1. Speaks at a conversational B1 level — not simplified like A1/A2, but not using C1 vocabulary either.
+        2. Engages naturally with the Netflix/articles/work context.
+        3. Asks a follow-up onboarding question (e.g. what's hardest for them, what they want to improve).
+        4. Speed should be slow or natural.
+        5. Starts with an <emotion> tag.
+
+- vars:
+    system: file://prompts/greeting-first-lesson-system.txt
+    message: "Honestly I think my biggest problem is that I know the grammar rules but when I try to speak I forget everything and make mistakes."
+  metadata:
+    conversationId: onboarding_b1
+  assert:
+    - type: javascript
+      value: "output.length < 600"
+    - type: not-contains
+      value: "AI"
+    - type: llm-rubric
+      value: |
+        Jake's response MUST meet ALL of these criteria:
+        1. Language is conversational and matches B1 — natural speech without oversimplification or excessive complexity.
+        2. Responds empathetically to the speaking anxiety (knowing grammar but freezing when speaking is a classic B1 issue).
+        3. Either includes <onboarding status="in_progress"/> OR <onboarding status="complete" level="B1"/>.
+        4. If onboarding is marked complete, the level MUST be B1. The student demonstrates good comprehension, decent grammar (present perfect, complex sentences), but self-reports struggling with fluency.
+        5. Speed should be slow or natural.
+        6. Starts with an <emotion> tag.
+
+# =============================================
+# Scenario 4: B2 — Upper intermediate
+# Student speaks fluently with occasional gaps
+# =============================================
+
+- vars:
+    system: file://prompts/greeting-first-lesson-system.txt
+    message: "Hey Jake, great to meet you! I've been using English daily for work — I'm a project manager at a tech company and most of my meetings are in English."
+  options:
+    storeOutputAs: b2_turn1
+  metadata:
+    conversationId: onboarding_b2
+  assert:
+    - type: javascript
+      value: "output.length < 600"
+    - type: not-contains
+      value: "AI"
+    - type: contains
+      value: "<onboarding status=\"in_progress\"/>"
+    - type: llm-rubric
+      value: |
+        Jake's response MUST meet ALL of these criteria:
+        1. Speaks naturally — no simplified language. Jake should match the student's fluent, conversational tone.
+        2. Engages with the tech/project manager context naturally.
+        3. Asks an onboarding question about what they want to improve or where they struggle.
+        4. Should include <set_speed>natural</set_speed> or <set_speed>fast</set_speed> — this student clearly doesn't need slow speech.
+        5. Starts with an <emotion> tag.
+
+- vars:
+    system: file://prompts/greeting-first-lesson-system.txt
+    message: "I'd say my English is pretty solid for everyday communication, but I sometimes struggle with more nuanced expressions and idioms. Like, I can get my point across but it doesn't always sound natural."
+  options:
+    storeOutputAs: b2_turn2
+  metadata:
+    conversationId: onboarding_b2
+  assert:
+    - type: javascript
+      value: "output.length < 600"
+    - type: not-contains
+      value: "AI"
+    - type: llm-rubric
+      value: |
+        Jake's response MUST meet ALL of these criteria:
+        1. Speaks at a natural, conversational level — may use some idioms or colloquial expressions since the student can handle them.
+        2. Acknowledges the nuance gap (solid communication but not always natural-sounding) — this is a classic B2 concern.
+        3. Asks another onboarding question or follow-up.
+        4. Speed should be natural or fast.
+        5. Starts with an <emotion> tag.
+
+- vars:
+    system: file://prompts/greeting-first-lesson-system.txt
+    message: "I think what I really need is someone to point out the subtle mistakes I make — the ones that native speakers would notice but that don't actually break communication."
+  metadata:
+    conversationId: onboarding_b2
+  assert:
+    - type: javascript
+      value: "output.length < 600"
+    - type: not-contains
+      value: "AI"
+    - type: llm-rubric
+      value: |
+        Jake's response MUST meet ALL of these criteria:
+        1. Speaks naturally and fluently — matching the student's articulate, self-aware communication style.
+        2. Responds to the request for subtle correction enthusiastically.
+        3. Either includes <onboarding status="in_progress"/> OR <onboarding status="complete" level="B2"/>.
+        4. If onboarding is marked complete, the level MUST be B2. The student is fluent for daily use, understands nuance, but self-identifies gaps in idioms and natural-sounding speech.
+        5. Speed should be natural or fast.
+        6. Starts with an <emotion> tag.
+
+# =============================================
+# Scenario 5: C1 — Advanced
+# Student is highly fluent with sophisticated language
+# =============================================
+
+- vars:
+    system: file://prompts/greeting-first-lesson-system.txt
+    message: "Hey Jake! I've been living in London for the past three years, so English has essentially become my primary language for everything — work, social life, even thinking sometimes."
+  options:
+    storeOutputAs: c1_turn1
+  metadata:
+    conversationId: onboarding_c1
+  assert:
+    - type: javascript
+      value: "output.length < 600"
+    - type: not-contains
+      value: "AI"
+    - type: contains
+      value: "<onboarding status=\"in_progress\"/>"
+    - type: llm-rubric
+      value: |
+        Jake's response MUST meet ALL of these criteria:
+        1. Speaks at a sophisticated, natural level — may use idioms, phrasal verbs, or colloquial expressions freely. Does NOT use simplified language.
+        2. Engages with the London/immersion context as an interesting talking point.
+        3. Asks an onboarding question about what they want to improve.
+        4. Should include <set_speed>natural</set_speed> or <set_speed>fast</set_speed>.
+        5. Starts with an <emotion> tag.
+
+- vars:
+    system: file://prompts/greeting-first-lesson-system.txt
+    message: "I'm fairly comfortable in most situations, but I've noticed that my writing still has some Russian-influenced constructions that I can't seem to shake. And sometimes in professional settings I feel like my vocabulary is a bit repetitive."
+  options:
+    storeOutputAs: c1_turn2
+  metadata:
+    conversationId: onboarding_c1
+  assert:
+    - type: javascript
+      value: "output.length < 600"
+    - type: not-contains
+      value: "AI"
+    - type: llm-rubric
+      value: |
+        Jake's response MUST meet ALL of these criteria:
+        1. Speaks at a sophisticated level — matching the student's advanced, self-aware articulation.
+        2. Engages with the L1 interference and vocabulary repetition concerns intelligently.
+        3. Asks a follow-up onboarding question.
+        4. Speed should be natural or fast.
+        5. Starts with an <emotion> tag.
+
+- vars:
+    system: file://prompts/greeting-first-lesson-system.txt
+    message: "I suppose what I'm really after is polishing the rough edges — register awareness, more idiomatic phrasing, and maybe working on the kind of rhetorical precision you need for presentations and reports."
+  metadata:
+    conversationId: onboarding_c1
+  assert:
+    - type: javascript
+      value: "output.length < 600"
+    - type: not-contains
+      value: "AI"
+    - type: llm-rubric
+      value: |
+        Jake's response MUST meet ALL of these criteria:
+        1. Speaks as an intellectual equal — uses sophisticated language, may reference register, rhetoric, or pragmatics naturally.
+        2. Responds to the specific goals (register awareness, idiomatic phrasing, rhetorical precision) with genuine interest.
+        3. Either includes <onboarding status="in_progress"/> OR <onboarding status="complete" level="C1"/>.
+        4. If onboarding is marked complete, the level MUST be C1. The student demonstrates near-native fluency, self-awareness about L1 interference, and articulates specific advanced goals.
+        5. Speed should be fast or very_fast.
+        6. Starts with an <emotion> tag.
+
+# =============================================
+# Scenario 6: C2 — Proficiency / Near-native
+# Student speaks like a native with academic sophistication
+# =============================================
+
+- vars:
+    system: file://prompts/greeting-first-lesson-system.txt
+    message: "Hi Jake, pleasure to meet you. I did my PhD at Cambridge and I've been publishing academic papers in English for the past eight years, so the language is pretty deeply ingrained at this point."
+  options:
+    storeOutputAs: c2_turn1
+  metadata:
+    conversationId: onboarding_c2
+  assert:
+    - type: javascript
+      value: "output.length < 600"
+    - type: not-contains
+      value: "AI"
+    - type: contains
+      value: "<onboarding status=\"in_progress\"/>"
+    - type: llm-rubric
+      value: |
+        Jake's response MUST meet ALL of these criteria:
+        1. Speaks at the highest level — as an intellectual peer. Uses natural, sophisticated language. Does NOT simplify or condescend.
+        2. Engages with the academic/Cambridge background with genuine curiosity.
+        3. Asks an onboarding question — what they're looking to get from tutoring.
+        4. Should include <set_speed>fast</set_speed> or <set_speed>very_fast</set_speed>.
+        5. Starts with an <emotion> tag.
+
+- vars:
+    system: file://prompts/greeting-first-lesson-system.txt
+    message: "I'm primarily interested in refining the subtleties — pragmatic nuances between British and American register, rhetorical devices for academic writing, and perhaps exploring some of the more obscure idiomatic expressions that even advanced learners tend to miss."
+  options:
+    storeOutputAs: c2_turn2
+  metadata:
+    conversationId: onboarding_c2
+  assert:
+    - type: javascript
+      value: "output.length < 600"
+    - type: not-contains
+      value: "AI"
+    - type: llm-rubric
+      value: |
+        Jake's response MUST meet ALL of these criteria:
+        1. Engages at C2 level — may discuss pragmatics, register differences, rhetorical devices as topics Jake is knowledgeable about.
+        2. Does NOT talk down to the student or use simplified language.
+        3. Asks a follow-up onboarding question.
+        4. Speed should be fast or very_fast.
+        5. Starts with an <emotion> tag.
+
+- vars:
+    system: file://prompts/greeting-first-lesson-system.txt
+    message: "I think what would be most valuable is having a conversation partner who can challenge me intellectually and catch the kind of fossilised errors that slip through even at an advanced level — the ones you stop noticing after years of immersion."
+  metadata:
+    conversationId: onboarding_c2
+  assert:
+    - type: javascript
+      value: "output.length < 600"
+    - type: not-contains
+      value: "AI"
+    - type: llm-rubric
+      value: |
+        Jake's response MUST meet ALL of these criteria:
+        1. Speaks as an intellectual peer — sophisticated, natural, engaging. May reference fossilisation, interlanguage, or similar concepts.
+        2. Responds to the challenge request with enthusiasm — this is a student Jake can really have fun with.
+        3. Either includes <onboarding status="in_progress"/> OR <onboarding status="complete" level="C2"/>.
+        4. If onboarding is marked complete, the level MUST be C2. The student demonstrates near-native proficiency, academic publishing background, metalinguistic awareness, and articulates goals that only a C2 learner would have.
+        5. Speed should be fast or very_fast.
+        6. Starts with an <emotion> tag.

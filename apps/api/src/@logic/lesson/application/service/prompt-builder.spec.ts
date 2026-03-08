@@ -173,7 +173,7 @@ describe("buildFullSystemPrompt", () => {
 
   it("should include emotion instructions with all 10 emotions", () => {
     const result = buildFullSystemPrompt(createMockContext());
-    expect(result).toContain("=== EMOTIONAL EXPRESSION ===");
+    expect(result).toContain("=== EMOTION TAG ===");
     expect(result).toContain("<emotion>");
     expect(result).toContain("neutral");
     expect(result).toContain("happy");

@@ -6,6 +6,7 @@
     "generate-prompts": "tsx scripts/generate-prompts.ts",
     "eval": "tsx scripts/generate-prompts.ts && promptfoo eval $([ -f ../.env ] && echo '--env-file ../.env')",
     "eval:multi": "tsx scripts/generate-prompts.ts && promptfoo eval -c multi-turn.yaml $([ -f ../.env ] && echo '--env-file ../.env')",
+    "eval:onboarding": "tsx scripts/generate-prompts.ts && promptfoo eval -c onboarding.yaml $([ -f ../.env ] && echo '--env-file ../.env')",
     "eval:view": "promptfoo view"
   },
   "devDependencies": {

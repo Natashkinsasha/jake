@@ -117,9 +117,6 @@ export class LessonMaintainer {
     const context = await this.contextService.build(userId);
 
     const isOnboarding = !context.onboardingCompleted;
-    if (isOnboarding) {
-      context.preferences.speakingSpeed = "very_slow";
-    }
 
     const systemPrompt = buildFullSystemPrompt(context);
 
