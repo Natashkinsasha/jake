@@ -99,7 +99,7 @@ jobs:
           context: .
           file: apps/api/Dockerfile
           push: false
-          cache-from: type=gha,scope=api
+          no-cache: true
           cache-to: type=gha,mode=max,scope=api
 
   build-web:
