@@ -51,6 +51,10 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private voicePrintService: VoicePrintService,
   ) {}
 
+  private getUserId(client: Socket): string {
+    return (client.data as SocketData).userId;
+  }
+
   async handleConnection(client: Socket) {
     // Guards don't run for handleConnection, authenticate manually
     const token =
@@ -72,12 +76,28 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    const userId = (client.data as SocketData).userId;
+    const userId = this.getUserId(client);
 
     try {
+      // Check for existing session (reconnection)
+      const existingSession = await this.sessionService.get(userId);
+      if (existingSession) {
+        client.emit("lesson_resumed", {
+          lessonId: existingSession.lessonId,
+          voiceId: existingSession.voiceId,
+          speechSpeed: existingSession.speechSpeed,
+          isOnboarding: existingSession.isOnboarding,
+          history: existingSession.history.map((m) => ({
+            role: m.role,
+            text: m.content,
+          })),
+        });
+        return;
+      }
+
       const result = await this.lessonMaintainer.startLesson(userId);
 
-      await this.sessionService.save(client.id, {
+      await this.sessionService.save(userId, {
         lessonId: result.lessonId,
         systemPrompt: result.systemPrompt,
         voiceId: result.voiceId,
@@ -105,17 +125,11 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  async handleDisconnect(client: Socket) {
+  handleDisconnect(client: Socket) {
     this.abortControllers.get(client.id)?.abort();
     this.abortControllers.delete(client.id);
     this.sentChunksText.delete(client.id);
     this.pendingUserText.delete(client.id);
-
-    const session = await this.sessionService.get(client.id);
-    if (session) {
-      await this.lessonMaintainer.endLesson(session.lessonId, session.history);
-      await this.sessionService.delete(client.id);
-    }
   }
 
   @SubscribeMessage("text")
@@ -129,7 +143,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    const userId = (client.data as SocketData).userId;
+    const userId = this.getUserId(client);
 
     // Cancel any in-flight generation
     this.abortControllers.get(client.id)?.abort();
@@ -144,7 +158,6 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
     client.emit("status", { state: "thinking" });
 
     await this.lessonMaintainer.processTextMessageStreaming(
-      client.id,
       userId,
       parsed.data.text,
       {
@@ -207,7 +220,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
       if (userText?.trim()) messages.push({ role: "user", content: userText.trim() });
       if (partialText?.trim()) messages.push({ role: "assistant", content: partialText.trim() + "..." });
       if (messages.length > 0) {
-        await this.sessionService.appendHistory(client.id, ...messages);
+        await this.sessionService.appendHistory(this.getUserId(client), ...messages);
       }
 
       this.logger.debug(`Interrupted streaming for ${client.id}`);
@@ -225,11 +238,11 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    const session = await this.sessionService.get(client.id);
+    const session = await this.sessionService.get(this.getUserId(client));
     if (!session) return;
 
     const speed = toSpeechSpeed(parsed.data.speed);
-    await this.sessionService.updateSpeechSpeed(client.id, speed);
+    await this.sessionService.updateSpeechSpeed(this.getUserId(client), speed);
 
     client.emit("speed_updated", { speed: parsed.data.speed });
   }
@@ -256,7 +269,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const result = await this.voicePrintService.processVoiceSample(userId, audioBuffer);
 
       if (result.status === "mismatch") {
-        await this.sessionService.setVoiceMismatch(client.id, true);
+        await this.sessionService.setVoiceMismatch(this.getUserId(client), true);
         this.logger.log(`Voice mismatch detected for user ${userId}, similarity: ${result.similarity?.toFixed(3)}`);
       }
     } catch (error) {
@@ -266,11 +279,11 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage("end_lesson")
   async handleEndLesson(@ConnectedSocket() client: Socket) {
-    const session = await this.sessionService.get(client.id);
+    const session = await this.sessionService.get(this.getUserId(client));
     if (!session) return;
 
     await this.lessonMaintainer.endLesson(session.lessonId, session.history);
-    await this.sessionService.delete(client.id);
+    await this.sessionService.delete(this.getUserId(client));
 
     client.emit("lesson_ended", { lessonId: session.lessonId });
     client.disconnect();

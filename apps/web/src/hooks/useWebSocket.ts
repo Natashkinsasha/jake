@@ -30,7 +30,7 @@ export function useWebSocket({ url, token, onEvent }: UseWebSocketOptions) {
     });
 
     const events = [
-      "lesson_started", "tutor_message", "transcript",
+      "lesson_started", "lesson_resumed", "tutor_message", "transcript",
       "exercise_feedback", "lesson_ended", "status", "error",
       "tutor_chunk", "tutor_stream_end",
     ];

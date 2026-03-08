@@ -149,20 +149,19 @@ export class LessonMaintainer {
   }
 
   async processTextMessageStreaming(
-    socketId: string,
     userId: string,
     text: string,
     callbacks: StreamCallbacks,
     options?: { signal?: AbortSignal },
   ) {
-    const session = await this.sessionService.get(socketId);
+    const session = await this.sessionService.get(userId);
     if (!session) return;
 
     // Inject voice mismatch hint into system prompt (one-time)
     let systemPrompt = session.systemPrompt;
     if (session.voiceMismatch) {
       systemPrompt += "\n\n=== VOICE OBSERVATION ===\nThe student's voice sounds noticeably different from their usual voice today. They might be sick, tired, or feeling off. You can gently and naturally ask if they're feeling okay — don't make a big deal of it, just show you noticed. One brief mention is enough.";
-      await this.sessionService.setVoiceMismatch(socketId, false);
+      await this.sessionService.setVoiceMismatch(userId, false);
     }
 
     // Layer 1: Regex pre-filter (instant, <1ms)
@@ -223,7 +222,7 @@ export class LessonMaintainer {
 
             if (speed) {
               const numericSpeed = toSpeechSpeed(speed);
-              await this.sessionService.updateSpeechSpeed(socketId, numericSpeed);
+              await this.sessionService.updateSpeechSpeed(userId, numericSpeed);
               callbacks.onSpeedChange?.(speed);
             }
 
@@ -238,7 +237,7 @@ export class LessonMaintainer {
             });
 
             await this.sessionService.appendHistory(
-              socketId,
+              userId,
               { role: "user", content: text },
               { role: "assistant", content: cleanText },
             );
