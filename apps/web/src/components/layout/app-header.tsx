@@ -38,7 +38,7 @@ export function AppHeader() {
             <button
               type="button"
               onClick={() => { setSettingsOpen(true); }}
-              className="p-1.5 text-gray-400 hover:text-gray-600 transition-colors"
+              className="p-2.5 -m-1 text-gray-400 hover:text-gray-600 transition-colors rounded-lg hover:bg-gray-100 active:bg-gray-200"
               title="Settings"
             >
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -48,7 +48,7 @@ export function AppHeader() {
             <button
               type="button"
               onClick={() => { void signOut({ callbackUrl: "/login" }); }}
-              className="text-sm text-gray-400 hover:text-red-500 transition-colors"
+              className="px-3 py-2 text-sm text-gray-400 hover:text-red-500 transition-colors rounded-lg hover:bg-gray-100 active:bg-gray-200"
             >
               Sign out
             </button>
