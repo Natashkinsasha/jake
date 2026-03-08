@@ -36,7 +36,7 @@
     - type: llm-rubric
       value: >
         Response is a short greeting that includes a question about the student's day.
-        It's one sentence, casual and friendly. Sounds like a real person.
+        It's 1-2 sentences max, casual and friendly. Sounds like a real person.
 
 - description: "Greeting — fun comment + what to chat about"
   vars:

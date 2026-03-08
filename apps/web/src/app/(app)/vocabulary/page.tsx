@@ -209,7 +209,7 @@ export default function VocabularyPage() {
           >
             <option value="">All topics</option>
             {topics.map((t) => (
-              <option key={t} value={t}>{t}</option>
+              <option key={t} value={t}>{t.replaceAll("_", " ")}</option>
             ))}
           </select>
         )}
@@ -248,7 +248,7 @@ export default function VocabularyPage() {
                   <div className="flex items-center gap-2 mt-1.5">
                     {word.topic && (
                       <span className="text-[11px] bg-gray-50 text-gray-500 px-2 py-0.5 rounded-md border border-gray-100">
-                        {word.topic}
+                        {word.topic.replaceAll("_", " ")}
                       </span>
                     )}
                     <ReviewBar count={word.reviewCount} />
