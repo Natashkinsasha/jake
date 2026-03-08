@@ -28,7 +28,7 @@ export function LessonScreen({ token }: LessonScreenProps) {
     messages, status, connected, isPlaying, lessonId,
     lessonEnded: serverLessonEnded, error: lessonError, ttsError, sendText,
     sendVoiceSample, endLesson, interruptTutor, stopAllAudio,
-    setUserSpeaking, debugInfo,
+    setUserSpeaking, debugInfo, submitExerciseAnswer,
   } = useLessonState(token);
 
   const [isMuted, setIsMuted] = useState(false);
@@ -200,6 +200,7 @@ export function LessonScreen({ token }: LessonScreenProps) {
         isThinking={status === "thinking"}
         isTutorActive={isTutorActive}
         lessonId={lessonId}
+        onExerciseSubmit={submitExerciseAnswer}
       />
 
       {/* Live transcript preview */}

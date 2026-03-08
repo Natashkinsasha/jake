@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import type { ChatMessage, VocabHighlight } from "@/types";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
+import { MatchingExercise } from "./MatchingExercise";
 
 interface ChatHistoryProps {
   messages: ChatMessage[];
@@ -11,6 +12,7 @@ interface ChatHistoryProps {
   isTutorActive?: boolean;
   lessonId?: string | null;
   onVocabSaved?: (word: string) => void;
+  onExerciseSubmit?: (exerciseId: string, answers: Array<{ word: string; definition: string }>) => void;
 }
 
 function VocabCard({
@@ -93,6 +95,7 @@ export function ChatHistory({
   isTutorActive = false,
   lessonId,
   onVocabSaved,
+  onExerciseSubmit,
 }: ChatHistoryProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const lastAssistantIdx = messages.length - 1 - [...messages].reverse().findIndex((m) => m.role === "assistant");
@@ -107,7 +110,13 @@ export function ChatHistory({
       {/* eslint-disable-next-line @eslint-react/no-array-index-key -- timestamp alone may not be unique */}
       {messages.map((msg, i) => (
         <div key={`${msg.timestamp}-${i}`}>
-          {msg.role === "user" ? (
+          {msg.role === "exercise" && msg.exercise ? (
+            <MatchingExercise
+              exercise={msg.exercise}
+              feedback={msg.exerciseFeedback}
+              onSubmit={onExerciseSubmit ?? (() => {})}
+            />
+          ) : msg.role === "user" ? (
             /* User message — right aligned, gradient bubble */
             <div className="flex justify-end">
               <div className="gradient-bg rounded-2xl rounded-br-md px-4 py-2.5 max-w-[80%] shadow-sm">
