@@ -123,6 +123,33 @@ export function useLessonState(token?: string | null) {
       greetingPlayingRef.current = true;
     }
 
+    if (event === "lesson_resumed") {
+      const d = data as LessonEventData & {
+        lessonId?: string;
+        voiceId?: string;
+        speechSpeed?: number;
+        isOnboarding?: boolean;
+        history?: Array<{ role: "user" | "assistant"; text: string }>;
+      };
+      if (d.voiceId) voiceIdRef.current = d.voiceId;
+      if (d.speechSpeed != null) speechSpeedRef.current = d.speechSpeed;
+
+      const messages: ChatMessage[] = (d.history ?? []).map((msg) => ({
+        role: msg.role,
+        text: msg.text,
+        timestamp: Date.now(),
+      }));
+
+      setState({
+        lessonId: d.lessonId ?? null,
+        messages,
+        status: "idle",
+        lessonEnded: false,
+        error: null,
+      });
+      return;
+    }
+
     if (event === "tutor_emotion") {
       const d = data as LessonEventData & { emotion?: string };
       if (d.emotion) emotionRef.current = d.emotion;

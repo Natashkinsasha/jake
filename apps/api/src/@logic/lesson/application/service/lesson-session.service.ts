@@ -25,48 +25,48 @@ export class LessonSessionService {
     this.redis = redisService.getOrThrow();
   }
 
-  async save(socketId: string, session: LessonSession): Promise<void> {
+  async save(userId: string, session: LessonSession): Promise<void> {
     await this.redis.set(
-      KEY_PREFIX + socketId,
+      KEY_PREFIX + userId,
       JSON.stringify(session),
       "EX",
       SESSION_TTL,
     );
   }
 
-  async get(socketId: string): Promise<LessonSession | null> {
-    const data = await this.redis.get(KEY_PREFIX + socketId);
+  async get(userId: string): Promise<LessonSession | null> {
+    const data = await this.redis.get(KEY_PREFIX + userId);
     if (!data) return null;
     try {
       return JSON.parse(data) as LessonSession;
     } catch {
-      this.logger.warn(`Failed to parse session for socket ${socketId}`);
+      this.logger.warn(`Failed to parse session for user ${userId}`);
       return null;
     }
   }
 
-  async delete(socketId: string): Promise<void> {
-    await this.redis.del(KEY_PREFIX + socketId);
+  async delete(userId: string): Promise<void> {
+    await this.redis.del(KEY_PREFIX + userId);
   }
 
-  async updateSpeechSpeed(socketId: string, speed: number): Promise<void> {
-    const session = await this.get(socketId);
+  async updateSpeechSpeed(userId: string, speed: number): Promise<void> {
+    const session = await this.get(userId);
     if (!session) return;
     session.speechSpeed = speed;
-    await this.save(socketId, session);
+    await this.save(userId, session);
   }
 
-  async setVoiceMismatch(socketId: string, mismatch: boolean): Promise<void> {
-    const session = await this.get(socketId);
+  async setVoiceMismatch(userId: string, mismatch: boolean): Promise<void> {
+    const session = await this.get(userId);
     if (!session) return;
     session.voiceMismatch = mismatch;
-    await this.save(socketId, session);
+    await this.save(userId, session);
   }
 
-  async appendHistory(socketId: string, ...messages: LlmMessage[]): Promise<void> {
-    const session = await this.get(socketId);
+  async appendHistory(userId: string, ...messages: LlmMessage[]): Promise<void> {
+    const session = await this.get(userId);
     if (!session) return;
     session.history.push(...messages);
-    await this.save(socketId, session);
+    await this.save(userId, session);
   }
 }
