@@ -131,7 +131,10 @@ export function LessonScreen({ token }: LessonScreenProps) {
     }
   }, [isMuted, isPaused, stt]);
 
+  const endedByClientRef = useRef(false);
+
   const handleEndLesson = useCallback(() => {
+    endedByClientRef.current = true;
     stt.disable();
     stopAllAudio();
     speechBuffer.flush();
@@ -139,9 +142,9 @@ export function LessonScreen({ token }: LessonScreenProps) {
     router.push("/dashboard");
   }, [endLesson, stt, speechBuffer, router, stopAllAudio]);
 
-  // Server ended the lesson
+  // Server ended the lesson (only react if not initiated by client)
   useEffect(() => {
-    if (serverLessonEnded) {
+    if (serverLessonEnded && !endedByClientRef.current) {
       stt.disable();
       stopAllAudio();
       showToast("Lesson ended", "info");

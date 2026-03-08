@@ -230,6 +230,15 @@ export class LessonMaintainer {
 
             if (!modResult.isSafe) {
               this.logger.warn(`LLM flagged input from ${userId}: reason=${modResult.reason}`);
+
+              // Still save exchange to history so the tutor doesn't lose context.
+              // The client already received and played the streamed chunks.
+              await this.sessionService.appendHistory(
+                userId,
+                { role: "user", content: text },
+                { role: "assistant", content: SAFETY_RESPONSE },
+              );
+
               callbacks.onDiscard?.(SAFETY_RESPONSE);
               return;
             }
