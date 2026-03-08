@@ -18,6 +18,7 @@ import { extractVocabTags, VocabTagBuffer } from "../service/vocab-tags";
 
 const SET_SPEED_RE = /<set_speed>(very_slow|slow|natural|fast|very_fast)<\/set_speed>/g;
 
+// eslint-disable-next-line security/detect-unsafe-regex -- bounded input from LLM response
 const ONBOARDING_RE = /<onboarding\s+status="(complete|in_progress)"(?:\s+level="(A1|A2|B1|B2|C1|C2)")?\s*\/>/g;
 
 function stripOnboardingTags(text: string): { cleanText: string; onboardingComplete: boolean; level: string | null } {
@@ -58,6 +59,7 @@ const GREETING_PROMPTS = [
 ];
 
 function pickGreetingPrompt(): string {
+  // eslint-disable-next-line sonarjs/pseudo-random -- non-security random for greeting variety
   return GREETING_PROMPTS[Math.floor(Math.random() * GREETING_PROMPTS.length)] ?? GREETING_PROMPTS[0] ?? "";
 }
 

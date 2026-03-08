@@ -5,6 +5,7 @@ export interface VocabHighlight {
 }
 
 // Flexible regex: matches <vocab> with word/translation/topic attributes in ANY order
+// eslint-disable-next-line sonarjs/slow-regex, sonarjs/regex-complexity -- lookahead is bounded by tag closing
 const VOCAB_TAG_RE = /<vocab\s+(?=.*?\bword="([^"]+)")(?=.*?\btranslation="([^"]+)")(?=.*?\btopic="([^"]+)")[^/]*\/>/g;
 const VOCAB_REVIEWED_RE = /<vocab_reviewed\s+word="([^"]+)"\s*\/>/g;
 

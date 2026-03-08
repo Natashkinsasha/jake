@@ -1,3 +1,4 @@
+/* eslint-disable no-secrets/no-secrets -- ElevenLabs public voice IDs and preview URLs, not secrets */
 import type { TutorGender, TutorVoice } from "./tutor-types";
 
 export const TUTOR_VOICES: TutorVoice[] = [
