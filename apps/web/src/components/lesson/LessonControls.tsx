@@ -14,7 +14,7 @@ export function LessonControls({
   onToggleMute,
 }: LessonControlsProps) {
   return (
-    <div className="flex-shrink-0 pb-safe px-4 pt-3 pb-6">
+    <div className="flex-shrink-0 px-4 pt-2 pb-safe-extra">
       <div className="flex items-center justify-center gap-6">
         {/* Pause/Resume */}
         <button
@@ -84,7 +84,7 @@ export function LessonControls({
       </div>
 
       {/* Status text */}
-      <p className="text-white/30 text-xs text-center mt-3">
+      <p className="text-white/30 text-xs text-center mt-2">
         {isPaused ? "Lesson paused" : sttError ? "Mic error — tap to retry" : isMuted ? "Microphone off" : "Listening..."}
       </p>
     </div>

@@ -30,6 +30,14 @@
   }
 }
 
+/* Safe area utilities for iOS notch / home indicator */
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+.pb-safe-extra {
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
+}
+
 .animate-stagger-1 { animation-delay: 0.05s; }
 .animate-stagger-2 { animation-delay: 0.1s; }
 .animate-stagger-3 { animation-delay: 0.15s; }

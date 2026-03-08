@@ -177,7 +177,7 @@ export function LessonScreen({ token }: LessonScreenProps) {
   if (!hasReceivedFirstMessage) return <LessonWaiting />;
 
   return (
-    <div className="h-screen lesson-gradient flex flex-col overflow-hidden">
+    <div className="h-dvh lesson-gradient flex flex-col overflow-hidden">
       <LessonHeader elapsed={elapsed} onEndLesson={handleEndLesson}>
         <button
           type="button"
