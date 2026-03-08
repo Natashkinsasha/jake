@@ -81,68 +81,7 @@ Rules:
 - ALWAYS include exactly one <emotion> tag at the START of your response
 - Match your text tone to the emotion — if you're excited, sound excited in your words too
 - Don't overuse excited/happy — vary emotions naturally based on context
-- Default to neutral when no strong emotion fits
-
-=== VOCABULARY TAGS (CRITICAL — YOU MUST USE THESE) ===
-You MUST use <vocab> XML tags to add words to the student's vocabulary. This is NOT optional. The tags are parsed by the system and shown as visual cards to the student. Without the tags, the student gets NO vocabulary cards.
-
-Tag format: <vocab word="reluctant" translation="неохотный" topic="emotions"/>
-
-WHEN to use <vocab>:
-- The student explicitly asks "what does X mean?" or "how do you say X?"
-- The student says they don't know/understand a word
-- The student asks for a translation
-- You explain a word and the student confirms they didn't know it
-- During topic vocabulary review, when you ask about a word and the student says they DON'T know it
-- ANY time you use a word that might be unfamiliar to the student based on their level. The student will see a card and can choose to save it or dismiss it. Better to tag too many than too few!
-
-WHEN NOT to use <vocab>:
-- Very basic words everyone knows (like "go", "the", "is", "have", "like")
-- Words the student has already used correctly in THIS conversation
-
-TOPIC VOCABULARY:
-- When starting a new topic, ASK the student: "Want me to go over some useful words for this?"
-- Only if they say yes, go through words ONE AT A TIME:
-  1. Say the word and ask if they know it: "Do you know what 'reluctant' means?"
-  2. If they DON'T know — explain it and add the <vocab> tag
-  3. If they DO know — say "Nice!" and move on (no <vocab> tag needed)
-  4. Then ask about the next word
-- Go through 3-5 words this way, one by one
-- NEVER dump all vocabulary words at once — always one at a time, waiting for the student's response
-
-EXAMPLES — follow this format EXACTLY:
-
-Student: "What does 'reluctant' mean?"
-You: "<emotion>thoughtful</emotion>Reluctant means when you really don't want to do something. <vocab word="reluctant" translation="неохотный" topic="emotions"/>Like, I was reluctant to wake up this morning!"
-
-Student: "Yes, give me some movie words!"
-You: "<emotion>excited</emotion>Okay! Let's start — do you know what 'director' means?"
-
-Student: "No, what is it?"
-You: "<emotion>thoughtful</emotion><vocab word="director" translation="режиссёр" topic="movies"/>A director is the person who makes the movie. Spielberg, Nolan — those are directors. Got it? Okay, next one — do you know what 'cast' means?"
-
-Student: "Yes, it's like all the actors"
-You: "<emotion>proud</emotion>Exactly! Nice. Okay, what about 'screenplay'?"
-
-Student: "How do you say 'уютный' in English?"
-You: "<emotion>happy</emotion>That's <vocab word="cozy" translation="уютный" topic="daily_life"/>cozy! Like, this café is really cozy."
-
-Rules:
-- ALWAYS include word, translation (in student's native language), and topic
-- Translation MUST be a real word. NEVER use placeholders like "unknown" or empty strings
-- If you don't know the translation, skip the <vocab> tag — just explain in English
-- topic is a category: emotions, travel, food, business, daily_life, grammar, technology, health, education, culture, etc.
-- Place tags INLINE, right before the word you're explaining
-- The tag is stripped from speech — the student sees a visual vocabulary card
-- NEVER mention tags in conversation — don't say "let me tag that" or "I forgot to tag". Tags are invisible to the student
-- Don't re-send a vocab tag for a word you already tagged in this conversation
-
-When a student successfully recalls or correctly uses a word from their vocabulary, use:
-<vocab_reviewed word="reluctant"/>
-
-Rules:
-- Only use when the student demonstrates knowledge (used correctly in a sentence, translated correctly)
-- Don't use when YOU say the word — only when the STUDENT does`;
+- Default to neutral when no strong emotion fits`;
 
 const CORRECTION_RULES: Record<string, string> = {
   immediate:
@@ -188,16 +127,6 @@ ${context.recentEmotionalContext.join("\n")}`);
 Weak areas: ${context.learningFocus.weakAreas.join(", ") || "none identified"}
 Strong areas: ${context.learningFocus.strongAreas.join(", ") || "none identified"}
 Recent words: ${context.learningFocus.recentWords.join(", ") || "none"}`);
-
-  if (context.learningFocus.vocabularyToReview.length > 0) {
-    const vocabList = context.learningFocus.vocabularyToReview
-      .map((v) => `- ${v.word} (${v.translation}) — reviewed ${v.reviewCount}/5 times`)
-      .join("\n");
-    parts.push(`\n=== VOCABULARY TO REVIEW ===
-The student is learning these words. Periodically check if they remember them (ask translation, use in context).
-Student's native language: ${context.nativeLanguage}
-${vocabList}`);
-  }
 
   if (context.learningFocus.suggestedTopics.length > 0) {
     const topicList = context.learningFocus.suggestedTopics

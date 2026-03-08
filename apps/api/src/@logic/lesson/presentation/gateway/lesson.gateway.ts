@@ -186,14 +186,6 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
         onOnboardingComplete: (data) => {
           client.emit("onboarding_completed", data);
         },
-        onVocabHighlight: (highlight) => {
-          this.logger.log(`Emitting vocab_highlight to client: ${JSON.stringify(highlight)}`);
-          client.emit("vocab_highlight", highlight);
-        },
-        onVocabReviewed: (word) => {
-          this.logger.log(`Emitting vocab_reviewed to client: ${word}`);
-          client.emit("vocab_reviewed", { word });
-        },
       },
       { signal: abortController.signal },
     );

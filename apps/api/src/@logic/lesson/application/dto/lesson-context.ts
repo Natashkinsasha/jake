@@ -6,7 +6,6 @@ export interface LessonContext {
   lastLessonAt: Date | null;
   tutorPromptFragment: string;
   tutorVoiceId: string;
-  nativeLanguage: string;
   preferences: {
     correctionStyle: string;
     speakingSpeed: string;
@@ -23,6 +22,5 @@ export interface LessonContext {
     strongAreas: string[];
     recentWords: string[];
     suggestedTopics: string[];
-    vocabularyToReview: Array<{ word: string; translation: string; reviewCount: number }>;
   };
 }

@@ -3,20 +3,17 @@ import type {
   UserPreferences,
   LessonListItem,
   LessonDetail,
-  VocabularyItem,
-  VocabularyStats,
 } from "@/types";
 import { getBackendToken } from "@/lib/session";
 import { API_URL } from "@/lib/config";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const token = getBackendToken();
-  const hasBody = options?.body != null;
 
   const res = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
-      ...(hasBody ? { "Content-Type": "application/json" } : {}),
+      "Content-Type": "application/json",
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options?.headers,
     },
@@ -79,25 +76,5 @@ export const api = {
   },
   tts: {
     token: () => request<{ token: string }>("/lessons/tts/token"),
-  },
-  vocabulary: {
-    list: (params?: { status?: string; topic?: string; lessonId?: string; offset?: number; limit?: number }) => {
-      const query = new URLSearchParams();
-      if (params?.status) query.set("status", params.status);
-      if (params?.topic) query.set("topic", params.topic);
-      if (params?.lessonId) query.set("lessonId", params.lessonId);
-      if (params?.offset != null) query.set("offset", String(params.offset));
-      if (params?.limit != null) query.set("limit", String(params.limit));
-      const qs = query.toString();
-      return request<VocabularyItem[]>(`/vocabulary${qs ? `?${qs}` : ""}`);
-    },
-    stats: () => request<VocabularyStats>("/vocabulary/stats"),
-    topics: () => request<string[]>("/vocabulary/topics"),
-    add: (data: { word: string; translation: string; topic: string; lessonId?: string }) =>
-      request<{ success: boolean; id: string }>("/vocabulary", {
-        method: "POST",
-        body: JSON.stringify(data),
-      }),
-    delete: (id: string) => request<{ success: boolean }>(`/vocabulary/${id}`, { method: "DELETE" }),
   },
 };

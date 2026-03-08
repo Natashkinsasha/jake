@@ -53,9 +53,9 @@ export class AuthMaintainer {
   @Transaction()
   async resetAccount(userId: string): Promise<void> {
     await this.vocabularyContract.deleteByUser(userId);
+    await this.lessonContract.deleteByUser(userId);
     await this.memoryContract.deleteByUser(userId);
     await this.progressContract.deleteByUser(userId);
-    await this.lessonContract.deleteByUser(userId);
     await this.userRepository.resetUserFields(userId);
   }
 }

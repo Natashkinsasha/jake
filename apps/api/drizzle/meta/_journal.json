@@ -57,13 +57,6 @@
       "when": 1773129700000,
       "tag": "0007_mushy_paper_doll",
       "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "7",
-      "when": 1772915726682,
-      "tag": "0008_panoramic_patch",
-      "breakpoints": true
     }
   ]
 }

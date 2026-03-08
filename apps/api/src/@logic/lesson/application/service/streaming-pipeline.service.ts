@@ -22,8 +22,6 @@ export interface StreamCallbacks {
   onSpeedChange?(speed: string): void;
   onEmotion?(emotion: string): void;
   onOnboardingComplete?: (data: { level: string }) => void;
-  onVocabHighlight?(highlight: { word: string; translation: string; topic: string }): void;
-  onVocabReviewed?(word: string): void;
 }
 
 const MAX_BUFFER_AGE_MS = 500;

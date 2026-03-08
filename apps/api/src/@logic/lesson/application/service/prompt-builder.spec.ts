@@ -10,7 +10,6 @@ function createMockContext(overrides: Partial<LessonContext> = {}): LessonContex
     tutorPromptFragment: "",
     onboardingCompleted: true,
     tutorVoiceId: "voice-1",
-    nativeLanguage: "Russian",
     preferences: {
       correctionStyle: "immediate",
       speakingSpeed: "normal",
@@ -27,7 +26,6 @@ function createMockContext(overrides: Partial<LessonContext> = {}): LessonContex
       strongAreas: [],
       recentWords: [],
       suggestedTopics: [],
-      vocabularyToReview: [],
     },
     ...overrides,
   };
@@ -125,7 +123,6 @@ describe("buildFullSystemPrompt", () => {
         strongAreas: ["vocabulary", "pronunciation"],
         recentWords: ["accomplish", "determine"],
         suggestedTopics: ["past_simple", "articles", "present_perfect"],
-        vocabularyToReview: [],
       },
     });
     const result = buildFullSystemPrompt(context);
@@ -156,12 +153,11 @@ describe("buildFullSystemPrompt", () => {
         strongAreas: [],
         recentWords: [],
         suggestedTopics: ["past_simple"],
-        vocabularyToReview: [],
       },
     });
     const result = buildFullSystemPrompt(context);
     expect(result).toContain("1. past_simple (priority — focus here first)");
-    expect(result).not.toMatch(/^2\. /m);
+    expect(result).not.toContain("2.");
   });
 
   it("should include onboarding mode when onboardingCompleted is false", () => {
