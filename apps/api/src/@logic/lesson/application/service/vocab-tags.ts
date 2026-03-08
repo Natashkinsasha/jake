@@ -20,14 +20,12 @@ export function extractVocabTags(text: string): {
   const reviewedWords: string[] = [];
 
   // Try flexible regex first, fallback to strict if no matches
-  let matched = false;
   let cleanText = text.replaceAll(VOCAB_TAG_RE, (_, word: string, translation: string, topic: string) => {
     highlights.push({ word, translation, topic });
-    matched = true;
     return "";
   });
 
-  if (!matched) {
+  if (highlights.length === 0) {
     cleanText = text.replaceAll(VOCAB_TAG_STRICT_RE, (_, word: string, translation: string, topic: string) => {
       highlights.push({ word, translation, topic });
       return "";
@@ -60,7 +58,7 @@ export class VocabTagBuffer {
     if (lastOpenBracket !== -1) {
       const afterOpen = this.buffer.slice(lastOpenBracket);
       // If it looks like a vocab tag starting but not closed yet
-      if (/^<vocab/.test(afterOpen) && !/>/.test(afterOpen)) {
+      if (/^<vocab/.test(afterOpen) && !afterOpen.includes(">")) {
         safeText = this.buffer.slice(0, lastOpenBracket);
         remainder = afterOpen;
       }
