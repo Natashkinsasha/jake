@@ -24,7 +24,11 @@ export function extractExerciseTag(text: string): {
   PAIR_RE.lastIndex = 0;
   let pairMatch: RegExpExecArray | null;
   while ((pairMatch = PAIR_RE.exec(inner)) !== null) {
-    pairs.push({ word: pairMatch[1]!, definition: pairMatch[2]! });
+    const word = pairMatch[1];
+    const definition = pairMatch[2];
+    if (word && definition) {
+      pairs.push({ word, definition });
+    }
   }
 
   if (pairs.length === 0) return { cleanText: text.trim(), exercise: null };

@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { Injectable, Logger } from "@nestjs/common";
 import { Queue } from "bullmq";
 import { InjectQueue } from "@nestjs/bullmq";
@@ -16,7 +17,6 @@ import { LessonSessionService } from "../service/lesson-session.service";
 import { parseEmotion } from "../service/emotion";
 import { extractVocabTags, VocabTagBuffer } from "../service/vocab-tags";
 import { ExerciseTagBuffer, extractExerciseTag } from "../service/exercise-tags";
-import { randomUUID } from "node:crypto";
 
 const SET_SPEED_RE = /<set_speed>(very_slow|slow|natural|fast|very_fast)<\/set_speed>/g;
 
