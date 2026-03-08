@@ -20,6 +20,7 @@ export type LessonAction =
   | { type: "stream_chunk"; chunkIndex: number; text: string; messageId?: string }
   | { type: "stream_end"; fullText: string; messageId?: string }
   | { type: "stream_discard" }
+  | { type: "show_exercise"; exercise: { exerciseId: string; type: string; pairs: Array<{ word: string; definition: string }> } }
   | { type: "discard" };
 
 export function handleLessonEvent(
@@ -89,6 +90,14 @@ export function handleLessonEvent(
 
     case "error":
       return { type: "set_state", patch: { status: "idle", error: data.message ?? "Something went wrong" } };
+
+    case "exercise": {
+      const d = data as LessonEventData & { exerciseId?: string; type?: string; pairs?: Array<{ word: string; definition: string }> };
+      if (d.exerciseId && d.type && d.pairs) {
+        return { type: "show_exercise", exercise: { exerciseId: d.exerciseId, type: d.type, pairs: d.pairs } };
+      }
+      return { type: "discard" };
+    }
 
     default:
       return { type: "discard" };
