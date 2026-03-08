@@ -23,11 +23,13 @@ export const returningStudentContext: LessonContext = {
     { category: "travel", fact: "Visited Japan last year" },
   ],
   recentEmotionalContext: [],
+  nativeLanguage: "Russian",
   learningFocus: {
     weakAreas: ["present_perfect", "conditionals"],
     strongAreas: ["past_simple", "present_simple"],
     recentWords: ["essentially", "nevertheless", "straightforward", "accomplish"],
     suggestedTopics: ["present_perfect", "conditionals"],
+    vocabularyToReview: [],
   },
 };
 
@@ -49,10 +51,12 @@ export const firstLessonContext: LessonContext = {
   },
   facts: [],
   recentEmotionalContext: [],
+  nativeLanguage: "Russian",
   learningFocus: {
     weakAreas: [],
     strongAreas: [],
     recentWords: [],
     suggestedTopics: [],
+    vocabularyToReview: [],
   },
 };

@@ -228,7 +228,7 @@ export default function VocabularyPage() {
       {!isLoading && words.length > 0 && (
         <div className="space-y-2">
           {words.map((word, i) => {
-            const config = STATUS_CONFIG[word.status] ?? STATUS_CONFIG["new"]!;
+            const config = (STATUS_CONFIG[word.status] ?? STATUS_CONFIG["new"])!;
             return (
               <div
                 key={word.id}
