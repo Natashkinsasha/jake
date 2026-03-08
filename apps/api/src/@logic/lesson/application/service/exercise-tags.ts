@@ -66,7 +66,7 @@ export class ExerciseTagBuffer {
 
     if (lastOpenBracket !== -1) {
       const afterOpen = this.buffer.slice(lastOpenBracket);
-      if (afterOpen.startsWith("<e") || afterOpen.startsWith("<ex")) {
+      if (afterOpen.startsWith("<exerc")) {
         const safeText = this.buffer.slice(0, lastOpenBracket);
         this.buffer = afterOpen;
         return { cleanText: safeText, exercise: null };

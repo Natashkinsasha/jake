@@ -202,7 +202,8 @@ export function useLessonState(token?: string | null) {
 
     if (event === "exercise") {
       const d = data as LessonEventData & { exerciseId?: string; type?: string; pairs?: Array<{ word: string; definition: string }> };
-      if (d.exerciseId && d.type && d.pairs) {
+      const { exerciseId, type, pairs } = d;
+      if (exerciseId && type && pairs) {
         setState((prev) => ({
           ...prev,
           messages: [
@@ -211,7 +212,7 @@ export function useLessonState(token?: string | null) {
               role: "exercise" as const,
               text: "",
               timestamp: Date.now(),
-              exercise: { exerciseId: d.exerciseId!, type: d.type! as "matching", pairs: d.pairs! },
+              exercise: { exerciseId, type: type as "matching", pairs },
             },
           ],
         }));
@@ -221,15 +222,14 @@ export function useLessonState(token?: string | null) {
 
     if (event === "exercise_feedback") {
       const d = data as LessonEventData & { exerciseId?: string; results?: Array<{ word: string; correct: boolean; correctDefinition: string }>; score?: string };
-      if (d.exerciseId && d.results && d.score) {
+      const { exerciseId, results, score } = d;
+      if (exerciseId && results && score) {
         setState((prev) => {
           const messages = [...prev.messages];
           for (let i = messages.length - 1; i >= 0; i--) {
-            if (messages[i]?.role === "exercise" && messages[i]?.exercise?.exerciseId === d.exerciseId) {
-              messages[i] = {
-                ...messages[i]!,
-                exerciseFeedback: { exerciseId: d.exerciseId!, results: d.results!, score: d.score! },
-              };
+            const msg = messages[i];
+            if (msg?.role === "exercise" && msg.exercise?.exerciseId === exerciseId) {
+              messages[i] = { ...msg, exerciseFeedback: { exerciseId, results, score } };
               break;
             }
           }

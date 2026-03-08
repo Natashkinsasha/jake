@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { MatchingExercise } from "./MatchingExercise";
 import type { ChatMessage, VocabHighlight } from "@/types";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
-import { MatchingExercise } from "./MatchingExercise";
 
 interface ChatHistoryProps {
   messages: ChatMessage[];

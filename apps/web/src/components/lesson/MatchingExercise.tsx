@@ -13,21 +13,24 @@ interface MatchingExerciseProps {
 function shuffleArray<T>(arr: T[]): T[] {
   const shuffled = [...arr];
   for (let i = shuffled.length - 1; i > 0; i--) {
+    // eslint-disable-next-line sonarjs/pseudo-random -- non-security shuffle for UI display order
     const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j]!, shuffled[i]!];
+    const temp = shuffled[i];
+    shuffled[i] = shuffled[j] as T;
+    shuffled[j] = temp as T;
   }
   return shuffled;
 }
 
 export function MatchingExercise({ exercise, feedback, onSubmit }: MatchingExerciseProps) {
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
-  const [matches, setMatches] = useState<Map<string, string>>(new Map());
+  const [matches, setMatches] = useState<Map<string, string>>(() => new Map());
   const [submitted, setSubmitted] = useState(false);
 
+  const exerciseId = exercise.exerciseId;
   const shuffledDefinitions = useMemo(
     () => shuffleArray(exercise.pairs.map((p) => p.definition)),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only shuffle once per exercise
-    [exercise.exerciseId],
+    [exerciseId, exercise.pairs],
   );
 
   const words = exercise.pairs.map((p) => p.word);
@@ -66,7 +69,7 @@ export function MatchingExercise({ exercise, feedback, onSubmit }: MatchingExerc
   }, []);
 
   // Compact view after completion
-  if (isComplete && feedback) {
+  if (feedback) {
     return (
       <div className="bg-white/10 backdrop-blur-sm rounded-2xl px-4 py-3 mx-4">
         <div className="flex items-center gap-2">
@@ -113,13 +116,13 @@ export function MatchingExercise({ exercise, feedback, onSubmit }: MatchingExerc
           {words.map((word) => {
             const isSelected = selectedWord === word;
             const isMatched = matches.has(word);
-            const matchColor = isMatched ? getMatchColor(word, matches.get(word)!) : "";
+            const matchColor = isMatched ? getMatchColor(word, matches.get(word) ?? "") : "";
 
             return (
               <button
                 key={word}
                 type="button"
-                onClick={() => handleWordClick(word)}
+                onClick={() => { handleWordClick(word); }}
                 disabled={submitted}
                 className={cn(
                   "w-full text-left px-3 py-2 rounded-xl text-sm font-medium transition-all border",
@@ -146,7 +149,7 @@ export function MatchingExercise({ exercise, feedback, onSubmit }: MatchingExerc
               <button
                 key={def}
                 type="button"
-                onClick={() => handleDefinitionClick(def)}
+                onClick={() => { handleDefinitionClick(def); }}
                 disabled={submitted || !selectedWord}
                 className={cn(
                   "w-full text-left px-3 py-2 rounded-xl text-xs transition-all border",

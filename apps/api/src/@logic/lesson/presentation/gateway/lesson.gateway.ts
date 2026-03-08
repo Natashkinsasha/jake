@@ -36,9 +36,9 @@ const wsSetSpeedSchema = z.object({
 const wsExerciseAnswerSchema = z.object({
   exerciseId: z.string().uuid(),
   answers: z.array(z.object({
-    word: z.string(),
-    definition: z.string(),
-  })),
+    word: z.string().max(200),
+    definition: z.string().max(500),
+  })).max(20),
 });
 
 @WebSocketGateway({ namespace: "/ws/lesson", cors: true })

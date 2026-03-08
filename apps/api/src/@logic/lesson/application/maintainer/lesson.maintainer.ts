@@ -216,7 +216,7 @@ export class LessonMaintainer {
           if (exercise) {
             const exerciseId = randomUUID();
             void this.sessionService.setActiveExercise(userId, exerciseId, exercise);
-            callbacks.onExercise?.({ id: exerciseId, type: exercise.type, pairs: exercise.pairs });
+            callbacks.onExercise?.({ exerciseId, type: exercise.type, pairs: exercise.pairs });
           }
           if (finalText) {
             callbacks.onChunk({ ...chunk, text: finalText });
@@ -238,7 +238,7 @@ export class LessonMaintainer {
           if (exerciseRemaining.exercise) {
             const exerciseId = randomUUID();
             void this.sessionService.setActiveExercise(userId, exerciseId, exerciseRemaining.exercise);
-            callbacks.onExercise?.({ id: exerciseId, type: exerciseRemaining.exercise.type, pairs: exerciseRemaining.exercise.pairs });
+            callbacks.onExercise?.({ exerciseId, type: exerciseRemaining.exercise.type, pairs: exerciseRemaining.exercise.pairs });
           }
           if (exerciseRemaining.cleanText) {
             callbacks.onChunk({ chunkIndex: -1, text: exerciseRemaining.cleanText });
