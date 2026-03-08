@@ -381,7 +381,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
         closeWs();
       }
     },
-    [enqueueAudio, closeWs, sendTextToWs, sendEos, checkDone, scheduleBuffers],
+    [enqueueAudio, closeWs, sendTextToWs, sendEos, checkDone, scheduleBuffers, optionsRef],
   );
 
   /** Speak a single message (greeting, exercise feedback). Opens WS, sends text, closes. */

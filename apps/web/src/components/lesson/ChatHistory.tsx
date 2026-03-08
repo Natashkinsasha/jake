@@ -35,6 +35,7 @@ export function ChatHistory({
 
   return (
     <div className="flex-1 overflow-y-auto px-4 pb-3 space-y-3">
+      {/* eslint-disable-next-line @eslint-react/no-array-index-key -- timestamp alone may not be unique */}
       {messages.map((msg, i) => (
         <div key={`${msg.timestamp}-${i}`}>
           {msg.role === "user" ? (

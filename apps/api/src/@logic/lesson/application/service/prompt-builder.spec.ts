@@ -157,7 +157,8 @@ describe("buildFullSystemPrompt", () => {
     });
     const result = buildFullSystemPrompt(context);
     expect(result).toContain("1. past_simple (priority — focus here first)");
-    expect(result).not.toContain("2.");
+    const topicSection = result.split("=== LESSON TOPICS")[1] ?? "";
+    expect(topicSection).not.toContain("2.");
   });
 
   it("should include onboarding mode when onboardingCompleted is false", () => {
