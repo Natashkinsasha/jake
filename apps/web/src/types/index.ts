@@ -26,10 +26,18 @@ export interface UserPreferences {
 
 export type LessonStatus = "idle" | "connecting" | "listening" | "thinking" | "speaking";
 
+export interface VocabHighlight {
+  word: string;
+  translation: string;
+  topic: string;
+  saved?: boolean;
+}
+
 export interface ChatMessage {
   role: "user" | "assistant";
   text: string;
   timestamp: number;
+  vocabHighlights?: VocabHighlight[];
 }
 
 export interface LessonListItem {
@@ -44,4 +52,25 @@ export interface LessonListItem {
 
 export interface LessonDetail extends LessonListItem {
   messages: { role: string; content: string; timestamp: string }[];
+}
+
+// Vocabulary types
+
+export interface VocabularyItem {
+  id: string;
+  word: string;
+  translation: string | null;
+  topic: string | null;
+  status: "new" | "learning" | "learned";
+  reviewCount: number;
+  lastReviewedAt: string | null;
+  lessonId: string | null;
+  createdAt: string;
+}
+
+export interface VocabularyStats {
+  total: number;
+  new: number;
+  learning: number;
+  learned: number;
 }
