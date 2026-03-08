@@ -20,7 +20,7 @@ export async function createApp(): Promise<NestFastifyApplication> {
     new FastifyAdapter(),
   );
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- @nestjs/platform-fastify types lag behind fastify@5
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any -- @nestjs/platform-fastify types lag behind fastify@5
   await app.register(helmet as any, {
     contentSecurityPolicy: false, // managed by Next.js / nginx
   });
