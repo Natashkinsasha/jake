@@ -104,6 +104,7 @@ export function ChatHistory({
 
   return (
     <div className="flex-1 overflow-y-auto px-4 pb-3 space-y-3">
+      {/* eslint-disable-next-line @eslint-react/no-array-index-key -- timestamp alone may not be unique */}
       {messages.map((msg, i) => (
         <div key={`${msg.timestamp}-${i}`}>
           {msg.role === "user" ? (
@@ -132,7 +133,8 @@ export function ChatHistory({
               {/* Vocab cards inline */}
               {msg.vocabHighlights && msg.vocabHighlights.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pl-1">
-                  {msg.vocabHighlights.map((h, vi) => (
+                  {/* eslint-disable-next-line @eslint-react/no-array-index-key -- word may repeat */}
+                {msg.vocabHighlights.map((h, vi) => (
                     <VocabCard
                       key={`${h.word}-${vi}`}
                       highlight={h}

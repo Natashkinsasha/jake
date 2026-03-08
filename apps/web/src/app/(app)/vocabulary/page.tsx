@@ -7,13 +7,15 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
 import type { VocabularyItem, VocabularyStats } from "@/types";
 
+const DEFAULT_STATUS_CONFIG = {
+  label: "New",
+  badge: "bg-primary-50 text-primary-600",
+  border: "border-l-primary-400",
+  dot: "bg-primary-400",
+} as const;
+
 const STATUS_CONFIG: Record<string, { label: string; badge: string; border: string; dot: string }> = {
-  new: {
-    label: "New",
-    badge: "bg-primary-50 text-primary-600",
-    border: "border-l-primary-400",
-    dot: "bg-primary-400",
-  },
+  new: DEFAULT_STATUS_CONFIG,
   learning: {
     label: "Learning",
     badge: "bg-amber-50 text-amber-600",
@@ -39,6 +41,7 @@ function ReviewBar({ count }: { count: number }) {
   return (
     <div className="flex items-center gap-1.5">
       <div className="flex gap-px">
+        {/* eslint-disable-next-line @eslint-react/no-array-index-key -- fixed-size decorative elements */}
         {Array.from({ length: 5 }).map((_, i) => (
           <div
             key={i}
@@ -148,7 +151,7 @@ export default function VocabularyPage() {
         const updated = { ...stats, total: stats.total - 1 };
         if (status === "new") updated["new"] = Math.max(0, updated["new"] - 1);
         else if (status === "learning") updated.learning = Math.max(0, updated.learning - 1);
-        else if (status === "learned") updated.learned = Math.max(0, updated.learned - 1);
+        else updated.learned = Math.max(0, updated.learned - 1);
         setStats(updated);
       }
     } catch {}
@@ -228,7 +231,7 @@ export default function VocabularyPage() {
       {!isLoading && words.length > 0 && (
         <div className="space-y-2">
           {words.map((word, i) => {
-            const config = (STATUS_CONFIG[word.status] ?? STATUS_CONFIG["new"])!;
+            const config = STATUS_CONFIG[word.status] ?? DEFAULT_STATUS_CONFIG;
             return (
               <div
                 key={word.id}

@@ -16,7 +16,8 @@ export function VocabCard({ highlights, reviewedWords }: VocabCardProps) {
 
   return (
     <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-30 flex flex-wrap gap-2 justify-center max-w-md">
-      {highlights.slice(-5).map((h, i) => {
+      {/* eslint-disable-next-line @eslint-react/no-array-index-key -- word may repeat */}
+    {highlights.slice(-5).map((h, i) => {
         const isReviewed = reviewedWords.includes(h.word);
         return (
           <div
