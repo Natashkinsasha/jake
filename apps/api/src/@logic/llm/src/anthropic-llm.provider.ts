@@ -167,8 +167,20 @@ export class AnthropicLlmProvider extends LlmProvider {
 
         this.logger.debug(`LLM tool_use response: inputTokens=${response.usage.input_tokens}, outputTokens=${response.usage.output_tokens}`);
 
+        // LLMs sometimes return stringified JSON instead of an object
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let raw: any = toolBlock.input;
+        if (typeof raw === "string") {
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
+            raw = JSON.parse(raw);
+          } catch {
+            throw new Error("LLM returned a non-JSON string instead of an object");
+          }
+        }
+
         // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-        let sanitized = this.sanitizeNullStrings(toolBlock.input);
+        let sanitized = this.sanitizeNullStrings(raw);
         let result = schema.safeParse(sanitized);
 
         // LLMs sometimes return a bare value instead of a single-element array

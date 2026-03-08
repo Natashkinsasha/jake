@@ -139,7 +139,7 @@ export function useLessonState(token?: string | null) {
           return;
         }
         seenVocabRef.current.add(key);
-        const highlight = { word: d.word, translation: d.translation, topic: d.topic, saved: true };
+        const highlight = { word: d.word, translation: d.translation, topic: d.topic, saved: false };
         setState((prev) => {
           const messages = [...prev.messages];
           const last = messages[messages.length - 1];
