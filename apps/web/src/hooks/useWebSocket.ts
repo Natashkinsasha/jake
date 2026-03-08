@@ -31,10 +31,10 @@ export function useWebSocket({ url, token, onEvent }: UseWebSocketOptions) {
 
     const events = [
       "lesson_started", "lesson_resumed", "tutor_message", "transcript",
-      "exercise_feedback", "lesson_ended", "status", "error",
+      "exercise", "exercise_feedback", "lesson_ended", "status", "error",
       "tutor_chunk", "tutor_stream_end",
       "vocab_highlight", "vocab_reviewed",
-      "tutor_emotion", "speed_updated",
+      "tutor_emotion", "speed_updated", "onboarding_completed",
     ];
     events.forEach((event) => socket.on(event, (data: LessonEventData) => { onEventRef.current(event, data); }));
 

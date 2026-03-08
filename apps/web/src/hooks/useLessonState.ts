@@ -14,6 +14,7 @@ interface LessonState {
   status: LessonStatus;
   lessonEnded: boolean;
   error: string | null;
+  startedAt: number | null;
 }
 
 export function useLessonState(token?: string | null) {
@@ -23,6 +24,7 @@ export function useLessonState(token?: string | null) {
     status: "connecting",
     lessonEnded: false,
     error: null,
+    startedAt: null,
   });
 
   const [ttsError, setTtsError] = useState<string | null>(null);
@@ -37,6 +39,7 @@ export function useLessonState(token?: string | null) {
   const streamStartedRef = useRef(false);
   const greetingPlayingRef = useRef(false);
   const emotionRef = useRef<string>("neutral");
+  const streamGenRef = useRef(0);
 
   const streamTextRef = useRef<string>("");
   const pendingRevealTextRef = useRef<string | null>(null);
@@ -51,6 +54,11 @@ export function useLessonState(token?: string | null) {
     },
     onAllDone: () => {
       greetingPlayingRef.current = false;
+
+      // If a new stream already started (e.g. exercise feedback response),
+      // this onAllDone is from a stale TTS — don't overwrite the new stream's message.
+      if (streamStartedRef.current) return;
+
       // Use server's authoritative fullText for the final snap (corrected punctuation etc.)
       const text = finalFullTextRef.current ?? pendingRevealTextRef.current;
       if (text) {
@@ -121,6 +129,7 @@ export function useLessonState(token?: string | null) {
       if (d.systemPrompt) systemPromptRef.current = d.systemPrompt;
       if (d.emotion) emotionRef.current = d.emotion;
       greetingPlayingRef.current = true;
+      setState((prev) => ({ ...prev, startedAt: Date.now() }));
     }
 
     if (event === "lesson_resumed") {
@@ -128,6 +137,7 @@ export function useLessonState(token?: string | null) {
         lessonId?: string;
         voiceId?: string;
         speechSpeed?: number;
+        startedAt?: number;
         isOnboarding?: boolean;
         history?: Array<{ role: "user" | "assistant"; text: string }>;
       };
@@ -146,6 +156,7 @@ export function useLessonState(token?: string | null) {
         status: "idle",
         lessonEnded: false,
         error: null,
+        startedAt: d.startedAt ?? null,
       });
       return;
     }
@@ -204,18 +215,24 @@ export function useLessonState(token?: string | null) {
       const d = data as LessonEventData & { exerciseId?: string; type?: string; pairs?: Array<{ word: string; definition: string }> };
       const { exerciseId, type, pairs } = d;
       if (exerciseId && type && pairs) {
-        setState((prev) => ({
-          ...prev,
-          messages: [
-            ...prev.messages,
-            {
-              role: "exercise" as const,
-              text: "",
-              timestamp: Date.now(),
-              exercise: { exerciseId, type: type as "matching", pairs },
-            },
-          ],
-        }));
+        setState((prev) => {
+          // Remove any previous uncompleted exercise (replaced by this one)
+          const messages = prev.messages.filter(
+            (m) => !(m.role === "exercise" && !m.exerciseFeedback),
+          );
+          return {
+            ...prev,
+            messages: [
+              ...messages,
+              {
+                role: "exercise" as const,
+                text: "",
+                timestamp: Date.now(),
+                exercise: { exerciseId, type: type as "matching", pairs },
+              },
+            ],
+          };
+        });
       }
       return;
     }
@@ -245,7 +262,7 @@ export function useLessonState(token?: string | null) {
       pendingTurns: pendingTurnsRef.current,
     });
 
-    if (event === "tutor_message" || event === "exercise_feedback") {
+    if (event === "tutor_message") {
       pendingTurnsRef.current = Math.max(0, pendingTurnsRef.current - 1);
     }
 
@@ -296,6 +313,9 @@ export function useLessonState(token?: string | null) {
 
         if (!streamStartedRef.current && voiceIdRef.current) {
           streamStartedRef.current = true;
+          // Reset reveal state for fresh stream (old onAllDone may not have cleaned up if guarded)
+          revealedLenRef.current = 0;
+          finalFullTextRef.current = null;
           const voiceSettings = emotionRef.current !== "neutral"
             ? EMOTION_VOICE_SETTINGS[emotionRef.current]
             : undefined;

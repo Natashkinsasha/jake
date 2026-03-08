@@ -1,0 +1,17 @@
+description: "Jake English Tutor — FTUE Onboarding Adaptive Level Eval"
+
+prompts:
+  - label: multi-turn-chat
+    raw: file://prompts/multi-turn.json
+
+providers:
+  - id: anthropic:messages:claude-sonnet-4-20250514
+    config:
+      max_tokens: 512
+
+defaultTest:
+  options:
+    provider: anthropic:messages:claude-sonnet-4-20250514
+
+tests:
+  - file://datasets/onboarding-level-cases.yaml

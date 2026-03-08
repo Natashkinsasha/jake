@@ -10,6 +10,7 @@ export interface LessonSession {
   voiceId: string;
   speechSpeed: number;
   history: LlmMessage[];
+  startedAt: number;
   isOnboarding?: boolean;
   voiceMismatch?: boolean;
   activeExercise?: {

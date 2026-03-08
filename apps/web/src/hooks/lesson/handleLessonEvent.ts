@@ -48,16 +48,6 @@ export function handleLessonEvent(
         status: "transcript",
       };
 
-    case "exercise_feedback": {
-      const shouldDiscardFb = ctx.userSpeaking || ctx.pendingTurns > 1;
-      if (shouldDiscardFb) return { type: "discard" };
-      return {
-        type: "show_message",
-        text: data.text ?? "",
-        status: "idle",
-      };
-    }
-
     case "tutor_chunk": {
       if (ctx.userSpeaking) return { type: "discard" };
       return {

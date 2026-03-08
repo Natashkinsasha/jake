@@ -416,6 +416,11 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
       isStreamingRef.current = true;
       eosRequestedRef.current = false;
 
+      // Stop any audio still playing from a previous stream/speak call.
+      // Without this, old AudioBufferSourceNode.onended callbacks fire checkDone()
+      // with stale allReceivedRef=true, triggering onAllDone prematurely.
+      stopAudio();
+
       // If voice settings provided, close pre-warmed WS (it has default settings)
       // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
       if (voiceSettings && (wsRef.current || connectingRef.current)) {
@@ -434,7 +439,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
       pendingTextRef.current = [];
       void openWs(voiceId, speechSpeed ?? 1.0, () => {}, model, voiceSettings);
     },
-    [openWs, closeWs],
+    [openWs, closeWs, stopAudio],
   );
 
   /** Send a text chunk (sentence) during a streaming session. No flush — let ElevenLabs maintain consistent prosody. */

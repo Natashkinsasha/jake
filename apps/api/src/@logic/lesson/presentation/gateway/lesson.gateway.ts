@@ -95,6 +95,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
           voiceId: existingSession.voiceId,
           speechSpeed: existingSession.speechSpeed,
           isOnboarding: existingSession.isOnboarding,
+          startedAt: existingSession.startedAt,
           history: existingSession.history.map((m) => ({
             role: m.role,
             text: m.content,
@@ -111,6 +112,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
         voiceId: result.voiceId,
         speechSpeed: result.speechSpeed,
         history: [{ role: "assistant", content: result.greeting.text }],
+        startedAt: Date.now(),
         isOnboarding: result.isOnboarding,
       });
 
@@ -347,6 +349,44 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     await this.sessionService.appendHistory(userId, { role: "user", content: historyEntry });
     await this.sessionService.clearActiveExercise(userId);
+
+    // Trigger tutor response to comment on the exercise result
+    await this.streamToClient(client, userId, historyEntry);
+  }
+
+  private async streamToClient(client: Socket, userId: string, text: string) {
+    const abortController = new AbortController();
+    this.abortControllers.set(client.id, abortController);
+    this.sentChunksText.set(client.id, "");
+
+    await this.lessonMaintainer.processTextMessageStreaming(
+      userId,
+      text,
+      {
+        onChunk: (chunk) => {
+          const current = this.sentChunksText.get(client.id) ?? "";
+          const sep = current && !/^[,.\-!?;:'"]/.test(chunk.text) ? " " : "";
+          this.sentChunksText.set(client.id, current + sep + chunk.text);
+          client.emit("tutor_chunk", chunk);
+        },
+        onEnd: (result) => {
+          this.abortControllers.delete(client.id);
+          this.sentChunksText.delete(client.id);
+          client.emit("tutor_stream_end", { fullText: result.fullText });
+        },
+        onError: (error) => {
+          this.abortControllers.delete(client.id);
+          this.sentChunksText.delete(client.id);
+          this.logger.error(`Streaming failed: ${error.message}`);
+        },
+        onSpeedChange: (speed) => { client.emit("speed_updated", { speed }); },
+        onEmotion: (emotion) => { client.emit("tutor_emotion", { emotion }); },
+        onVocabHighlight: (highlight) => { client.emit("vocab_highlight", highlight); },
+        onVocabReviewed: (word) => { client.emit("vocab_reviewed", { word }); },
+        onExercise: (exercise) => { client.emit("exercise", exercise); },
+      },
+      { signal: abortController.signal },
+    );
   }
 
   @SubscribeMessage("end_lesson")

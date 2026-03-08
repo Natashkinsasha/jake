@@ -16,7 +16,7 @@ export default function LessonError({
   }, [error]);
 
   return (
-    <div className="min-h-screen lesson-gradient flex items-center justify-center p-4">
+    <div className="min-h-screen lesson-bg flex items-center justify-center p-4">
       <div className="text-center max-w-md">
         <h1 className="text-2xl font-bold text-white mb-2">Lesson interrupted</h1>
         <p className="text-white/60 mb-6">Something went wrong during your lesson.</p>
