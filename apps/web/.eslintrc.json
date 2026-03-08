@@ -4,11 +4,13 @@
     "project": "tsconfig.json",
     "tsconfigRootDir": "."
   },
-  "plugins": ["@typescript-eslint", "react-compiler", "import-x", "unicorn"],
+  "plugins": ["@typescript-eslint", "react-compiler", "import-x", "unicorn", "security", "sonarjs", "no-secrets"],
   "extends": [
     "plugin:@typescript-eslint/strict-type-checked",
     "plugin:@eslint-react/recommended-type-checked-legacy",
-    "next/core-web-vitals"
+    "next/core-web-vitals",
+    "plugin:security/recommended-legacy",
+    "plugin:sonarjs/recommended-legacy"
   ],
   "root": true,
   "ignorePatterns": ["next.config.js", ".next/", "out/", "src/__mocks__/"],
@@ -63,6 +65,16 @@
     "@eslint-react/web-api/no-leaked-interval": "error",
     "@eslint-react/web-api/no-leaked-timeout": "error",
     "@eslint-react/web-api/no-leaked-resize-observer": "error",
+    "security/detect-object-injection": "off",
+    "security/detect-non-literal-fs-filename": "off",
+    "sonarjs/deprecation": "warn",
+    "sonarjs/no-nested-template-literals": "warn",
+    "sonarjs/cognitive-complexity": ["warn", 25],
+    "sonarjs/prefer-read-only-props": "off",
+    "sonarjs/no-nested-conditional": "off",
+    "sonarjs/no-nested-functions": "off",
+    "sonarjs/use-type-alias": "off",
+    "no-secrets/no-secrets": ["error", { "tolerance": 4.5 }],
     "no-loop-func": "error"
   },
   "overrides": [

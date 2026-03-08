@@ -5,9 +5,11 @@ module.exports = {
     tsconfigRootDir: __dirname,
     sourceType: "module",
   },
-  plugins: ["@typescript-eslint", "drizzle", "import-x", "unicorn"],
+  plugins: ["@typescript-eslint", "drizzle", "import-x", "unicorn", "security", "sonarjs", "no-secrets"],
   extends: [
     "plugin:@typescript-eslint/strict-type-checked",
+    "plugin:security/recommended-legacy",
+    "plugin:sonarjs/recommended-legacy",
   ],
   root: true,
   env: {
@@ -57,6 +59,17 @@ module.exports = {
     "unicorn/prefer-number-properties": "error",
     "unicorn/no-for-loop": "error",
     "unicorn/prefer-includes": "error",
+    // security — disable false-positive rules
+    "security/detect-object-injection": "off", // too many false positives with TypeScript
+    "security/detect-non-literal-fs-filename": "off", // we don't use fs directly
+    // sonarjs — tune noisy rules
+    "sonarjs/deprecation": "warn", // drizzle's pgTable signature triggers this
+    "sonarjs/no-nested-template-literals": "warn", // prompt templates use nested literals
+    "sonarjs/cognitive-complexity": ["warn", 25], // allow higher complexity threshold
+    "sonarjs/no-nested-functions": "off", // common in NestJS callbacks
+    "sonarjs/use-type-alias": "off", // opinionated style rule
+    // no-secrets
+    "no-secrets/no-secrets": ["error", { "tolerance": 4.5 }],
     // memory leak prevention
     "no-loop-func": "error",
   },
