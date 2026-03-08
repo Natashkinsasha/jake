@@ -1,3 +1,4 @@
+import helmet from "@fastify/helmet";
 import { NestFactory } from "@nestjs/core";
 import { FastifyAdapter, type NestFastifyApplication } from "@nestjs/platform-fastify";
 import { IoAdapter } from "@nestjs/platform-socket.io";
@@ -18,6 +19,11 @@ export async function createApp(): Promise<NestFastifyApplication> {
     AppModule,
     new FastifyAdapter(),
   );
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- @nestjs/platform-fastify types lag behind fastify@5
+  await app.register(helmet as any, {
+    contentSecurityPolicy: false, // managed by Next.js / nginx
+  });
 
   app.enableCors({
     origin: process.env["FRONTEND_URL"] ?? "http://localhost:3000",

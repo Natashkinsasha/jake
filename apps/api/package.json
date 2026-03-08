@@ -23,6 +23,7 @@
     "@bull-board/fastify": "^6.20.3",
     "@bull-board/ui": "^6.20.3",
     "@fastify/basic-auth": "^6.2.0",
+    "@fastify/helmet": "^13.0.2",
     "@huggingface/transformers": "^3.8.1",
     "@jake/shared": "workspace:*",
     "@knaadh/nestjs-drizzle-pg": "^1.2.0",
