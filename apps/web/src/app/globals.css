@@ -31,8 +31,8 @@
 }
 
 /* Safe area utilities for iOS notch / home indicator */
-.pt-safe {
-  padding-top: env(safe-area-inset-top, 0px);
+.pt-safe-extra {
+  padding-top: calc(0.75rem + env(safe-area-inset-top, 0px));
 }
 .pb-safe-extra {
   padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));

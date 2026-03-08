@@ -8,7 +8,7 @@ interface LessonHeaderProps {
 
 export function LessonHeader({ elapsed, onEndLesson, children }: LessonHeaderProps) {
   return (
-    <div className="flex-shrink-0 flex items-center justify-between px-5 py-3 pt-safe">
+    <div className="flex-shrink-0 flex items-center justify-between px-5 pb-3 pt-safe-extra">
       <span className="text-white/70 text-sm font-mono tabular-nums tracking-wider">
         {formatElapsed(elapsed)}
       </span>
