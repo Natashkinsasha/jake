@@ -24,6 +24,7 @@ export interface StreamCallbacks {
   onOnboardingComplete?: (data: { level: string }) => void;
   onVocabHighlight?(highlight: { word: string; translation: string; topic: string }): void;
   onVocabReviewed?(word: string): void;
+  onExercise?: (exercise: { id: string; type: string; pairs: Array<{ word: string; definition: string }> }) => void;
 }
 
 const MAX_BUFFER_AGE_MS = 500;

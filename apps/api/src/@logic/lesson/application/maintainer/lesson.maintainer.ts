@@ -15,6 +15,8 @@ import { ModerationService, SAFETY_RESPONSE } from "../../../llm/src/moderation/
 import { LessonSessionService } from "../service/lesson-session.service";
 import { parseEmotion } from "../service/emotion";
 import { extractVocabTags, VocabTagBuffer } from "../service/vocab-tags";
+import { ExerciseTagBuffer, extractExerciseTag } from "../service/exercise-tags";
+import { randomUUID } from "node:crypto";
 
 const SET_SPEED_RE = /<set_speed>(very_slow|slow|natural|fast|very_fast)<\/set_speed>/g;
 
@@ -191,6 +193,7 @@ export class LessonMaintainer {
       });
 
     const vocabBuffer = new VocabTagBuffer();
+    const exerciseBuffer = new ExerciseTagBuffer();
 
     await this.streamingPipeline.stream(
       systemPrompt,
@@ -209,8 +212,14 @@ export class LessonMaintainer {
           for (const h of highlights) callbacks.onVocabHighlight?.(h);
           for (const w of reviewedWords) callbacks.onVocabReviewed?.(w);
 
-          if (cleanText) {
-            callbacks.onChunk({ ...chunk, text: cleanText });
+          const { cleanText: finalText, exercise } = exerciseBuffer.push(cleanText);
+          if (exercise) {
+            const exerciseId = randomUUID();
+            void this.sessionService.setActiveExercise(userId, exerciseId, exercise);
+            callbacks.onExercise?.({ id: exerciseId, type: exercise.type, pairs: exercise.pairs });
+          }
+          if (finalText) {
+            callbacks.onChunk({ ...chunk, text: finalText });
           }
         },
         onEnd: (result) => {
@@ -223,6 +232,16 @@ export class LessonMaintainer {
           for (const w of remaining.reviewedWords) callbacks.onVocabReviewed?.(w);
           if (remaining.cleanText) {
             callbacks.onChunk({ chunkIndex: -1, text: remaining.cleanText });
+          }
+
+          const exerciseRemaining = exerciseBuffer.flush();
+          if (exerciseRemaining.exercise) {
+            const exerciseId = randomUUID();
+            void this.sessionService.setActiveExercise(userId, exerciseId, exerciseRemaining.exercise);
+            callbacks.onExercise?.({ id: exerciseId, type: exerciseRemaining.exercise.type, pairs: exerciseRemaining.exercise.pairs });
+          }
+          if (exerciseRemaining.cleanText) {
+            callbacks.onChunk({ chunkIndex: -1, text: exerciseRemaining.cleanText });
           }
 
           void (async () => {
@@ -253,7 +272,8 @@ export class LessonMaintainer {
               await this.authContract.completeOnboarding(userId, onboardingLevel);
               callbacks.onOnboardingComplete?.({ level: onboardingLevel });
             }
-            const { cleanText, highlights: endHighlights } = extractVocabTags(textWithoutOnboarding);
+            const { cleanText: textWithoutExercise } = extractExerciseTag(textWithoutOnboarding);
+            const { cleanText, highlights: endHighlights } = extractVocabTags(textWithoutExercise);
             if (endHighlights.length > 0) {
               this.logger.log(`Vocab from fullText: ${endHighlights.map(h => h.word).join(", ")}`);
             }
