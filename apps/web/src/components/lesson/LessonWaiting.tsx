@@ -1,6 +1,6 @@
 export function LessonWaiting() {
   return (
-    <div className="min-h-screen lesson-gradient flex items-center justify-center">
+    <div className="min-h-dvh lesson-gradient flex items-center justify-center">
       <div className="text-center text-white">
         <div className="w-12 h-12 border-[3px] border-white/20 border-t-white rounded-full animate-spin mx-auto mb-4" />
         <p className="text-base font-medium">Jake is getting ready...</p>
