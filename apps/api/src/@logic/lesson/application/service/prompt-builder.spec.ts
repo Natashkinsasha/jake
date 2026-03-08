@@ -160,7 +160,7 @@ describe("buildFullSystemPrompt", () => {
     });
     const result = buildFullSystemPrompt(context);
     expect(result).toContain("1. past_simple (priority — focus here first)");
-    const topicSection = result.split("=== LESSON TOPICS")[1]!;
+    const topicSection = result.split("=== LESSON TOPICS")[1] ?? "";
     expect(topicSection).not.toContain("2.");
   });
 
