@@ -200,6 +200,46 @@ export function useLessonState(token?: string | null) {
       return;
     }
 
+    if (event === "exercise") {
+      const d = data as LessonEventData & { exerciseId?: string; type?: string; pairs?: Array<{ word: string; definition: string }> };
+      if (d.exerciseId && d.type && d.pairs) {
+        setState((prev) => ({
+          ...prev,
+          messages: [
+            ...prev.messages,
+            {
+              role: "exercise" as const,
+              text: "",
+              timestamp: Date.now(),
+              exercise: { exerciseId: d.exerciseId!, type: d.type! as "matching", pairs: d.pairs! },
+            },
+          ],
+        }));
+      }
+      return;
+    }
+
+    if (event === "exercise_feedback") {
+      const d = data as LessonEventData & { exerciseId?: string; results?: Array<{ word: string; correct: boolean; correctDefinition: string }>; score?: string };
+      if (d.exerciseId && d.results && d.score) {
+        setState((prev) => {
+          const messages = [...prev.messages];
+          for (let i = messages.length - 1; i >= 0; i--) {
+            if (messages[i]?.role === "exercise" && messages[i]?.exercise?.exerciseId === d.exerciseId) {
+              messages[i] = {
+                ...messages[i]!,
+                exerciseFeedback: { exerciseId: d.exerciseId!, results: d.results!, score: d.score! },
+              };
+              break;
+            }
+          }
+          return { ...prev, messages };
+        });
+      }
+      pendingTurnsRef.current = Math.max(0, pendingTurnsRef.current - 1);
+      return;
+    }
+
     const action = handleLessonEvent(event, data, {
       userSpeaking: userSpeakingRef.current,
       pendingTurns: pendingTurnsRef.current,
@@ -418,6 +458,9 @@ export function useLessonState(token?: string | null) {
     sendVoiceSample,
     endLesson,
     interruptTutor,
+    submitExerciseAnswer: useCallback((exerciseId: string, answers: Array<{ word: string; definition: string }>) => {
+      emit("exercise_answer", { exerciseId, answers });
+    }, [emit]),
     stopAllAudio: useCallback(() => { tts.stop(); }, [tts]),
     setUserSpeaking,
     debugInfo: {
