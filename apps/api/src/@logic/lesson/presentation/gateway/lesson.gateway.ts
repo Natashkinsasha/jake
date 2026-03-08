@@ -33,6 +33,14 @@ const wsSetSpeedSchema = z.object({
   speed: z.enum(["very_slow", "slow", "normal", "fast", "very_fast"]),
 });
 
+const wsExerciseAnswerSchema = z.object({
+  exerciseId: z.string().uuid(),
+  answers: z.array(z.object({
+    word: z.string(),
+    definition: z.string(),
+  })),
+});
+
 @WebSocketGateway({ namespace: "/ws/lesson", cors: true })
 @UseGuards(WsAuthGuard)
 export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -207,6 +215,9 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
           this.logger.log(`Emitting vocab_reviewed to client: ${word}`);
           client.emit("vocab_reviewed", { word });
         },
+        onExercise: (exercise) => {
+          client.emit("exercise", exercise);
+        },
       },
       { signal: abortController.signal },
     );
@@ -283,6 +294,59 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
     } catch (error) {
       this.logger.error(`Voice sample processing failed: ${error instanceof Error ? error.message : String(error)}`);
     }
+  }
+
+  @SubscribeMessage("exercise_answer")
+  async handleExerciseAnswer(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: unknown,
+  ) {
+    const parsed = wsExerciseAnswerSchema.safeParse(data);
+    if (!parsed.success) {
+      client.emit("error", { message: "Invalid exercise answer" });
+      return;
+    }
+
+    const userId = this.getUserId(client);
+    const session = await this.sessionService.get(userId);
+    if (!session?.activeExercise || session.activeExercise.id !== parsed.data.exerciseId) {
+      client.emit("error", { message: "No active exercise" });
+      return;
+    }
+
+    const { exercise } = session.activeExercise;
+    const results = exercise.pairs.map((pair) => {
+      const studentAnswer = parsed.data.answers.find((a) => a.word === pair.word);
+      return {
+        word: pair.word,
+        correct: studentAnswer?.definition === pair.definition,
+        correctDefinition: pair.definition,
+      };
+    });
+
+    const correctCount = results.filter((r) => r.correct).length;
+    const score = `${correctCount}/${results.length}`;
+
+    client.emit("exercise_feedback", {
+      exerciseId: parsed.data.exerciseId,
+      results,
+      score,
+    });
+
+    // Add result to Claude's history so tutor can comment
+    const mistakes = results
+      .filter((r) => !r.correct)
+      .map((r) => {
+        const studentDef = parsed.data.answers.find((a) => a.word === r.word)?.definition ?? "no answer";
+        return `"${r.word}" -> student matched with "${studentDef}" (correct: "${r.correctDefinition}")`;
+      });
+
+    const historyEntry = mistakes.length > 0
+      ? `[Exercise result: ${score} correct. Mistakes: ${mistakes.join("; ")}]`
+      : `[Exercise result: ${score} correct. Perfect score!]`;
+
+    await this.sessionService.appendHistory(userId, { role: "user", content: historyEntry });
+    await this.sessionService.clearActiveExercise(userId);
   }
 
   @SubscribeMessage("end_lesson")
