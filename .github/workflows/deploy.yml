@@ -99,7 +99,7 @@ jobs:
           context: .
           file: apps/api/Dockerfile
           push: false
-          no-cache: true
+          cache-from: type=gha,scope=api
           cache-to: type=gha,mode=max,scope=api
 
   build-web:
@@ -138,7 +138,7 @@ jobs:
           file: apps/api/Dockerfile
           push: true
           tags: ${{ env.API_IMAGE }}:latest,${{ env.API_IMAGE }}:${{ github.sha }}
-          no-cache: true
+          cache-from: type=gha,scope=api
       - name: Push Web image
         uses: docker/build-push-action@v6
         with:
