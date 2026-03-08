@@ -15,6 +15,10 @@ export class MemoryFactRepository {
     return MemoryFactFactory.create(row);
   }
 
+  async deleteByUser(userId: string): Promise<void> {
+    await this.txHost.tx.delete(memoryFactTable).where(eq(memoryFactTable.userId, userId));
+  }
+
   async findActiveByUser(userId: string, limit = 50): Promise<MemoryFactEntity[]> {
     const rows = await this.txHost.tx
       .select()

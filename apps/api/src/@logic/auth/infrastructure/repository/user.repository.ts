@@ -53,6 +53,34 @@ export class UserRepository {
       .where(eq(userTable.id, id));
   }
 
+  async completeOnboarding(id: string, level: string): Promise<void> {
+    await this.txHost.tx
+      .update(userTable)
+      .set({ onboardingCompleted: true, currentLevel: level, updatedAt: new Date() })
+      .where(eq(userTable.id, id));
+  }
+
+  async resetUserFields(id: string): Promise<void> {
+    await this.txHost.tx.update(userTable).set({
+      currentLevel: null,
+      onboardingCompleted: false,
+      updatedAt: new Date(),
+    }).where(eq(userTable.id, id));
+
+    await this.txHost.tx.update(userPreferenceTable).set({
+      correctionStyle: "immediate",
+      explainGrammar: true,
+      speakingSpeed: "very_slow",
+      useNativeLanguage: false,
+      preferredExerciseTypes: [],
+      interests: [],
+      tutorGender: null,
+      tutorNationality: null,
+      tutorVoiceId: null,
+      updatedAt: new Date(),
+    }).where(eq(userPreferenceTable.userId, id));
+  }
+
   async updatePreferences(userId: string, data: Partial<{
     correctionStyle: string;
     explainGrammar: boolean;

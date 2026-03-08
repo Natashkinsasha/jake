@@ -25,7 +25,7 @@ export function LessonScreen({ token }: LessonScreenProps) {
   const router = useRouter();
   const { showToast } = useToast();
   const {
-    messages, status, connected, isPlaying, lessonId,
+    messages, status, connected, isPlaying,
     lessonEnded: serverLessonEnded, error: lessonError, ttsError, sendText,
     sendVoiceSample, endLesson, interruptTutor, stopAllAudio,
     setUserSpeaking, debugInfo,
@@ -196,7 +196,6 @@ export function LessonScreen({ token }: LessonScreenProps) {
         messages={messages}
         isThinking={status === "thinking"}
         isTutorActive={isTutorActive}
-        lessonId={lessonId}
       />
 
       {/* Live transcript preview */}

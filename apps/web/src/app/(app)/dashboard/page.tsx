@@ -8,7 +8,6 @@ import { useBackendSession } from "@/hooks/useBackendSession";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
 import { TutorSetupModal } from "@/components/TutorSetupModal";
-import { VocabularyWidget } from "@/components/VocabularyWidget";
 import type { LessonListItem, UserPreferences } from "@/types";
 
 const PAGE_SIZE = 10;
@@ -133,11 +132,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </button>
-
-      {/* Vocabulary Widget */}
-      <div className="opacity-0 animate-slide-up animate-stagger-3">
-        <VocabularyWidget />
-      </div>
 
       {/* Lessons */}
       {isLoading && <LoadingSpinner className="h-32" />}

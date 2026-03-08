@@ -13,4 +13,8 @@ export class ProgressContract {
   async upsertError(userId: string, topic: string): Promise<void> {
     return this.grammarProgressRepository.upsertError(userId, topic);
   }
+
+  async deleteByUser(userId: string): Promise<void> {
+    return this.grammarProgressRepository.deleteByUser(userId);
+  }
 }
