@@ -5,11 +5,13 @@ module.exports = {
     tsconfigRootDir: __dirname,
     sourceType: "module",
   },
-  plugins: ["@typescript-eslint", "@stylistic", "drizzle", "import-x", "unicorn", "security", "sonarjs", "no-secrets"],
+  plugins: ["@typescript-eslint", "@stylistic", "drizzle", "import-x", "unicorn", "security", "sonarjs", "no-secrets", "promise", "regexp"],
   extends: [
     "plugin:@typescript-eslint/strict-type-checked",
     "plugin:security/recommended-legacy",
     "plugin:sonarjs/recommended-legacy",
+    "plugin:promise/recommended",
+    "plugin:regexp/recommended",
   ],
   root: true,
   env: {
@@ -95,6 +97,9 @@ module.exports = {
   overrides: [
     {
       files: ["**/*.spec.ts", "**/*.test.ts"],
+      plugins: ["jest"],
+      extends: ["plugin:jest/recommended"],
+      env: { "jest/globals": true },
       rules: {
         "@typescript-eslint/no-explicit-any": "off",
         "@typescript-eslint/no-unsafe-assignment": "off",
@@ -103,6 +108,12 @@ module.exports = {
         "@typescript-eslint/no-unsafe-return": "off",
         "@typescript-eslint/no-unsafe-argument": "off",
         "@typescript-eslint/unbound-method": "off",
+        "jest/no-disabled-tests": "warn",
+        "jest/no-focused-tests": "error",
+        "jest/no-identical-title": "error",
+        "jest/expect-expect": "error",
+        "jest/no-conditional-expect": "error",
+        "jest/valid-expect": "error",
       },
     },
   ],

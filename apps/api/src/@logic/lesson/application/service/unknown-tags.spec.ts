@@ -7,12 +7,12 @@ describe("stripUnknownTags", () => {
   });
 
   it("strips a full tag with content", () => {
-    const result = stripUnknownTags('<grammar_note>Use present perfect here</grammar_note>');
+    const result = stripUnknownTags("<grammar_note>Use present perfect here</grammar_note>");
     expect(result).toBe("");
   });
 
   it("strips unknown tags but keeps surrounding text", () => {
-    const result = stripUnknownTags('Hello! <unknown_tag>inner</unknown_tag> How are you?');
+    const result = stripUnknownTags("Hello! <unknown_tag>inner</unknown_tag> How are you?");
     expect(result).toBe("Hello!  How are you?");
   });
 
@@ -22,7 +22,7 @@ describe("stripUnknownTags", () => {
   });
 
   it("strips multiple tags", () => {
-    const result = stripUnknownTags('A <foo>bar</foo> B <baz /> C');
+    const result = stripUnknownTags("A <foo>bar</foo> B <baz /> C");
     expect(result).toBe("A  B  C");
   });
 

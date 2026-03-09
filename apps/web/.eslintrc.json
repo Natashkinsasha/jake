@@ -4,13 +4,15 @@
     "project": "tsconfig.json",
     "tsconfigRootDir": "."
   },
-  "plugins": ["@typescript-eslint", "@stylistic", "react-compiler", "import-x", "unicorn", "security", "sonarjs", "no-secrets"],
+  "plugins": ["@typescript-eslint", "@stylistic", "react-compiler", "import-x", "unicorn", "security", "sonarjs", "no-secrets", "promise", "tailwindcss"],
   "extends": [
     "plugin:@typescript-eslint/strict-type-checked",
     "plugin:@eslint-react/recommended-type-checked-legacy",
     "next/core-web-vitals",
     "plugin:security/recommended-legacy",
-    "plugin:sonarjs/recommended-legacy"
+    "plugin:sonarjs/recommended-legacy",
+    "plugin:promise/recommended",
+    "plugin:tailwindcss/recommended"
   ],
   "root": true,
   "ignorePatterns": ["next.config.js", ".next/", "out/", "src/__mocks__/"],
@@ -99,6 +101,9 @@
   "overrides": [
     {
       "files": ["**/*.spec.ts", "**/*.spec.tsx", "**/*.test.ts", "**/*.test.tsx"],
+      "plugins": ["jest"],
+      "extends": ["plugin:jest/recommended"],
+      "env": { "jest/globals": true },
       "rules": {
         "@typescript-eslint/no-explicit-any": "off",
         "@typescript-eslint/no-unsafe-assignment": "off",
@@ -106,7 +111,13 @@
         "@typescript-eslint/no-unsafe-member-access": "off",
         "@typescript-eslint/no-unsafe-return": "off",
         "@typescript-eslint/no-unsafe-argument": "off",
-        "@typescript-eslint/unbound-method": "off"
+        "@typescript-eslint/unbound-method": "off",
+        "jest/no-disabled-tests": "warn",
+        "jest/no-focused-tests": "error",
+        "jest/no-identical-title": "error",
+        "jest/expect-expect": "error",
+        "jest/no-conditional-expect": "error",
+        "jest/valid-expect": "error"
       }
     }
   ]

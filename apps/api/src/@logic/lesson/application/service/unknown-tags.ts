@@ -6,8 +6,8 @@ const logger = new Logger("UnknownTagStrip");
  * Matches any XML-like tag: <tagname ...>...</tagname> or self-closing <tagname ... />
  * Captures the tag name for logging.
  */
-const SELF_CLOSING_TAG_RE = /<([a-z_][a-z0-9_]*)\b[^>]*\/>/gi;
-const FULL_TAG_RE = /<([a-z_][a-z0-9_]*)\b[^>]*>[\s\S]*?<\/\1>/gi;
+const SELF_CLOSING_TAG_RE = /<([a-z_]\w*)\b[^>]*\/>/gi;
+const FULL_TAG_RE = /<([a-z_]\w*)\b[^>]*>[\s\S]*?<\/\1>/gi;
 
 export function stripUnknownTags(text: string): string {
   let cleaned = text;

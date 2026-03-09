@@ -29,7 +29,7 @@ const INJECTION_PATTERNS: { regex: RegExp; label: string }[] = [
     label: "pretend you are",
   },
   {
-    regex: /\bDAN\b.*\bmode\b/i,
+    regex: /\bDAN\b.+\bmode\b/i,
     label: "DAN mode",
   },
   {
