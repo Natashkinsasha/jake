@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { Injectable, Logger } from "@nestjs/common";
 import { Queue } from "bullmq";
 import { InjectQueue } from "@nestjs/bullmq";
@@ -15,6 +16,8 @@ import { ModerationService, SAFETY_RESPONSE } from "../../../llm/src/moderation/
 import { LessonSessionService } from "../service/lesson-session.service";
 import { parseEmotion } from "../service/emotion";
 import { extractVocabTags, VocabTagBuffer } from "../service/vocab-tags";
+import { ExerciseTagBuffer, extractExerciseTag } from "../service/exercise-tags";
+import { UnknownTagBuffer, stripUnknownTags } from "../service/unknown-tags";
 
 const SET_SPEED_RE = /<set_speed>(very_slow|slow|natural|fast|very_fast)<\/set_speed>/g;
 
@@ -189,6 +192,8 @@ export class LessonMaintainer {
       });
 
     const vocabBuffer = new VocabTagBuffer();
+    const exerciseBuffer = new ExerciseTagBuffer();
+    const unknownTagBuffer = new UnknownTagBuffer();
 
     await this.streamingPipeline.stream(
       systemPrompt,
@@ -207,8 +212,17 @@ export class LessonMaintainer {
           for (const h of highlights) callbacks.onVocabHighlight?.(h);
           for (const w of reviewedWords) callbacks.onVocabReviewed?.(w);
 
-          if (cleanText) {
-            callbacks.onChunk({ ...chunk, text: cleanText });
+          const { cleanText: finalText, exercise } = exerciseBuffer.push(cleanText);
+          if (exercise) {
+            const exerciseId = randomUUID();
+            void this.sessionService.setActiveExercise(userId, exerciseId, exercise);
+            callbacks.onExercise?.({ exerciseId, type: exercise.type, pairs: exercise.pairs });
+          }
+
+          // Last step: catch any unknown XML tags that slipped through
+          const safeText = unknownTagBuffer.push(finalText);
+          if (safeText) {
+            callbacks.onChunk({ ...chunk, text: safeText });
           }
         },
         onEnd: (result) => {
@@ -223,24 +237,45 @@ export class LessonMaintainer {
             callbacks.onChunk({ chunkIndex: -1, text: remaining.cleanText });
           }
 
+          const exerciseRemaining = exerciseBuffer.flush();
+          if (exerciseRemaining.exercise) {
+            const exerciseId = randomUUID();
+            void this.sessionService.setActiveExercise(userId, exerciseId, exerciseRemaining.exercise);
+            callbacks.onExercise?.({ exerciseId, type: exerciseRemaining.exercise.type, pairs: exerciseRemaining.exercise.pairs });
+          }
+          if (exerciseRemaining.cleanText) {
+            const safeRemaining = unknownTagBuffer.push(exerciseRemaining.cleanText);
+            if (safeRemaining) {
+              callbacks.onChunk({ chunkIndex: -1, text: safeRemaining });
+            }
+          }
+
+          // Flush unknown tag buffer — catch any incomplete tags at stream end
+          const unknownRemaining = unknownTagBuffer.flush();
+          if (unknownRemaining) {
+            callbacks.onChunk({ chunkIndex: -1, text: unknownRemaining });
+          }
+
           void (async () => {
             const modResult = await moderationPromise;
 
             if (options?.signal?.aborted) return;
 
             if (!modResult.isSafe) {
-              this.logger.warn(`LLM flagged input from ${userId}: reason=${modResult.reason}`);
+              if (modResult.confidence < 0.7) {
+                this.logger.warn(`LLM moderation below threshold, allowing: reason=${modResult.reason}, confidence=${modResult.confidence}`);
+              } else {
+                this.logger.warn(`LLM flagged input from ${userId}: reason=${modResult.reason}, confidence=${modResult.confidence}`);
 
-              // Still save exchange to history so the tutor doesn't lose context.
-              // The client already received and played the streamed chunks.
-              await this.sessionService.appendHistory(
-                userId,
-                { role: "user", content: text },
-                { role: "assistant", content: SAFETY_RESPONSE },
-              );
+                await this.sessionService.appendHistory(
+                  userId,
+                  { role: "user", content: text },
+                  { role: "assistant", content: SAFETY_RESPONSE },
+                );
 
-              callbacks.onDiscard?.(SAFETY_RESPONSE);
-              return;
+                callbacks.onDiscard?.(SAFETY_RESPONSE);
+                return;
+              }
             }
 
             this.logger.log(`RAW fullText: "${result.fullText}"`);
@@ -251,7 +286,9 @@ export class LessonMaintainer {
               await this.authContract.completeOnboarding(userId, onboardingLevel);
               callbacks.onOnboardingComplete?.({ level: onboardingLevel });
             }
-            const { cleanText, highlights: endHighlights } = extractVocabTags(textWithoutOnboarding);
+            const { cleanText: textWithoutExercise } = extractExerciseTag(textWithoutOnboarding);
+            const { cleanText: textWithoutVocab, highlights: endHighlights } = extractVocabTags(textWithoutExercise);
+            const cleanText = stripUnknownTags(textWithoutVocab);
             if (endHighlights.length > 0) {
               this.logger.log(`Vocab from fullText: ${endHighlights.map(h => h.word).join(", ")}`);
             }

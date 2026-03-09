@@ -109,7 +109,9 @@ export function useStudentStt(
     try {
       const { key } = await api.stt.token();
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
+      });
       // Mic permission = user gesture — unlock audio playback
       unlockAudio();
       streamRef.current = stream;

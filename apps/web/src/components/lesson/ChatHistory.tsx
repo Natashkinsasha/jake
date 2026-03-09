@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
+import { MatchingExercise } from "./MatchingExercise";
 import type { ChatMessage, VocabHighlight } from "@/types";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
@@ -11,19 +12,23 @@ interface ChatHistoryProps {
   isTutorActive?: boolean;
   lessonId?: string | null;
   onVocabSaved?: (word: string) => void;
+  onExerciseSubmit?: (exerciseId: string, answers: Array<{ word: string; definition: string }>) => void;
+  activeExerciseId?: string;
 }
 
 function VocabCard({
   highlight,
   lessonId,
   onSaved,
+  isSaved,
 }: {
   highlight: VocabHighlight;
   lessonId?: string | null;
   onSaved?: (word: string) => void;
+  isSaved: boolean;
 }) {
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(highlight.saved ?? false);
+  const [saved, setSaved] = useState(isSaved);
 
   const handleSave = useCallback(async () => {
     if (saved || saving) return;
@@ -47,7 +52,7 @@ function VocabCard({
   return (
     <div
       className={cn(
-        "animate-fade-in inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 shadow-sm transition-all",
+        "animate-fade-in inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 transition-all",
         saved
           ? "bg-emerald-50/90 border border-emerald-200/60"
           : "bg-white/80 backdrop-blur-sm border border-primary-200/60 hover:border-primary-300",
@@ -79,10 +84,14 @@ function VocabCard({
 
 function ThinkingDots() {
   return (
-    <div className="flex gap-1 py-1 px-1">
-      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-      <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+    <div className="flex gap-1.5 py-1 px-1">
+      {[0, 1, 2].map((i) => (
+        <div
+          key={i}
+          className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+          style={{ animationDelay: `${i * 150}ms` }}
+        />
+      ))}
     </div>
   );
 }
@@ -93,26 +102,29 @@ export function ChatHistory({
   isTutorActive = false,
   lessonId,
   onVocabSaved,
+  onExerciseSubmit,
+  activeExerciseId,
 }: ChatHistoryProps) {
+  const savedWordsRef = useRef<Set<string>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isNearBottomRef = useRef(true);
   const lastAssistantIdx = messages.length - 1 - [...messages].reverse().findIndex((m) => m.role === "assistant");
   const isLastAssistantNew = lastAssistantIdx >= 0 && lastAssistantIdx === messages.length - 1;
 
-  const containerRef = useRef<HTMLDivElement>(null);
-  const isNearBottomRef = useRef(true);
-
-  // Track if user is near bottom (within 100px)
+  // Track whether user is scrolled near the bottom
   const handleScroll = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
     isNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
   }, []);
 
-  // Snap scroll on new messages or thinking state change
-  const messageCount = messages.length;
+  // Only auto-scroll if user hasn't scrolled up to read old messages
   useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messageCount, isThinking]);
+    if (isNearBottomRef.current) {
+      scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isThinking]);
 
   // Keep scrolled to bottom during text reveal (only if user hasn't scrolled up)
   const lastMessageText = messages[messages.length - 1]?.text;
@@ -126,10 +138,44 @@ export function ChatHistory({
   return (
     <div ref={containerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-4 pb-3 space-y-3">
       {/* eslint-disable-next-line @eslint-react/no-array-index-key -- timestamp alone may not be unique */}
-      {messages.map((msg, i) => (
-        <div key={`${msg.timestamp}-${i}`}>
-          {msg.role === "user" ? (
-            /* User message — right aligned, gradient bubble */
+      {messages.map((msg, i) => {
+        // Skip the active exercise — it's rendered in ExercisePanel below the chat
+        if (msg.role === "exercise" && msg.exercise?.exerciseId === activeExerciseId) {
+          return null;
+        }
+
+        // Skip empty assistant messages stuck from interrupted streams
+        // (the last empty one is OK — it shows loading dots for in-progress response)
+        if (msg.role === "assistant" && !msg.text && i !== messages.length - 1) {
+          return null;
+        }
+
+        return (
+        <div key={`${msg.timestamp}-${i}`} className="animate-fade-in">
+          {msg.role === "exercise" && msg.exercise ? (
+            msg.exerciseFeedback ? (
+              /* Completed exercise — show results */
+              <MatchingExercise
+                exercise={msg.exercise}
+                feedback={msg.exerciseFeedback}
+                onSubmit={onExerciseSubmit ?? (() => {})}
+              />
+            ) : (
+              /* Skipped exercise — compact placeholder */
+              <div className="bg-white/[0.05] backdrop-blur-sm rounded-xl px-4 py-3 border border-white/[0.06]">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-5 h-5 rounded-full flex items-center justify-center bg-white/10">
+                    <svg className="w-3 h-3 text-white/30" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                    </svg>
+                  </div>
+                  <span className="text-white/30 text-sm">Matching exercise</span>
+                  <span className="text-xs text-white/20 ml-auto">skipped</span>
+                </div>
+              </div>
+            )
+          ) : msg.role === "user" ? (
+            /* User message — right aligned */
             <div className="flex justify-end">
               <div className="gradient-bg rounded-2xl rounded-br-md px-4 py-2.5 max-w-[80%] shadow-sm">
                 <p className="text-white text-[15px] leading-relaxed">
@@ -138,12 +184,12 @@ export function ChatHistory({
               </div>
             </div>
           ) : msg.text ? (
-            /* Tutor message — left aligned, white bubble */
+            /* Tutor message — left aligned */
             <div className="space-y-2">
               <div className="flex justify-start">
                 <div className={cn(
-                  "bg-white/95 backdrop-blur-sm rounded-2xl rounded-bl-md px-4 py-2.5 max-w-[80%] shadow-sm",
-                  i === lastAssistantIdx && isLastAssistantNew ? "" : "opacity-80",
+                  "bg-white/95 backdrop-blur-sm rounded-2xl rounded-bl-md px-4 py-2.5 max-w-[85%] shadow-sm",
+                  i === lastAssistantIdx && isLastAssistantNew ? "" : "opacity-70",
                 )}>
                   <p className="text-gray-800 text-[15px] leading-relaxed">
                     {msg.text}
@@ -159,14 +205,18 @@ export function ChatHistory({
                       key={`${h.word}-${vi}`}
                       highlight={h}
                       lessonId={lessonId}
-                      onSaved={onVocabSaved}
+                      isSaved={savedWordsRef.current.has(h.word.toLowerCase())}
+                      onSaved={(word) => {
+                        savedWordsRef.current.add(word.toLowerCase());
+                        onVocabSaved?.(word);
+                      }}
                     />
                   ))}
                 </div>
               )}
             </div>
           ) : (
-            /* Empty assistant message = loading */
+            /* Last empty assistant message = loading dots */
             <div className="flex justify-start">
               <div className="bg-white/95 backdrop-blur-sm rounded-2xl rounded-bl-md px-4 py-2.5 shadow-sm">
                 <ThinkingDots />
@@ -174,33 +224,15 @@ export function ChatHistory({
             </div>
           )}
         </div>
-      ))}
+        );
+      })}
 
-      {/* Thinking indicator */}
-      {isThinking && (
-        <div className="flex justify-start">
-          <div className="bg-white/95 backdrop-blur-sm rounded-2xl rounded-bl-md px-4 py-2.5 shadow-sm">
+      {/* Thinking indicator — only when not already speaking */}
+      {isThinking && !isTutorActive && (
+        <div className="flex justify-start animate-fade-in">
+          <div className="bg-white/[0.07] backdrop-blur-sm rounded-2xl rounded-bl-sm px-4 py-2.5 border border-white/[0.06]">
             <ThinkingDots />
           </div>
-        </div>
-      )}
-
-      {/* Tutor speaking indicator — inline at bottom of chat */}
-      {isTutorActive && !isThinking && (
-        <div className="flex items-center gap-2 py-1">
-          <div className="flex items-center gap-1">
-            {[0, 1, 2, 3].map((i) => (
-              <div
-                key={i}
-                className="w-0.5 bg-white/50 rounded-full animate-wave"
-                style={{
-                  height: "12px",
-                  animationDelay: `${i * 0.15}s`,
-                }}
-              />
-            ))}
-          </div>
-          <span className="text-white/40 text-xs">Jake is speaking</span>
         </div>
       )}
 

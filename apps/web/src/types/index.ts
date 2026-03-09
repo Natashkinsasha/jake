@@ -33,11 +33,38 @@ export interface VocabHighlight {
   saved?: boolean;
 }
 
+// Exercise types
+
+export interface ExercisePair {
+  word: string;
+  definition: string;
+}
+
+export interface ExerciseData {
+  exerciseId: string;
+  type: "matching";
+  pairs: ExercisePair[];
+}
+
+export interface ExerciseResult {
+  word: string;
+  correct: boolean;
+  correctDefinition: string;
+}
+
+export interface ExerciseFeedbackData {
+  exerciseId: string;
+  results: ExerciseResult[];
+  score: string;
+}
+
 export interface ChatMessage {
-  role: "user" | "assistant";
+  role: "user" | "assistant" | "exercise";
   text: string;
   timestamp: number;
   vocabHighlights?: VocabHighlight[];
+  exercise?: ExerciseData;
+  exerciseFeedback?: ExerciseFeedbackData;
 }
 
 export interface LessonListItem {

@@ -38,8 +38,10 @@ const config: Config = {
         "pulse-slow": "pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite",
         "bounce-slow": "bounce 2s infinite",
         "wave": "wave 1.5s ease-in-out infinite",
-        "fade-in": "fade-in 0.5s ease-out forwards",
-        "slide-up": "slide-up 0.5s ease-out forwards",
+        "fade-in": "fade-in 0.4s ease-out forwards",
+        "slide-up": "slide-up 0.4s ease-out forwards",
+        "breathe": "breathe 2s ease-in-out infinite",
+        "glow-pulse": "glow-pulse 2.5s ease-in-out infinite",
       },
       keyframes: {
         wave: {
@@ -51,8 +53,16 @@ const config: Config = {
           to: { opacity: "1" },
         },
         "slide-up": {
-          from: { opacity: "0", transform: "translateY(1rem)" },
+          from: { opacity: "0", transform: "translateY(0.75rem)" },
           to: { opacity: "1", transform: "translateY(0)" },
+        },
+        breathe: {
+          "0%, 100%": { opacity: "0.4", transform: "scaleY(0.6)" },
+          "50%": { opacity: "0.8", transform: "scaleY(1.4)" },
+        },
+        "glow-pulse": {
+          "0%, 100%": { boxShadow: "0 0 20px rgba(99,102,241,0.3), 0 0 40px rgba(99,102,241,0.1)" },
+          "50%": { boxShadow: "0 0 30px rgba(99,102,241,0.5), 0 0 60px rgba(99,102,241,0.2)" },
         },
       },
     },
