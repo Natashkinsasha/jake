@@ -2,20 +2,13 @@ import { useState, useCallback, useRef } from "react";
 import { useWebSocket } from "./useWebSocket";
 import { useTutorTts } from "./useTutorTts";
 import { handleLessonEvent, type LessonEventData } from "./lesson/handleLessonEvent";
+import { handleCustomEvent } from "./lesson/customEventHandlers";
+import { processAction } from "./lesson/processAction";
+import type { LessonState, LessonRefs } from "./lesson/types";
 import { createLogger } from "./logger";
-import { WS_URL, EMOTION_VOICE_SETTINGS } from "@/lib/config";
-import type { ChatMessage, LessonStatus } from "@/types";
+import { WS_URL } from "@/lib/config";
 
 const log = createLogger("Lesson");
-
-interface LessonState {
-  lessonId: string | null;
-  messages: ChatMessage[];
-  status: LessonStatus;
-  lessonEnded: boolean;
-  error: string | null;
-  startedAt: number | null;
-}
 
 export function useLessonState(token?: string | null) {
   const [state, setState] = useState<LessonState>({
@@ -117,282 +110,45 @@ export function useLessonState(token?: string | null) {
   const ttsRef = useRef(tts);
   ttsRef.current = tts;
 
-  // eslint-disable-next-line sonarjs/cognitive-complexity
+  const refsRef = useRef<LessonRefs | null>(null);
+  if (!refsRef.current) {
+    refsRef.current = {
+      voiceId: voiceIdRef,
+      speechSpeed: speechSpeedRef,
+      ttsModel: ttsModelRef,
+      systemPrompt: systemPromptRef,
+      emotion: emotionRef,
+      greetingPlaying: greetingPlayingRef,
+      seenVocab: seenVocabRef,
+      pendingTurns: pendingTurnsRef,
+      activeMessageId: activeMessageIdRef,
+      streamStarted: streamStartedRef,
+      streamText: streamTextRef,
+      pendingRevealText: pendingRevealTextRef,
+      finalFullText: finalFullTextRef,
+      revealedLen: revealedLenRef,
+      userSpeaking: userSpeakingRef,
+      tts: ttsRef,
+    };
+  }
+  const refs = refsRef.current;
+
   const handleEvent = useCallback((event: string, data: LessonEventData) => {
     log("event:", event, data.text ? `"${data.text.slice(0, 50)}..."` : "");
 
-    if (event === "lesson_started") {
-      const d = data as LessonEventData & { voiceId?: string; speechSpeed?: number; ttsModel?: string; systemPrompt?: string; emotion?: string };
-      if (d.voiceId) voiceIdRef.current = d.voiceId;
-      if (d.speechSpeed != null) speechSpeedRef.current = d.speechSpeed;
-      if (d.ttsModel) ttsModelRef.current = d.ttsModel;
-      if (d.systemPrompt) systemPromptRef.current = d.systemPrompt;
-      if (d.emotion) emotionRef.current = d.emotion;
-      greetingPlayingRef.current = true;
-      setState((prev) => ({ ...prev, startedAt: Date.now() }));
-    }
+    if (handleCustomEvent(event, data, refs, setState, log)) return;
 
-    if (event === "lesson_resumed") {
-      const d = data as LessonEventData & {
-        lessonId?: string;
-        voiceId?: string;
-        speechSpeed?: number;
-        startedAt?: number;
-        isOnboarding?: boolean;
-        history?: Array<{ role: "user" | "assistant"; text: string }>;
-      };
-      if (d.voiceId) voiceIdRef.current = d.voiceId;
-      if (d.speechSpeed != null) speechSpeedRef.current = d.speechSpeed;
-
-      const messages: ChatMessage[] = (d.history ?? []).map((msg) => ({
-        role: msg.role,
-        text: msg.text,
-        timestamp: Date.now(),
-      }));
-
-      setState({
-        lessonId: d.lessonId ?? null,
-        messages,
-        status: "idle",
-        lessonEnded: false,
-        error: null,
-        startedAt: d.startedAt ?? null,
-      });
-      return;
-    }
-
-    if (event === "tutor_emotion") {
-      const d = data as LessonEventData & { emotion?: string };
-      if (d.emotion) emotionRef.current = d.emotion;
-      return;
-    }
-
-    if (event === "vocab_highlight") {
-      const d = data as LessonEventData & { word?: string; translation?: string; topic?: string };
-      log("vocab_highlight received:", d.word, d.translation, d.topic);
-      if (d.word && d.translation && d.topic) {
-        const key = d.word.toLowerCase();
-        if (seenVocabRef.current.has(key)) {
-          log("vocab_highlight skipped (duplicate):", d.word);
-          return;
-        }
-        seenVocabRef.current.add(key);
-        const highlight = { word: d.word, translation: d.translation, topic: d.topic, saved: false };
-        setState((prev) => {
-          const messages = [...prev.messages];
-          const last = messages[messages.length - 1];
-          if (last?.role === "assistant") {
-            const existing = last.vocabHighlights ?? [];
-            messages[messages.length - 1] = {
-              ...last,
-              vocabHighlights: [...existing, highlight],
-            };
-          } else {
-            // vocab_highlight arrived before first tutor_chunk — create assistant message
-            messages.push({ role: "assistant", text: "", timestamp: Date.now(), vocabHighlights: [highlight] });
-          }
-          return { ...prev, messages };
-        });
-      }
-      return;
-    }
-
-    if (event === "vocab_reviewed") {
-      return;
-    }
-
-    if (event === "speed_updated") {
-      const speedMap: Record<string, number> = { very_slow: 0.7, slow: 0.85, normal: 1.0, natural: 1.0, fast: 1.15, very_fast: 1.3 };
-      const d = data as LessonEventData & { speed?: string };
-      if (d.speed && speedMap[d.speed] != null) {
-        speechSpeedRef.current = speedMap[d.speed] ?? 1.0;
-        log("speed updated to:", d.speed, speechSpeedRef.current);
-      }
-      return;
-    }
-
-    if (event === "exercise") {
-      const d = data as LessonEventData & { exerciseId?: string; type?: string; pairs?: Array<{ word: string; definition: string }> };
-      const { exerciseId, type, pairs } = d;
-      if (exerciseId && type && pairs) {
-        setState((prev) => {
-          // Remove any previous uncompleted exercise (replaced by this one)
-          const messages = prev.messages.filter(
-            (m) => !(m.role === "exercise" && !m.exerciseFeedback),
-          );
-          return {
-            ...prev,
-            messages: [
-              ...messages,
-              {
-                role: "exercise" as const,
-                text: "",
-                timestamp: Date.now(),
-                exercise: { exerciseId, type: type as "matching", pairs },
-              },
-            ],
-          };
-        });
-      }
-      return;
-    }
-
-    if (event === "exercise_feedback") {
-      const d = data as LessonEventData & { exerciseId?: string; results?: Array<{ word: string; correct: boolean; correctDefinition: string }>; score?: string };
-      const { exerciseId, results, score } = d;
-      if (exerciseId && results && score) {
-        setState((prev) => {
-          const messages = [...prev.messages];
-          for (let i = messages.length - 1; i >= 0; i--) {
-            const msg = messages[i];
-            if (msg?.role === "exercise" && msg.exercise?.exerciseId === exerciseId) {
-              messages[i] = { ...msg, exerciseFeedback: { exerciseId, results, score } };
-              break;
-            }
-          }
-          return { ...prev, messages };
-        });
-      }
-      pendingTurnsRef.current = Math.max(0, pendingTurnsRef.current - 1);
-      return;
+    if (event === "tutor_message") {
+      refs.pendingTurns.current = Math.max(0, refs.pendingTurns.current - 1);
     }
 
     const action = handleLessonEvent(event, data, {
-      userSpeaking: userSpeakingRef.current,
-      pendingTurns: pendingTurnsRef.current,
+      userSpeaking: refs.userSpeaking.current,
+      pendingTurns: refs.pendingTurns.current,
     });
 
-    if (event === "tutor_message") {
-      pendingTurnsRef.current = Math.max(0, pendingTurnsRef.current - 1);
-    }
-
-    switch (action.type) {
-      case "set_state":
-        setState((prev) => {
-          const patch = action.patch;
-          if (event === "status" && patch["status"] === undefined) return prev;
-          return { ...prev, ...patch } as LessonState;
-        });
-        if (event === "error") log("ERROR:", data.message);
-        break;
-
-      case "show_message": {
-        if (action.text && voiceIdRef.current) {
-          // Buffer text — reveal progressively as audio plays
-          pendingRevealTextRef.current = action.text;
-          revealedLenRef.current = 0;
-          setState((prev) => ({
-            ...prev,
-            messages: [...prev.messages, { role: "assistant" as const, text: "", timestamp: Date.now() }],
-            status: "speaking",
-          }));
-          const voiceSettings = emotionRef.current !== "neutral"
-            ? EMOTION_VOICE_SETTINGS[emotionRef.current]
-            : undefined;
-          ttsRef.current.speak(action.text, voiceIdRef.current, speechSpeedRef.current, ttsModelRef.current, voiceSettings);
-        } else {
-          // No TTS — show text immediately
-          setState((prev) => ({
-            ...prev,
-            messages: [...prev.messages, { role: "assistant" as const, text: action.text, timestamp: Date.now() }],
-            status: "idle",
-          }));
-        }
-        break;
-      }
-
-      case "stream_chunk": {
-        if (action.messageId && activeMessageIdRef.current && action.messageId !== activeMessageIdRef.current) {
-          log("discarding stale chunk, messageId mismatch");
-          break;
-        }
-        if (action.messageId && !activeMessageIdRef.current) {
-          log("discarding chunk, no active generation");
-          break;
-        }
-
-        if (!streamStartedRef.current && voiceIdRef.current) {
-          streamStartedRef.current = true;
-          // Reset reveal state for fresh stream (old onAllDone may not have cleaned up if guarded)
-          revealedLenRef.current = 0;
-          finalFullTextRef.current = null;
-          const voiceSettings = emotionRef.current !== "neutral"
-            ? EMOTION_VOICE_SETTINGS[emotionRef.current]
-            : undefined;
-          ttsRef.current.startStream(voiceIdRef.current, speechSpeedRef.current, ttsModelRef.current, voiceSettings);
-        }
-
-        ttsRef.current.sendChunk(action.text);
-
-        // Accumulate text — progress callback will reveal it in sync with audio
-        // Don't add space if chunk starts with punctuation (e.g. ", I'm...")
-        const sep = streamTextRef.current && !/^[,.\-!?;:'"]/.test(action.text) ? " " : "";
-        streamTextRef.current += sep + action.text;
-        pendingRevealTextRef.current = streamTextRef.current;
-
-        // Ensure assistant message bubble exists (empty until audio plays)
-        setState((prev) => {
-          const messages = [...prev.messages];
-          const last = messages[messages.length - 1];
-          if (last?.role !== "assistant") {
-            messages.push({ role: "assistant", text: "", timestamp: Date.now() });
-            return { ...prev, messages, status: "speaking" };
-          }
-          return prev.status === "speaking" ? prev : { ...prev, status: "speaking" };
-        });
-        break;
-      }
-
-      case "stream_end": {
-        if (action.messageId && activeMessageIdRef.current && action.messageId !== activeMessageIdRef.current) {
-          log("discarding stale stream_end, messageId mismatch");
-          break;
-        }
-        if (action.messageId && !activeMessageIdRef.current) {
-          log("discarding stream_end, no active generation");
-          break;
-        }
-
-        activeMessageIdRef.current = null;
-        streamStartedRef.current = false;
-        ttsRef.current.endStream();
-
-        // Save authoritative fullText for onAllDone final snap.
-        // Don't overwrite pendingRevealTextRef — it's used for mid-reveal
-        // and switching text mid-playback causes visible "corrections".
-        streamTextRef.current = "";
-        finalFullTextRef.current = action.fullText;
-        break;
-      }
-
-      case "stream_discard": {
-        pendingTurnsRef.current = Math.max(0, pendingTurnsRef.current - 1);
-        activeMessageIdRef.current = null;
-        streamStartedRef.current = false;
-        streamTextRef.current = "";
-        pendingRevealTextRef.current = null;
-        finalFullTextRef.current = null;
-        revealedLenRef.current = 0;
-        ttsRef.current.stop();
-
-        setState((prev) => {
-          const messages = [...prev.messages];
-          const last = messages[messages.length - 1];
-          if (last?.role === "assistant") {
-            messages.pop();
-          }
-          return { ...prev, messages, status: "idle" };
-        });
-        break;
-      }
-
-      case "discard":
-        if (event === "tutor_message" || event === "exercise_feedback" || event === "tutor_chunk") {
-          log("discarding", event);
-        }
-        break;
-    }
-  }, []);
+    processAction(action, event, data, refs, setState, log);
+  }, [refs]);
 
   const { emit, connected } = useWebSocket({
     url: WS_URL,
