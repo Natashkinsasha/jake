@@ -61,10 +61,15 @@ module.exports = {
     "unicorn/prefer-number-properties": "error",
     "unicorn/no-for-loop": "error",
     "unicorn/prefer-includes": "error",
-    // security — disable false-positive rules
+    // security — disable false-positive and duplicate rules
     "security/detect-object-injection": "off", // too many false positives with TypeScript
     "security/detect-non-literal-fs-filename": "off", // we don't use fs directly
+    "security/detect-unsafe-regex": "off", // covered by regexp/no-super-linear-backtracking
+    // promise — disable rules covered by @typescript-eslint
+    "promise/catch-or-return": "off", // covered by @typescript-eslint/no-floating-promises
+    "promise/always-return": "off", // covered by @typescript-eslint/no-floating-promises
     // sonarjs — tune noisy rules
+    "sonarjs/slow-regex": "off", // covered by regexp/no-super-linear-backtracking
     "sonarjs/deprecation": "warn", // drizzle's pgTable signature triggers this
     "sonarjs/no-nested-template-literals": "warn", // prompt templates use nested literals
     "sonarjs/cognitive-complexity": ["warn", 25], // allow higher complexity threshold
