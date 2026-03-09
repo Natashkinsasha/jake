@@ -39,7 +39,6 @@ export function useLessonState(token?: string | null) {
   const streamStartedRef = useRef(false);
   const greetingPlayingRef = useRef(false);
   const emotionRef = useRef<string>("neutral");
-  const streamGenRef = useRef(0);
 
   const streamTextRef = useRef<string>("");
   const pendingRevealTextRef = useRef<string | null>(null);
