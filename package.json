@@ -15,7 +15,7 @@
     "eslint-plugin-jest": "^29.15.0",
     "eslint-plugin-no-secrets": "^2.3.3",
     "eslint-plugin-promise": "^7.2.1",
-    "eslint-plugin-regexp": "^2.10.0",
+    "eslint-plugin-regexp": "^2.6.0",
     "eslint-plugin-security": "^4.0.0",
     "eslint-plugin-sonarjs": "^4.0.1",
     "eslint-plugin-tailwindcss": "^3.18.2",
@@ -25,7 +25,15 @@
   "packageManager": "pnpm@9.15.0",
   "pnpm": {
     "overrides": {
-      "esbuild": "0.19.12"
+      "esbuild": ">=0.25.0",
+      "glob": ">=10.5.0",
+      "express-rate-limit": ">=8.2.2",
+      "tar": ">=7.5.10",
+      "serialize-javascript": ">=7.0.3",
+      "lodash": ">=4.17.23",
+      "webpack": ">=5.104.1",
+      "@tootallnate/once": ">=3.0.1",
+      "tmp": ">=0.2.4"
     }
   },
   "volta": {
