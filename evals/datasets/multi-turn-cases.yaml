@@ -190,3 +190,94 @@
         Jake suggests topics related to the student's learning focus (present_perfect, conditionals, or other relevant grammar areas).
         The suggestion is natural and conversational.
         Jake stays in character.
+
+# =============================================
+# Scenario 4: Matching exercise format
+# Tests: uses <exercise> tag (not plain text A/B/C), correct XML structure, pair count
+# =============================================
+
+- vars:
+    system: file://prompts/greeting-system.txt
+    message: "Hey Jake, I learned some new words recently — overwhelming, reluctant, resilient, and accomplish. Can you give me a matching exercise?"
+  options:
+    storeOutputAs: matching_turn1
+  metadata:
+    conversationId: matching
+  assert:
+    - type: javascript
+      value: "output.length < 1200"
+    - type: contains
+      value: "<exercise type=\"matching\">"
+    - type: contains
+      value: "</exercise>"
+    - type: contains
+      value: "<pair word=\""
+    - type: javascript
+      value: "(output.match(/<pair\\s+word=/g) || []).length >= 3"
+      metric: pair_count
+    - type: not-contains
+      value: "AI"
+    - type: not-contains
+      value: "language model"
+    - type: javascript
+      value: "!(/\\b[A-D]\\)\\s/.test(output))"
+      metric: no_abc_options
+    - type: llm-rubric
+      value: |
+        Jake says something brief and friendly before providing the exercise.
+        The exercise uses the <exercise type="matching"> XML tag with <pair word="..." definition="..."/> entries.
+        Jake does NOT use plain text options like "A) ... B) ... C) ..." — all exercises must use the <exercise> tag format.
+        Jake stays in character.
+
+- vars:
+    system: file://prompts/greeting-system.txt
+    message: "Let's do a quick vocabulary quiz"
+  options:
+    storeOutputAs: matching_turn2
+  metadata:
+    conversationId: matching
+  assert:
+    - type: javascript
+      value: "output.length < 1200"
+    - type: contains
+      value: "<exercise type=\"matching\">"
+    - type: contains
+      value: "</exercise>"
+    - type: javascript
+      value: "(output.match(/<pair\\s+word=/g) || []).length >= 3"
+      metric: pair_count
+    - type: javascript
+      value: "!(/\\b[A-D]\\)\\s/.test(output))"
+      metric: no_abc_options
+    - type: llm-rubric
+      value: |
+        When a student asks for a "quiz" or "vocabulary quiz", Jake uses the <exercise type="matching"> tag format.
+        Jake does NOT write plain text questions, numbered lists, or A/B/C options.
+        The exercise contains at least 3 word-definition pairs.
+        Jake stays in character.
+
+- vars:
+    system: file://prompts/greeting-system.txt
+    message: "Can you test me on the words we discussed?"
+  metadata:
+    conversationId: matching
+  assert:
+    - type: javascript
+      value: "output.length < 1200"
+    - type: contains
+      value: "<exercise type=\"matching\">"
+    - type: contains
+      value: "</exercise>"
+    - type: javascript
+      value: "(output.match(/<pair\\s+word=/g) || []).length >= 3"
+      metric: pair_count
+    - type: javascript
+      value: "!(/\\b[A-D]\\)\\s/.test(output))"
+      metric: no_abc_options
+    - type: llm-rubric
+      value: |
+        Jake responds to the request to be tested on words by providing a matching exercise.
+        The exercise uses <exercise type="matching"> tag with <pair/> entries.
+        Jake does NOT fall back to plain text quiz formats (A/B/C, numbered options, fill-in-the-blank text).
+        The pairs reference words from the conversation context.
+        Jake stays in character.

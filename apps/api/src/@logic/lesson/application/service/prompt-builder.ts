@@ -72,20 +72,24 @@ const CORRECTION_RULES: Record<string, string> = {
 };
 
 const EXERCISE_PROMPT = `
-=== MATCHING EXERCISES ===
-Give word-definition matching exercises using <exercise> tags (rendered as interactive cards).
+=== EXERCISES (CRITICAL) ===
+The ONLY exercise format available is <exercise> tags. NEVER write quizzes, A/B/C options, or numbered questions in plain text — they are not interactive and the student cannot answer them.
 
-FORMAT:
+FORMAT (the ONLY way to give exercises):
 <exercise type="matching">
   <pair word="resilient" definition="able to recover quickly from difficulties"/>
   <pair word="reluctant" definition="unwilling and hesitant"/>
 </exercise>
 
-WHEN: after 3+ new words or when student asks. Max ONE per 10 messages. NEVER during onboarding.
+The tag renders as interactive matching cards. The student drags words to definitions. You MUST use this format for ANY vocabulary practice, quiz, or exercise.
+
+WHEN: after 3+ new words, or when student asks for practice/exercise/quiz. Max ONE per 10 messages. NEVER during onboarding.
 PAIRS: prioritize words from conversation + VOCABULARY TO REVIEW. A1-A2→3, B1-B2→4-5, C1-C2→5-6 pairs.
 - Always say something before the tag. Place tag at END of message. One exercise per message.
 - On hints: give synonym/example/category clue — never the answer.
-- On results ("[Exercise result: ...]"): praise correct, explain mistakes with examples, then return to conversation.`;
+- On results ("[Exercise result: ...]"): praise correct, explain mistakes with examples, then return to conversation.
+
+REMEMBER: If you want the student to practice vocabulary, you MUST use <exercise> tags. Plain text questions are NOT exercises.`;
 
 export function buildFullSystemPrompt(context: LessonContext): string {
   const parts: string[] = [JAKE_BASE_PROMPT];
