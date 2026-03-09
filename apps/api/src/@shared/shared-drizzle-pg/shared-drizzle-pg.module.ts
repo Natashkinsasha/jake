@@ -1,17 +1,17 @@
-import { DrizzlePGModule } from '@knaadh/nestjs-drizzle-pg';
-import {ClsPluginTransactional, getTransactionHostToken} from "@nestjs-cls/transactional";
-import {TransactionalAdapterDrizzleOrm} from "@nestjs-cls/transactional-adapter-drizzle-orm";
-import { Module } from '@nestjs/common';
-import {AppDrizzleTransactionHost} from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
-import {ClsModule} from "nestjs-cls";
+import { DrizzlePGModule } from "@knaadh/nestjs-drizzle-pg";
+import { ClsPluginTransactional, getTransactionHostToken } from "@nestjs-cls/transactional";
+import { TransactionalAdapterDrizzleOrm } from "@nestjs-cls/transactional-adapter-drizzle-orm";
+import { Module } from "@nestjs/common";
+import { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
+import { ClsModule } from "nestjs-cls";
 
-import { SharedConfigModule } from '../shared-config/shared-config.module';
-import { DrizzlePgConfig } from './drizzle-pg.config';
+import { SharedConfigModule } from "../shared-config/shared-config.module";
+import { DrizzlePgConfig } from "./drizzle-pg.config";
 
 @Module({
   imports: [
     DrizzlePGModule.registerAsync({
-      tag: 'DB',
+      tag: "DB",
       imports: [SharedConfigModule],
       useClass: DrizzlePgConfig,
     }),
@@ -19,15 +19,15 @@ import { DrizzlePgConfig } from './drizzle-pg.config';
       new ClsPluginTransactional({
         imports: [SharedDrizzlePgModule],
         adapter: new TransactionalAdapterDrizzleOrm({
-          drizzleInstanceToken: 'DB',
+          drizzleInstanceToken: "DB",
         }),
-        connectionName: 'pg',
+        connectionName: "pg",
       }),
-    ])
+    ]),
   ],
   providers: [
     {
-      useExisting: getTransactionHostToken('pg'),
+      useExisting: getTransactionHostToken("pg"),
       provide: AppDrizzleTransactionHost,
     },
   ],

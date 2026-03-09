@@ -1,5 +1,5 @@
-import { Module } from '@nestjs/common';
-import { ClsModule } from 'nestjs-cls';
+import { Module } from "@nestjs/common";
+import { ClsModule } from "nestjs-cls";
 
 @Module({
   imports: [

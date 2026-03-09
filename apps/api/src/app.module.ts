@@ -1,5 +1,5 @@
 import { Module } from "@nestjs/common";
-import {SharedJobBoardModule} from "@shared/shared-job-board";
+import { SharedJobBoardModule } from "@shared/shared-job-board";
 // @shared
 import { SharedConfigModule } from "./@shared/shared-config/shared-config.module";
 import { SharedClsModule } from "./@shared/shared-cls/shared-cls.module";

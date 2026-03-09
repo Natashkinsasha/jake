@@ -1,19 +1,19 @@
-import { createBullBoard } from '@bull-board/api';
-import { BullMQAdapter } from '@bull-board/api/bullMQAdapter';
-import { FastifyAdapter } from '@bull-board/fastify';
-import type { FastifyBasicAuthOptions } from '@fastify/basic-auth';
-import basicAuth from '@fastify/basic-auth';
+import { createBullBoard } from "@bull-board/api";
+import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
+import { FastifyAdapter } from "@bull-board/fastify";
+import type { FastifyBasicAuthOptions } from "@fastify/basic-auth";
+import basicAuth from "@fastify/basic-auth";
 import type {
   DynamicModule,
   ModuleMetadata,
   NestModule,
   Type,
-} from '@nestjs/common';
-import { HttpStatus, Module, UnauthorizedException } from '@nestjs/common';
-import { HttpAdapterHost, ModuleRef } from '@nestjs/core';
-import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+} from "@nestjs/common";
+import { HttpStatus, Module, UnauthorizedException } from "@nestjs/common";
+import { HttpAdapterHost, ModuleRef } from "@nestjs/core";
+import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
 
-import { QueueRegistryService } from '../../job/src';
+import { QueueRegistryService } from "../../job/src";
 
 export interface JobBoardModuleOptions {
   route: string;
@@ -23,7 +23,7 @@ export interface JobBoardModuleOptions {
 }
 
 export interface JobBoardModuleAsyncOptions
-  extends Pick<ModuleMetadata, 'imports'> {
+  extends Pick<ModuleMetadata, "imports"> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- NestJS DI requires any[] for factory args
   useFactory?: (...args: any[]) => Promise<JobBoardModuleOptions> | JobBoardModuleOptions;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any -- NestJS DI injection tokens
@@ -38,7 +38,7 @@ export interface JobBoardModuleOptionsFactory {
     | JobBoardModuleOptions;
 }
 
-const JOB_BOARD_OPTIONS = 'JOB_BOARD_OPTIONS';
+const JOB_BOARD_OPTIONS = "JOB_BOARD_OPTIONS";
 
 @Module({})
 export class JobBoardModule implements NestModule {
@@ -142,9 +142,9 @@ export class JobBoardModule implements NestModule {
 
     const app = this.adapterHost.httpAdapter.getInstance<FastifyInstance>();
 
-    const authenticate: FastifyBasicAuthOptions['authenticate'] = true;
+    const authenticate: FastifyBasicAuthOptions["authenticate"] = true;
 
-    const validate: FastifyBasicAuthOptions['validate'] = (
+    const validate: FastifyBasicAuthOptions["validate"] = (
       user: string,
       pass: string,
     ) => {
@@ -161,7 +161,7 @@ export class JobBoardModule implements NestModule {
     const bullboardPlugin = serverAdapter.registerPlugin();
 
     void app.register((instance: FastifyInstance, _opts: Record<string, unknown>, done: (err?: Error) => void) => {
-      instance.addHook('onRequest', (req: FastifyRequest, reply: FastifyReply, next: (err?: Error) => void) => {
+      instance.addHook("onRequest", (req: FastifyRequest, reply: FastifyReply, next: (err?: Error) => void) => {
         (instance as FastifyInstance & { basicAuth: (req: FastifyRequest, reply: FastifyReply, cb: (err?: Error) => void) => void }).basicAuth(req, reply, function (error?: Error) {
           if (!error) {
             next(); return;

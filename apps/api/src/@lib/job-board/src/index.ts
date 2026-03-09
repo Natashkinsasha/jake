@@ -1,1 +1,1 @@
-export * from './job-board.module';
+export * from "./job-board.module";

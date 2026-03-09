@@ -1,2 +1,2 @@
-export * from './job.module';
-export * from './queue-registry.service';
+export * from "./job.module";
+export * from "./queue-registry.service";

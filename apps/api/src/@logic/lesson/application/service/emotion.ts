@@ -12,16 +12,16 @@ export interface VoiceSettings {
 }
 
 const EMOTION_VOICE_MAP: Record<Emotion, VoiceSettings> = {
-  neutral:      { stability: 0.5,  similarity_boost: 0.75, style: 0.0 },
-  happy:        { stability: 0.35, similarity_boost: 0.75, style: 0.6 },
-  encouraging:  { stability: 0.4,  similarity_boost: 0.75, style: 0.5 },
-  empathetic:   { stability: 0.55, similarity_boost: 0.8,  style: 0.3 },
-  excited:      { stability: 0.3,  similarity_boost: 0.7,  style: 0.8 },
-  curious:      { stability: 0.45, similarity_boost: 0.75, style: 0.4 },
-  playful:      { stability: 0.35, similarity_boost: 0.7,  style: 0.7 },
-  proud:        { stability: 0.35, similarity_boost: 0.75, style: 0.65 },
-  thoughtful:   { stability: 0.55, similarity_boost: 0.8,  style: 0.2 },
-  surprised:    { stability: 0.3,  similarity_boost: 0.7,  style: 0.7 },
+  neutral: { stability: 0.5,  similarity_boost: 0.75, style: 0.0 },
+  happy: { stability: 0.35, similarity_boost: 0.75, style: 0.6 },
+  encouraging: { stability: 0.4,  similarity_boost: 0.75, style: 0.5 },
+  empathetic: { stability: 0.55, similarity_boost: 0.8,  style: 0.3 },
+  excited: { stability: 0.3,  similarity_boost: 0.7,  style: 0.8 },
+  curious: { stability: 0.45, similarity_boost: 0.75, style: 0.4 },
+  playful: { stability: 0.35, similarity_boost: 0.7,  style: 0.7 },
+  proud: { stability: 0.35, similarity_boost: 0.75, style: 0.65 },
+  thoughtful: { stability: 0.55, similarity_boost: 0.8,  style: 0.2 },
+  surprised: { stability: 0.3,  similarity_boost: 0.7,  style: 0.7 },
 };
 
 const EMOTION_RE = /<emotion>(\w+)<\/emotion>/;

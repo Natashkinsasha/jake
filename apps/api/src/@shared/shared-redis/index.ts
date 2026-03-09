@@ -1,1 +1,1 @@
-export { SharedRedisModule } from './shared-redis.module';
+export { SharedRedisModule } from "./shared-redis.module";

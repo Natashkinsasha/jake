@@ -79,7 +79,6 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   const nextStartTimeRef = useRef(0);
   const preBufferMetRef = useRef(false);
 
-
   const ensureAudioCtx = useCallback(() => {
     if (!audioCtxRef.current || audioCtxRef.current.state === "closed") {
       audioCtxRef.current = new AudioContext();

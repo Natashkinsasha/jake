@@ -11,6 +11,7 @@
     "db:seed": "pnpm --filter @jake/api db:seed"
   },
   "devDependencies": {
+    "@stylistic/eslint-plugin": "^5.10.0",
     "eslint-plugin-no-secrets": "^2.3.3",
     "eslint-plugin-security": "^4.0.0",
     "eslint-plugin-sonarjs": "^4.0.1",

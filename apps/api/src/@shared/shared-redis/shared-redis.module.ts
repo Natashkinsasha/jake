@@ -1,9 +1,9 @@
-import { RedisModule, RedisModuleOptions } from '@liaoliaots/nestjs-redis';
-import type { Redis } from 'ioredis';
-import { Logger, Module } from '@nestjs/common';
+import { RedisModule, RedisModuleOptions } from "@liaoliaots/nestjs-redis";
+import type { Redis } from "ioredis";
+import { Logger, Module } from "@nestjs/common";
 
-import { SharedConfigModule } from '../shared-config/shared-config.module';
-import { EnvService } from '../shared-config/env.service';
+import { SharedConfigModule } from "../shared-config/shared-config.module";
+import { EnvService } from "../shared-config/env.service";
 
 @Module({
   imports: [
@@ -12,11 +12,11 @@ import { EnvService } from '../shared-config/env.service';
         imports: [SharedConfigModule],
         useFactory: (...args: unknown[]): RedisModuleOptions => {
           const envService = args[0] as EnvService;
-          const redisUrl = envService.get('REDIS_URL');
-          const redisDbNumber = envService.get('REDIS_DB_NUMBER');
+          const redisUrl = envService.get("REDIS_URL");
+          const redisDbNumber = envService.get("REDIS_DB_NUMBER");
           Logger.debug(
             `Redis uri: ${redisUrl}. Db number: ${redisDbNumber}`,
-            'RedisModule',
+            "RedisModule",
           );
           return {
             readyLog: true,
@@ -30,10 +30,10 @@ import { EnvService } from '../shared-config/env.service';
                 onClientCreated: (client: Redis) => {
                   Logger.debug(
                     `Connected to redis: ${redisUrl}/${redisDbNumber}`,
-                    'RedisModule',
+                    "RedisModule",
                   );
-                  client.on('error', (error: Error) => {
-                    Logger.error(`Redis error: ${error.message}`, 'RedisModule');
+                  client.on("error", (error: Error) => {
+                    Logger.error(`Redis error: ${error.message}`, "RedisModule");
                   });
                 },
               },

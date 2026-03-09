@@ -5,7 +5,7 @@ module.exports = {
     tsconfigRootDir: __dirname,
     sourceType: "module",
   },
-  plugins: ["@typescript-eslint", "drizzle", "import-x", "unicorn", "security", "sonarjs", "no-secrets"],
+  plugins: ["@typescript-eslint", "@stylistic", "drizzle", "import-x", "unicorn", "security", "sonarjs", "no-secrets"],
   extends: [
     "plugin:@typescript-eslint/strict-type-checked",
     "plugin:security/recommended-legacy",
@@ -70,6 +70,25 @@ module.exports = {
     "sonarjs/use-type-alias": "off", // opinionated style rule
     // no-secrets
     "no-secrets/no-secrets": ["error", { "tolerance": 4.5 }],
+    // stylistic
+    "@stylistic/semi": ["error", "always"],
+    "@stylistic/quotes": ["error", "double", { "avoidEscape": true }],
+    "@stylistic/indent": ["error", 2, { "SwitchCase": 1 }],
+    "@stylistic/comma-dangle": ["error", "always-multiline"],
+    "@stylistic/object-curly-spacing": ["error", "always"],
+    "@stylistic/array-bracket-spacing": ["error", "never"],
+    "@stylistic/arrow-spacing": "error",
+    "@stylistic/block-spacing": "error",
+    "@stylistic/comma-spacing": "error",
+    "@stylistic/key-spacing": "error",
+    "@stylistic/keyword-spacing": "error",
+    "@stylistic/space-before-blocks": "error",
+    "@stylistic/space-infix-ops": "error",
+    "@stylistic/space-before-function-paren": ["error", { "anonymous": "always", "named": "never", "asyncArrow": "always" }],
+    "@stylistic/type-annotation-spacing": "error",
+    "@stylistic/no-multiple-empty-lines": ["error", { "max": 1, "maxEOF": 0 }],
+    "@stylistic/no-trailing-spaces": "error",
+    "@stylistic/eol-last": "error",
     // memory leak prevention
     "no-loop-func": "error",
   },
