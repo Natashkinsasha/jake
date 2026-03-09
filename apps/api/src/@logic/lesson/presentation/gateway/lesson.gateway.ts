@@ -128,6 +128,9 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       client.emit("tutor_chunk", { chunkIndex: 0, text: result.greeting.text });
       client.emit("tutor_stream_end", { fullText: result.greeting.text });
+      for (const h of result.greeting.vocabHighlights) {
+        client.emit("vocab_highlight", h);
+      }
     } catch (error: unknown) {
       this.logger.error(`Failed to start lesson: ${error instanceof Error ? error.message : String(error)}`);
       client.emit("error", { message: "Failed to start lesson" });

@@ -126,6 +126,15 @@ export function ChatHistory({
     }
   }, [messages, isThinking]);
 
+  // Keep scrolled to bottom during text reveal (only if user hasn't scrolled up)
+  const lastMessageText = messages[messages.length - 1]?.text;
+  useEffect(() => {
+    if (isNearBottomRef.current) {
+      const el = containerRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+    }
+  }, [lastMessageText]);
+
   return (
     <div ref={containerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-4 pb-3 space-y-3">
       {/* eslint-disable-next-line @eslint-react/no-array-index-key -- timestamp alone may not be unique */}

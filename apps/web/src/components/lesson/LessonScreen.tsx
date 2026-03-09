@@ -229,12 +229,12 @@ export function LessonScreen({ token }: LessonScreenProps) {
         />
       )}
 
-      {/* Live transcript preview */}
-      {liveTranscript && (
-        <div className="flex-shrink-0 px-5 pb-1">
-          <p className="text-indigo-300/40 text-sm italic text-center truncate">{liveTranscript}</p>
-        </div>
-      )}
+      {/* Live transcript preview — always rendered to avoid layout shift */}
+      <div className="flex-shrink-0 px-4 pb-2 min-h-7">
+        {liveTranscript && (
+          <p className="text-white/40 text-sm italic text-center truncate">{liveTranscript}</p>
+        )}
+      </div>
 
       {/* Bottom controls */}
       <LessonControls

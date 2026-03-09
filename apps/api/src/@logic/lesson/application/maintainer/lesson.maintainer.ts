@@ -129,7 +129,8 @@ export class LessonMaintainer {
 
     const { cleanText: greetingText, speed: greetingSpeed } = stripSpeedTags(greeting.text);
     const { emotion: greetingEmotion, text: greetingTextNoEmotion } = parseEmotion(greetingText);
-    const { cleanText: greetingCleanText } = stripOnboardingTags(greetingTextNoEmotion);
+    const { cleanText: greetingNoOnboarding } = stripOnboardingTags(greetingTextNoEmotion);
+    const { cleanText: greetingCleanText, highlights: greetingHighlights } = extractVocabTags(greetingNoOnboarding);
 
     const lesson = await this.lessonRepository.createWithGreeting(
       {
@@ -146,7 +147,7 @@ export class LessonMaintainer {
       voiceId: context.tutorVoiceId,
       speechSpeed,
       ttsModel: context.preferences.ttsModel,
-      greeting: { text: greetingCleanText, emotion: greetingEmotion },
+      greeting: { text: greetingCleanText, emotion: greetingEmotion, vocabHighlights: greetingHighlights },
       isOnboarding,
     };
   }
