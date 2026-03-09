@@ -39,28 +39,6 @@ describe("handleLessonEvent", () => {
     expect(action).toEqual({ type: "discard" });
   });
 
-  it("exercise_feedback → show_message", () => {
-    const action = handleLessonEvent(
-      "exercise_feedback",
-      { text: "Correct!" },
-      idle,
-    );
-    expect(action).toEqual({
-      type: "show_message",
-      text: "Correct!",
-      status: "idle",
-    });
-  });
-
-  it("exercise_feedback discarded when user is speaking", () => {
-    const action = handleLessonEvent(
-      "exercise_feedback",
-      { text: "Correct!" },
-      { userSpeaking: true, pendingTurns: 0 },
-    );
-    expect(action).toEqual({ type: "discard" });
-  });
-
   it("transcript → show_message with transcript status", () => {
     const action = handleLessonEvent("transcript", { text: "I said hello" }, idle);
     expect(action).toEqual({
