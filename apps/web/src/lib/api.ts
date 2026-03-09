@@ -15,7 +15,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const headers: Record<string, string> = {
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
   };
-  if (options?.body) {
+  if (options?.body != null) {
     headers["Content-Type"] = "application/json";
   }
 
@@ -34,7 +34,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
       detail = body.message ?? body.error ?? "";
     } catch {}
     throw new Error(
-      `API Error ${res.status} ${path}${detail ? `: ${detail}` : ""}`,
+      "API Error " + String(res.status) + " " + path + (detail ? ": " + detail : ""),
     );
   }
 
@@ -94,7 +94,7 @@ export const api = {
       if (params?.offset != null) query.set("offset", String(params.offset));
       if (params?.limit != null) query.set("limit", String(params.limit));
       const qs = query.toString();
-      return request<VocabularyItem[]>(`/vocabulary${qs ? `?${qs}` : ""}`);
+      return request<VocabularyItem[]>("/vocabulary" + (qs ? "?" + qs : ""));
     },
     stats: () => request<VocabularyStats>("/vocabulary/stats"),
     topics: () => request<string[]>("/vocabulary/topics"),

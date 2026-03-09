@@ -62,7 +62,7 @@ function VocabCard({
       <span className="text-[13px] text-gray-400">&mdash;</span>
       <span className="text-[13px] text-gray-500">{highlight.translation}</span>
       {saved ? (
-        <svg className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+        <svg className="size-3.5 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
         </svg>
       ) : (
@@ -70,10 +70,10 @@ function VocabCard({
           type="button"
           onClick={handleSave}
           disabled={saving}
-          className="flex-shrink-0 w-5 h-5 flex items-center justify-center rounded-full bg-primary-100 hover:bg-primary-200 text-primary-600 transition-colors disabled:opacity-50"
+          className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary-100 text-primary-600 transition-colors hover:bg-primary-200 disabled:opacity-50"
           title="Add to vocabulary"
         >
-          <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+          <svg className="size-3" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
           </svg>
         </button>
@@ -84,11 +84,11 @@ function VocabCard({
 
 function ThinkingDots() {
   return (
-    <div className="flex gap-1.5 py-1 px-1">
+    <div className="flex gap-1.5 p-1">
       {[0, 1, 2].map((i) => (
         <div
           key={i}
-          className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+          className="size-1.5 animate-bounce rounded-full bg-gray-400"
           style={{ animationDelay: `${i * 150}ms` }}
         />
       ))}
@@ -136,7 +136,7 @@ export function ChatHistory({
   }, [lastMessageText]);
 
   return (
-    <div ref={containerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-4 pb-3 space-y-3">
+    <div ref={containerRef} onScroll={handleScroll} className="flex-1 space-y-3 overflow-y-auto px-4 pb-3">
       {/* eslint-disable-next-line @eslint-react/no-array-index-key -- timestamp alone may not be unique */}
       {messages.map((msg, i) => {
         // Skip the active exercise — it's rendered in ExercisePanel below the chat
@@ -151,7 +151,7 @@ export function ChatHistory({
         }
 
         return (
-        <div key={`${msg.timestamp}-${i}`} className="animate-fade-in">
+        <div key={`${msg.timestamp}-${msg.role}-${String(i)}`} className="animate-fade-in">
           {msg.role === "exercise" && msg.exercise ? (
             msg.exerciseFeedback ? (
               /* Completed exercise — show results */
@@ -162,23 +162,23 @@ export function ChatHistory({
               />
             ) : (
               /* Skipped exercise — compact placeholder */
-              <div className="bg-white/[0.05] backdrop-blur-sm rounded-xl px-4 py-3 border border-white/[0.06]">
+              <div className="rounded-xl border border-white/[0.06] bg-white/[0.05] px-4 py-3 backdrop-blur-sm">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-5 h-5 rounded-full flex items-center justify-center bg-white/10">
-                    <svg className="w-3 h-3 text-white/30" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                  <div className="flex size-5 items-center justify-center rounded-full bg-white/10">
+                    <svg className="size-3 text-white/30" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                     </svg>
                   </div>
-                  <span className="text-white/30 text-sm">Matching exercise</span>
-                  <span className="text-xs text-white/20 ml-auto">skipped</span>
+                  <span className="text-sm text-white/30">Matching exercise</span>
+                  <span className="ml-auto text-xs text-white/20">skipped</span>
                 </div>
               </div>
             )
           ) : msg.role === "user" ? (
             /* User message — right aligned */
             <div className="flex justify-end">
-              <div className="gradient-bg rounded-2xl rounded-br-md px-4 py-2.5 max-w-[80%] shadow-sm">
-                <p className="text-white text-[15px] leading-relaxed">
+              <div className="gradient-bg max-w-[80%] rounded-2xl rounded-br-md px-4 py-2.5 shadow-sm">
+                <p className="text-[15px] leading-relaxed text-white">
                   {msg.text}
                 </p>
               </div>
@@ -191,7 +191,7 @@ export function ChatHistory({
                   "bg-white/95 backdrop-blur-sm rounded-2xl rounded-bl-md px-4 py-2.5 max-w-[85%] shadow-sm",
                   i === lastAssistantIdx && isLastAssistantNew ? "" : "opacity-70",
                 )}>
-                  <p className="text-gray-800 text-[15px] leading-relaxed">
+                  <p className="text-[15px] leading-relaxed text-gray-800">
                     {msg.text}
                   </p>
                 </div>
@@ -200,9 +200,9 @@ export function ChatHistory({
               {/* Vocab cards inline */}
               {msg.vocabHighlights && msg.vocabHighlights.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 pl-1">
-                  {msg.vocabHighlights.map((h, vi) => (
+                  {msg.vocabHighlights.map((h) => (
                     <VocabCard
-                      key={`${h.word}-${vi}`}
+                      key={h.word}
                       highlight={h}
                       lessonId={lessonId}
                       isSaved={savedWordsRef.current.has(h.word.toLowerCase())}
@@ -218,7 +218,7 @@ export function ChatHistory({
           ) : (
             /* Last empty assistant message = loading dots */
             <div className="flex justify-start">
-              <div className="bg-white/95 backdrop-blur-sm rounded-2xl rounded-bl-md px-4 py-2.5 shadow-sm">
+              <div className="rounded-2xl rounded-bl-md bg-white/95 px-4 py-2.5 shadow-sm backdrop-blur-sm">
                 <ThinkingDots />
               </div>
             </div>
@@ -229,8 +229,8 @@ export function ChatHistory({
 
       {/* Thinking indicator — only when not already speaking */}
       {isThinking && !isTutorActive && (
-        <div className="flex justify-start animate-fade-in">
-          <div className="bg-white/[0.07] backdrop-blur-sm rounded-2xl rounded-bl-sm px-4 py-2.5 border border-white/[0.06]">
+        <div className="flex animate-fade-in justify-start">
+          <div className="rounded-2xl rounded-bl-sm border border-white/[0.06] bg-white/[0.07] px-4 py-2.5 backdrop-blur-sm">
             <ThinkingDots />
           </div>
         </div>

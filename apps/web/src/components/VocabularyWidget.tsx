@@ -59,11 +59,11 @@ export function VocabularyWidget() {
     <button
       type="button"
       onClick={() => { router.push("/vocabulary"); }}
-      className="w-full text-left group bg-white rounded-2xl border border-gray-100 p-5 hover:border-primary-200 hover:shadow-lg hover:shadow-primary-900/5 transition-all duration-300"
+      className="group w-full rounded-2xl border border-gray-100 bg-white p-5 text-left transition-all duration-300 hover:border-primary-200 hover:shadow-lg hover:shadow-primary-900/5"
     >
       <div className="flex items-start gap-5">
         {/* Progress ring */}
-        <div className="relative flex-shrink-0">
+        <div className="relative shrink-0">
           <ProgressRing percent={learnedPercent} />
           <div className="absolute inset-0 flex items-center justify-center">
             <span className="text-sm font-bold text-gray-900">{learnedPercent}%</span>
@@ -71,10 +71,10 @@ export function VocabularyWidget() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-3">
+        <div className="min-w-0 flex-1">
+          <div className="mb-3 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">Vocabulary</h3>
-            <svg className="w-4 h-4 text-gray-300 group-hover:text-primary-500 group-hover:translate-x-0.5 transition-all" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <svg className="size-4 text-gray-300 transition-all group-hover:translate-x-0.5 group-hover:text-primary-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
             </svg>
           </div>
@@ -82,17 +82,17 @@ export function VocabularyWidget() {
           <div className="flex gap-4">
             <div>
               <p className="text-xl font-bold text-gray-900">{stats.total}</p>
-              <p className="text-[11px] text-gray-400 uppercase tracking-wider">words</p>
+              <p className="text-[11px] uppercase tracking-wider text-gray-400">words</p>
             </div>
             <div className="w-px bg-gray-100" />
             <div>
               <p className="text-xl font-bold text-emerald-600">{stats.learned}</p>
-              <p className="text-[11px] text-gray-400 uppercase tracking-wider">learned</p>
+              <p className="text-[11px] uppercase tracking-wider text-gray-400">learned</p>
             </div>
             <div className="w-px bg-gray-100" />
             <div>
               <p className="text-xl font-bold text-amber-500">{stats.new + stats.learning}</p>
-              <p className="text-[11px] text-gray-400 uppercase tracking-wider">active</p>
+              <p className="text-[11px] uppercase tracking-wider text-gray-400">active</p>
             </div>
           </div>
         </div>

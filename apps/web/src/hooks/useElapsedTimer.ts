@@ -6,7 +6,7 @@ export function useElapsedTimer(active: boolean, startedAt?: number | null) {
 
   // When startedAt changes (e.g. lesson_resumed), compute initial offset
   useEffect(() => {
-    if (startedAt) {
+    if (startedAt != null && startedAt > 0) {
       offsetRef.current = Math.floor((Date.now() - startedAt) / 1000);
       setElapsed(offsetRef.current);
     }

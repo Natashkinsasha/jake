@@ -128,26 +128,26 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden animate-slide-up">
+      <div className="mx-4 w-full max-w-lg animate-slide-up overflow-hidden rounded-3xl bg-white shadow-2xl">
         {/* Header */}
-        <div className="gradient-bg px-6 py-5 relative">
+        <div className="gradient-bg relative px-6 py-5">
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="absolute top-4 right-4 p-1 text-white/60 hover:text-white transition-colors"
+            className="absolute right-4 top-4 p-1 text-white/60 transition-colors hover:text-white"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="size-5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
           </button>
           <h2 className="text-xl font-bold text-white">Customize your tutor</h2>
-          <p className="text-blue-200 text-sm mt-1">
+          <p className="mt-1 text-sm text-blue-200">
             {step === 1 && "Choose your tutor's gender"}
             {step === 2 && "Choose your tutor's nationality"}
             {step === 3 && "Choose your tutor's voice"}
           </p>
-          <div className="flex gap-1.5 mt-3">
+          <div className="mt-3 flex gap-1.5">
             {[1, 2, 3].map((s) => (
               <div
                 key={s}
@@ -158,7 +158,7 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
         </div>
 
         {/* Content */}
-        <div className="px-6 py-6">
+        <div className="p-6">
           {/* Step 1: Gender */}
           {step === 1 && (
             <div className="grid grid-cols-2 gap-3">
@@ -167,14 +167,14 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
                   key={g}
                   type="button"
                   onClick={() => { handleGenderSelect(g); }}
-                  className={`p-5 rounded-2xl border-2 transition-all duration-200 hover:shadow-md ${
+                  className={`rounded-2xl border-2 p-5 transition-all duration-200 hover:shadow-md ${
                     gender === g
                       ? "border-primary-500 bg-primary-50"
                       : "border-gray-100 hover:border-primary-200"
                   }`}
                 >
-                  <div className="text-3xl mb-2">{g === "male" ? "\uD83D\uDC68\u200D\uD83C\uDFEB" : "\uD83D\uDC69\u200D\uD83C\uDFEB"}</div>
-                  <p className="font-semibold text-gray-800 capitalize">{g}</p>
+                  <div className="mb-2 text-3xl">{g === "male" ? "\uD83D\uDC68\u200D\uD83C\uDFEB" : "\uD83D\uDC69\u200D\uD83C\uDFEB"}</div>
+                  <p className="font-semibold capitalize text-gray-800">{g}</p>
                 </button>
               ))}
             </div>
@@ -190,7 +190,7 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
                     key={p.nationality}
                     type="button"
                     onClick={() => { handleNationalitySelect(p.nationality); }}
-                    className={`w-full text-left p-4 rounded-2xl border-2 transition-all duration-200 hover:shadow-md ${
+                    className={`w-full rounded-2xl border-2 p-4 text-left transition-all duration-200 hover:shadow-md ${
                       nationality === p.nationality
                         ? "border-primary-500 bg-primary-50"
                         : "border-gray-100 hover:border-primary-200"
@@ -200,7 +200,7 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
                       <span className="text-2xl">{nat?.flag}</span>
                       <div>
                         <p className="font-semibold text-gray-800">{nat?.label}</p>
-                        <p className="text-sm text-gray-500 mt-0.5">{p.description}</p>
+                        <p className="mt-0.5 text-sm text-gray-500">{p.description}</p>
                       </div>
                     </div>
                   </button>
@@ -215,7 +215,7 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
               {voices.map((v) => (
                 <div
                   key={v.id}
-                  className={`flex items-center gap-3 p-4 rounded-2xl border-2 transition-all duration-200 hover:shadow-md cursor-pointer ${
+                  className={`flex cursor-pointer items-center gap-3 rounded-2xl border-2 p-4 transition-all duration-200 hover:shadow-md ${
                     voiceId === v.id
                       ? "border-primary-500 bg-primary-50"
                       : "border-gray-100 hover:border-primary-200"
@@ -228,7 +228,7 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
                       e.stopPropagation();
                       togglePreview(v);
                     }}
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors ${
+                    className={`flex size-10 shrink-0 items-center justify-center rounded-xl transition-colors ${
                       playingVoiceId === v.id
                         ? "bg-primary-500 text-white"
                         : voiceId === v.id
@@ -237,11 +237,11 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
                     }`}
                   >
                     {playingVoiceId === v.id ? (
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <svg className="size-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
                       </svg>
                     ) : (
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <svg className="size-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
                       </svg>
                     )}
@@ -254,12 +254,12 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
         </div>
 
         {/* Footer */}
-        <div className="px-6 pb-6 flex gap-3">
+        <div className="flex gap-3 px-6 pb-6">
           {step > 1 && (
             <button
               type="button"
               onClick={handleBack}
-              className="px-5 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-medium hover:bg-gray-50 transition-colors"
+              className="rounded-xl border border-gray-200 px-5 py-2.5 font-medium text-gray-600 transition-colors hover:bg-gray-50"
             >
               Back
             </button>
@@ -269,7 +269,7 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
               type="button"
               onClick={() => { void handleComplete(); }}
               disabled={saving || !voiceId}
-              className="flex-1 px-5 py-2.5 rounded-xl gradient-bg text-white font-medium hover:shadow-lg transition-all disabled:opacity-50"
+              className="gradient-bg flex-1 rounded-xl px-5 py-2.5 font-medium text-white transition-all hover:shadow-lg disabled:opacity-50"
             >
               {saving ? "Saving..." : "Start learning"}
             </button>

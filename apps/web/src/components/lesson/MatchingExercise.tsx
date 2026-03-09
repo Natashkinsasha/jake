@@ -36,10 +36,9 @@ export function MatchingExercise({ exercise, feedback, onSubmit }: MatchingExerc
   const [matches, setMatches] = useState<Map<string, string>>(() => new Map());
   const [submitted, setSubmitted] = useState(false);
 
-  const exerciseId = exercise.exerciseId;
   const shuffledDefinitions = useMemo(
     () => shuffleArray(exercise.pairs.map((p) => p.definition)),
-    [exerciseId, exercise.pairs],
+    [exercise.pairs],
   );
 
   const words = exercise.pairs.map((p) => p.word);
@@ -87,23 +86,23 @@ export function MatchingExercise({ exercise, feedback, onSubmit }: MatchingExerc
   if (feedback) {
     const isPerfect = feedback.score === `${feedback.results.length}/${feedback.results.length}`;
     return (
-      <div className="bg-white/[0.05] backdrop-blur-sm rounded-xl px-4 py-3 border border-white/[0.06] space-y-2.5">
+      <div className="space-y-2.5 rounded-xl border border-white/[0.06] bg-white/[0.05] px-4 py-3 backdrop-blur-sm">
         <div className="flex items-center gap-2.5">
           <div className={cn(
             "w-5 h-5 rounded-full flex items-center justify-center",
             isPerfect ? "bg-emerald-500/20" : "bg-amber-500/20",
           )}>
             {isPerfect ? (
-              <svg className="w-3 h-3 text-emerald-400" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
+              <svg className="size-3 text-emerald-400" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
               </svg>
             ) : (
-              <svg className="w-3 h-3 text-amber-400" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+              <svg className="size-3 text-amber-400" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
               </svg>
             )}
           </div>
-          <span className="text-white/60 text-sm font-medium">
+          <span className="text-sm font-medium text-white/60">
             {isPerfect ? "Perfect!" : "Matching exercise"}
           </span>
           <span className={cn(
@@ -120,15 +119,15 @@ export function MatchingExercise({ exercise, feedback, onSubmit }: MatchingExerc
           {feedback.results.map((r) => (
             <div key={r.word} className="flex items-center gap-2 text-xs">
               {r.correct ? (
-                <svg className="w-3 h-3 text-emerald-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
+                <svg className="size-3 shrink-0 text-emerald-400" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                 </svg>
               ) : (
-                <svg className="w-3 h-3 text-red-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
+                <svg className="size-3 shrink-0 text-red-400" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               )}
-              <span className={r.correct ? "text-white/60" : "text-white/70 font-medium"}>{r.word}</span>
+              <span className={r.correct ? "text-white/60" : "font-medium text-white/70"}>{r.word}</span>
               <span className="text-white/25">&mdash;</span>
               <span className="text-white/70">{r.correctDefinition}</span>
             </div>
@@ -151,7 +150,7 @@ export function MatchingExercise({ exercise, feedback, onSubmit }: MatchingExerc
   return (
     <div className="space-y-3">
       {/* Header */}
-      <p className="text-white/40 text-[11px] font-medium uppercase tracking-widest">
+      <p className="text-[11px] font-medium uppercase tracking-widest text-white/40">
         {selectedWord ? "Now tap a definition" : "Tap a word to start"}
       </p>
 
@@ -221,7 +220,7 @@ export function MatchingExercise({ exercise, feedback, onSubmit }: MatchingExerc
           <button
             type="button"
             onClick={handleReset}
-            className="text-[11px] text-white/40 hover:text-white/60 transition-colors tracking-wide"
+            className="text-[11px] tracking-wide text-white/40 transition-colors hover:text-white/60"
           >
             Reset
           </button>

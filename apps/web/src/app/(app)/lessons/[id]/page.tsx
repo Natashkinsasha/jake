@@ -17,7 +17,7 @@ export default function LessonHistoryPage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-2xl mx-auto py-8 text-center text-gray-400">
+      <div className="mx-auto max-w-2xl py-8 text-center text-gray-400">
         <LoadingSpinner className="h-32" />
       </div>
     );
@@ -27,13 +27,13 @@ export default function LessonHistoryPage() {
   if (!lesson) return null;
 
   return (
-    <div className="max-w-2xl mx-auto space-y-4">
+    <div className="mx-auto max-w-2xl space-y-4">
       {/* Header */}
       <div>
         <button
           type="button"
           onClick={() => { router.push("/dashboard"); }}
-          className="text-sm text-gray-400 hover:text-gray-600 mb-2 inline-block"
+          className="mb-2 inline-block text-sm text-gray-400 hover:text-gray-600"
         >
           &larr; Back to dashboard
         </button>
@@ -41,13 +41,13 @@ export default function LessonHistoryPage() {
           Lesson {lesson.lessonNumber}
           {lesson.topic ? `: ${lesson.topic}` : ""}
         </h1>
-        <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
+        <div className="mt-1 flex items-center gap-3 text-sm text-gray-500">
           {lesson.createdAt && (
             <span>{formatLessonDate(lesson.createdAt)}</span>
           )}
           {lesson.duration != null && lesson.duration > 0 && <span>{Math.max(1, lesson.duration)} min</span>}
           <span
-            className={`px-2 py-0.5 rounded-full text-xs ${
+            className={`rounded-full px-2 py-0.5 text-xs ${
               lesson.status === "completed"
                 ? "bg-green-100 text-green-700"
                 : "bg-yellow-100 text-yellow-700"
@@ -60,14 +60,14 @@ export default function LessonHistoryPage() {
 
       {/* Summary */}
       {lesson.summary && (
-        <div className="card bg-blue-50 border border-blue-100">
+        <div className="card border border-blue-100 bg-blue-50">
           <p className="text-sm text-gray-700">{lesson.summary}</p>
         </div>
       )}
 
       {/* Messages */}
       <div className="card">
-        <h3 className="font-semibold text-gray-900 mb-4">Conversation</h3>
+        <h3 className="mb-4 font-semibold text-gray-900">Conversation</h3>
         {lesson.messages.length === 0 ? (
           <p className="text-sm text-gray-400">
             No messages yet. Summary will appear after the lesson is processed.
@@ -82,13 +82,13 @@ export default function LessonHistoryPage() {
                 <div
                   className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${
                     msg.role === "user"
-                      ? "bg-primary-500 text-white rounded-br-md"
-                      : "bg-gray-100 text-gray-800 rounded-bl-md"
+                      ? "rounded-br-md bg-primary-500 text-white"
+                      : "rounded-bl-md bg-gray-100 text-gray-800"
                   }`}
                 >
                   <p>{msg.content}</p>
                   <p
-                    className={`text-[10px] mt-1 ${
+                    className={`mt-1 text-[10px] ${
                       msg.role === "user" ? "text-blue-100" : "text-gray-400"
                     }`}
                   >

@@ -4,7 +4,7 @@ interface LessonHeaderProps {
 
 export function LessonHeader({ children }: LessonHeaderProps) {
   return (
-    <div className="flex-shrink-0 flex items-center justify-end px-4 pb-1 pt-safe-extra">
+    <div className="pt-safe-extra flex shrink-0 items-center justify-end px-4 pb-1">
       {children}
     </div>
   );

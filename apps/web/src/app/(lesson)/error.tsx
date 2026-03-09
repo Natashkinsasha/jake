@@ -16,14 +16,14 @@ export default function LessonError({
   }, [error]);
 
   return (
-    <div className="min-h-screen lesson-bg flex items-center justify-center p-4">
-      <div className="text-center max-w-md">
-        <h1 className="text-2xl font-bold text-white mb-2">Lesson interrupted</h1>
-        <p className="text-white/60 mb-6">Something went wrong during your lesson.</p>
+    <div className="lesson-bg flex min-h-screen items-center justify-center p-4">
+      <div className="max-w-md text-center">
+        <h1 className="mb-2 text-2xl font-bold text-white">Lesson interrupted</h1>
+        <p className="mb-6 text-white/60">Something went wrong during your lesson.</p>
         <button
           type="button"
           onClick={() => { router.push("/dashboard"); }}
-          className="bg-white text-primary-600 font-semibold px-6 py-3 rounded-xl hover:bg-blue-50 transition-colors"
+          className="rounded-xl bg-white px-6 py-3 font-semibold text-primary-600 transition-colors hover:bg-blue-50"
         >
           Back to dashboard
         </button>

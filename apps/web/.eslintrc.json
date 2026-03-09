@@ -36,7 +36,7 @@
       { "checksVoidReturn": { "attributes": false } }
     ],
     "@typescript-eslint/strict-boolean-expressions": [
-      "warn",
+      "error",
       {
         "allowString": true,
         "allowNullableObject": true,
@@ -72,9 +72,9 @@
     "security/detect-unsafe-regex": "off",
     "promise/catch-or-return": "off",
     "promise/always-return": "off",
-    "sonarjs/deprecation": "warn",
-    "sonarjs/no-nested-template-literals": "warn",
-    "sonarjs/cognitive-complexity": ["warn", 25],
+    "sonarjs/deprecation": "error",
+    "sonarjs/no-nested-template-literals": "error",
+    "sonarjs/cognitive-complexity": ["error", 25],
     "sonarjs/prefer-read-only-props": "off",
     "sonarjs/no-nested-conditional": "off",
     "sonarjs/no-nested-functions": "off",
@@ -115,7 +115,7 @@
         "@typescript-eslint/no-unsafe-return": "off",
         "@typescript-eslint/no-unsafe-argument": "off",
         "@typescript-eslint/unbound-method": "off",
-        "jest/no-disabled-tests": "warn",
+        "jest/no-disabled-tests": "error",
         "jest/no-focused-tests": "error",
         "jest/no-identical-title": "error",
         "jest/expect-expect": "error",

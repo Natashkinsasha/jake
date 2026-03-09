@@ -95,18 +95,18 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
     <>
       <div
         ref={backdropRef}
-        className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 transition-opacity"
+        className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm transition-opacity"
         onClick={onClose}
       />
-      <div className="fixed right-0 top-0 h-full w-80 bg-white shadow-xl z-50 overflow-y-auto animate-slide-in-right">
-        <div className="flex items-center justify-between p-4 border-b border-gray-100">
+      <div className="animate-slide-in-right fixed right-0 top-0 z-50 h-full w-80 overflow-y-auto bg-white shadow-xl">
+        <div className="flex items-center justify-between border-b border-gray-100 p-4">
           <h2 className="text-lg font-semibold text-gray-900">Settings</h2>
           <button
             type="button"
             onClick={onClose}
-            className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+            className="p-1 text-gray-400 transition-colors hover:text-gray-600"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="size-5" viewBox="0 0 20 20" fill="currentColor">
               <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
             </svg>
           </button>
@@ -115,18 +115,18 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
         {loading ? (
           <div className="p-4 text-sm text-gray-400">Loading...</div>
         ) : (
-          <div className="p-4 space-y-6">
+          <div className="space-y-6 p-4">
             {user && (
               <section>
-                <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Profile</h3>
+                <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-gray-400">Profile</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-500">Name</span>
-                    <span className="text-gray-900 font-medium">{user.name}</span>
+                    <span className="font-medium text-gray-900">{user.name}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Email</span>
-                    <span className="text-gray-900 text-right truncate ml-2">{user.email}</span>
+                    <span className="ml-2 truncate text-right text-gray-900">{user.email}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-500">Level</span>
@@ -141,7 +141,7 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
             )}
 
             <section>
-              <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Tutor</h3>
+              <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-gray-400">Tutor</h3>
               <div className="space-y-4">
                 <SelectField
                   label="Gender"
@@ -175,7 +175,7 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
             </section>
 
             <section>
-              <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Voice</h3>
+              <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-gray-400">Voice</h3>
               <div className="space-y-4">
                 <SelectField
                   label="TTS Model"
@@ -193,7 +193,7 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
             </section>
 
             <section>
-              <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Lesson</h3>
+              <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-gray-400">Lesson</h3>
               <div className="space-y-4">
                 <SelectField
                   label="Correction Style"
@@ -215,11 +215,11 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
             </section>
 
             <section>
-              <h3 className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-3">Account</h3>
+              <h3 className="mb-3 text-xs font-medium uppercase tracking-wider text-gray-400">Account</h3>
               <button
                 type="button"
                 onClick={() => { setShowResetConfirm(true); }}
-                className="w-full px-3 py-2 bg-red-50 text-red-600 text-sm font-medium rounded-lg hover:bg-red-100 transition-colors"
+                className="w-full rounded-lg bg-red-50 px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-100"
               >
                 Reset Account
               </button>
@@ -230,19 +230,19 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
 
       {showResetConfirm && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl p-6 w-80 shadow-2xl">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Reset Account?</h3>
-            <p className="text-sm text-gray-500 mb-4">
+          <div className="w-80 rounded-xl bg-white p-6 shadow-2xl">
+            <h3 className="mb-2 text-lg font-semibold text-gray-900">Reset Account?</h3>
+            <p className="mb-4 text-sm text-gray-500">
               All lessons, progress, vocabulary, and memory will be permanently deleted. Your settings will be reset to defaults.
             </p>
             {resetError && (
-              <p className="text-sm text-red-600 mb-3">Something went wrong. Please try again.</p>
+              <p className="mb-3 text-sm text-red-600">Something went wrong. Please try again.</p>
             )}
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => { setShowResetConfirm(false); setResetError(false); }}
-                className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                className="flex-1 rounded-lg bg-gray-100 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-200"
                 disabled={resetting}
               >
                 Cancel
@@ -250,7 +250,7 @@ export function SettingsDrawer({ open, onClose }: SettingsDrawerProps) {
               <button
                 type="button"
                 onClick={() => { void handleReset(); }}
-                className="flex-1 px-3 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                className="flex-1 rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-red-700 disabled:opacity-50"
                 disabled={resetting}
               >
                 {resetting ? "Resetting..." : "Reset"}
@@ -271,11 +271,11 @@ function SelectField({ label, value, options, onChange }: {
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>
       <select
         value={value}
         onChange={(e) => { onChange(e.target.value); }}
-        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-primary-500 focus:ring-1 focus:ring-primary-500 outline-none transition-colors"
+        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition-colors focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>{o.label}</option>
@@ -300,7 +300,7 @@ function ToggleField({ label, checked, onChange }: {
         onClick={() => { onChange(!checked); }}
         className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${checked ? "bg-primary-600" : "bg-gray-200"}`}
       >
-        <span className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${checked ? "translate-x-4" : "translate-x-0.5"}`} />
+        <span className={`inline-block size-3.5 rounded-full bg-white shadow-sm transition-transform ${checked ? "translate-x-4" : "translate-x-0.5"}`} />
       </button>
     </div>
   );

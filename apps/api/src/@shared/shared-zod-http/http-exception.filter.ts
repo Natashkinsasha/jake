@@ -8,7 +8,7 @@ export class HttpExceptionFilter extends BaseExceptionFilter {
 
   override catch(exception: unknown, host: ArgumentsHost) {
     if (host.getType() !== "http") {
-      super.catch(exception, host);
+      super.catch(exception, host); // eslint-disable-line promise/valid-params -- NestJS BaseExceptionFilter.catch, not Promise.catch
       return;
     }
 

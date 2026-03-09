@@ -34,7 +34,7 @@ module.exports = {
     "@typescript-eslint/prefer-optional-chain": "error",
     "@typescript-eslint/require-await": "error",
     "@typescript-eslint/strict-boolean-expressions": [
-      "warn",
+      "error",
       {
         allowString: true,
         allowNullableObject: true,
@@ -65,14 +65,15 @@ module.exports = {
     "security/detect-object-injection": "off", // too many false positives with TypeScript
     "security/detect-non-literal-fs-filename": "off", // we don't use fs directly
     "security/detect-unsafe-regex": "off", // covered by regexp/no-super-linear-backtracking
+    "security/detect-possible-timing-attacks": "off", // too many false positives
     // promise — disable rules covered by @typescript-eslint
     "promise/catch-or-return": "off", // covered by @typescript-eslint/no-floating-promises
     "promise/always-return": "off", // covered by @typescript-eslint/no-floating-promises
     // sonarjs — tune noisy rules
     "sonarjs/slow-regex": "off", // covered by regexp/no-super-linear-backtracking
-    "sonarjs/deprecation": "warn", // drizzle's pgTable signature triggers this
-    "sonarjs/no-nested-template-literals": "warn", // prompt templates use nested literals
-    "sonarjs/cognitive-complexity": ["warn", 25], // allow higher complexity threshold
+    "sonarjs/deprecation": "error", // drizzle's pgTable signature triggers this
+    "sonarjs/no-nested-template-literals": "error", // prompt templates use nested literals
+    "sonarjs/cognitive-complexity": ["error", 25], // allow higher complexity threshold
     "sonarjs/no-nested-functions": "off", // common in NestJS callbacks
     "sonarjs/use-type-alias": "off", // opinionated style rule
     // no-secrets
@@ -101,6 +102,12 @@ module.exports = {
   },
   overrides: [
     {
+      files: ["**/table/*.table.ts"],
+      rules: {
+        "sonarjs/deprecation": "off", // drizzle's pgTable old signature
+      },
+    },
+    {
       files: ["**/*.spec.ts", "**/*.test.ts"],
       plugins: ["jest"],
       extends: ["plugin:jest/recommended"],
@@ -113,7 +120,7 @@ module.exports = {
         "@typescript-eslint/no-unsafe-return": "off",
         "@typescript-eslint/no-unsafe-argument": "off",
         "@typescript-eslint/unbound-method": "off",
-        "jest/no-disabled-tests": "warn",
+        "jest/no-disabled-tests": "error",
         "jest/no-focused-tests": "error",
         "jest/no-identical-title": "error",
         "jest/expect-expect": "error",

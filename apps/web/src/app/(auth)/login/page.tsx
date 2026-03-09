@@ -4,27 +4,27 @@ import { signIn } from "next-auth/react";
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen gradient-bg flex items-center justify-center p-4">
+    <div className="gradient-bg flex min-h-screen items-center justify-center p-4">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-white/20 backdrop-blur-sm mb-4">
+        <div className="mb-8 text-center">
+          <div className="mb-4 inline-flex size-20 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
             <span className="text-4xl font-bold text-white">J</span>
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Jake</h1>
-          <p className="text-blue-100 text-lg">
+          <h1 className="mb-2 text-3xl font-bold text-white">Jake</h1>
+          <p className="text-lg text-blue-100">
             Your AI English tutor, always ready to chat
           </p>
         </div>
 
         <div className="card">
-          <h2 className="text-xl font-semibold text-center mb-6">Get Started</h2>
+          <h2 className="mb-6 text-center text-xl font-semibold">Get Started</h2>
 
           <button
             type="button"
             onClick={() => signIn("google", { callbackUrl: "/dashboard" })}
-            className="w-full flex items-center justify-center gap-3 rounded-xl border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+            className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-300 bg-white px-6 py-3 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
           >
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
+            <svg className="size-5" viewBox="0 0 24 24">
               <path
                 fill="#4285F4"
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"
@@ -45,7 +45,7 @@ export default function LoginPage() {
             Continue with Google
           </button>
 
-          <p className="mt-4 text-xs text-gray-400 text-center">
+          <p className="mt-4 text-center text-xs text-gray-400">
             By signing in, you agree to practice English with Jake, your AI tutor!
           </p>
         </div>

@@ -17,8 +17,8 @@ export default function LessonPage() {
 
   if (status === "loading" || !token) {
     return (
-      <div className="min-h-screen lesson-bg flex items-center justify-center">
-        <p className="text-white/80 text-sm">Loading...</p>
+      <div className="lesson-bg flex min-h-screen items-center justify-center">
+        <p className="text-sm text-white/80">Loading...</p>
       </div>
     );
   }

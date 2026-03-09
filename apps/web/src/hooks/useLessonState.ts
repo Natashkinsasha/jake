@@ -117,6 +117,7 @@ export function useLessonState(token?: string | null) {
   const ttsRef = useRef(tts);
   ttsRef.current = tts;
 
+  // eslint-disable-next-line sonarjs/cognitive-complexity
   const handleEvent = useCallback((event: string, data: LessonEventData) => {
     log("event:", event, data.text ? `"${data.text.slice(0, 50)}..."` : "");
 

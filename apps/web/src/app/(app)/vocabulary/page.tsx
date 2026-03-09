@@ -43,14 +43,14 @@ function ReviewBar({ count }: { count: number }) {
       <div className="flex gap-px">
         {Array.from({ length: 5 }).map((_, i) => (
           <div
-            key={i}
-            className={`w-3.5 h-1.5 first:rounded-l-full last:rounded-r-full transition-colors ${
+            key={`bar-${String(i)}`}
+            className={`h-1.5 w-3.5 transition-colors first:rounded-l-full last:rounded-r-full ${
               i < count ? "bg-emerald-400" : "bg-gray-100"
             }`}
           />
         ))}
       </div>
-      <span className="text-[10px] text-gray-400 tabular-nums">{count}/5</span>
+      <span className="text-[10px] tabular-nums text-gray-400">{count}/5</span>
     </div>
   );
 }
@@ -59,10 +59,10 @@ function StatsHeader({ stats }: { stats: VocabularyStats }) {
   const learnedPercent = stats.total > 0 ? Math.round((stats.learned / stats.total) * 100) : 0;
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-5">
-      <div className="flex items-center justify-between mb-4">
+    <div className="rounded-2xl border border-gray-100 bg-white p-5">
+      <div className="mb-4 flex items-center justify-between">
         <div>
-          <p className="text-3xl font-bold text-gray-900 tabular-nums">{stats.total}</p>
+          <p className="text-3xl font-bold tabular-nums text-gray-900">{stats.total}</p>
           <p className="text-sm text-gray-400">total words</p>
         </div>
         <div className="flex gap-5">
@@ -73,14 +73,14 @@ function StatsHeader({ stats }: { stats: VocabularyStats }) {
           ].map((s) => (
             <div key={s.label} className="text-right">
               <p className={`text-lg font-bold tabular-nums ${s.color}`}>{s.value}</p>
-              <p className="text-[11px] text-gray-400 uppercase tracking-wider">{s.label}</p>
+              <p className="text-[11px] uppercase tracking-wider text-gray-400">{s.label}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* Segmented progress bar */}
-      <div className="flex h-2 rounded-full overflow-hidden bg-gray-100">
+      <div className="flex h-2 overflow-hidden rounded-full bg-gray-100">
         {stats.learned > 0 && (
           <div
             className="bg-emerald-400 transition-all duration-700 ease-out"
@@ -100,8 +100,8 @@ function StatsHeader({ stats }: { stats: VocabularyStats }) {
           />
         )}
       </div>
-      <p className="text-xs text-gray-400 mt-2">{learnedPercent}% mastered</p>
-      <p className="text-[11px] text-gray-300 mt-1">Use a word 5 times in conversations to mark it as learned</p>
+      <p className="mt-2 text-xs text-gray-400">{learnedPercent}% mastered</p>
+      <p className="mt-1 text-[11px] text-gray-300">Use a word 5 times in conversations to mark it as learned</p>
     </div>
   );
 }
@@ -157,44 +157,44 @@ export default function VocabularyPage() {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-5 pb-12">
+    <div className="mx-auto max-w-2xl space-y-5 pb-12">
       {/* Header */}
-      <div className="pt-2 opacity-0 animate-fade-in">
+      <div className="animate-fade-in pt-2 opacity-0">
         <Link
           href="/dashboard"
-          className="inline-flex items-center gap-1.5 text-sm text-gray-400 hover:text-primary-600 transition-colors mb-3 group"
+          className="group mb-3 inline-flex items-center gap-1.5 text-sm text-gray-400 transition-colors hover:text-primary-600"
         >
-          <svg className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+          <svg className="size-3.5 transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
           </svg>
           Dashboard
         </Link>
-        <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Vocabulary</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900">Vocabulary</h1>
       </div>
 
       {/* Stats card */}
       {stats && stats.total > 0 && (
-        <div className="opacity-0 animate-slide-up animate-stagger-2">
+        <div className="animate-stagger-2 animate-slide-up opacity-0">
           <StatsHeader stats={stats} />
         </div>
       )}
 
       {/* Filters */}
-      <div className="opacity-0 animate-slide-up animate-stagger-3 flex flex-wrap items-center gap-2">
+      <div className="animate-stagger-3 flex animate-slide-up flex-wrap items-center gap-2 opacity-0">
         {/* Status pills */}
-        <div className="flex gap-1 bg-gray-100/80 rounded-xl p-1">
+        <div className="flex gap-1 rounded-xl bg-gray-100/80 p-1">
           {STATUS_FILTERS.map((f) => (
             <button
               key={f.value}
               type="button"
               onClick={() => { setStatusFilter(f.value); }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
                 statusFilter === f.value
                   ? "bg-white text-gray-900 shadow-sm"
                   : "text-gray-500 hover:text-gray-700"
               }`}
             >
-              {"dot" in f && <div className={`w-1.5 h-1.5 rounded-full ${f.dot}`} />}
+              {"dot" in f && <div className={`size-1.5 rounded-full ${f.dot}`} />}
               {f.label}
             </button>
           ))}
@@ -205,7 +205,7 @@ export default function VocabularyPage() {
           <select
             value={topicFilter}
             onChange={(e) => { setTopicFilter(e.target.value); }}
-            className="bg-gray-100/80 border-0 rounded-xl px-3 py-2 text-xs font-medium text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer"
+            className="cursor-pointer rounded-xl border-0 bg-gray-100/80 px-3 py-2 text-xs font-medium text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="">All topics</option>
             {topics.map((t) => (
@@ -216,7 +216,7 @@ export default function VocabularyPage() {
 
         {/* Word count badge */}
         {!isLoading && (
-          <span className="ml-auto text-xs text-gray-400 tabular-nums">
+          <span className="ml-auto text-xs tabular-nums text-gray-400">
             {words.length} word{words.length !== 1 ? "s" : ""}
           </span>
         )}
@@ -235,19 +235,19 @@ export default function VocabularyPage() {
               <div
                 key={word.id}
                 style={i < 20 ? { animationDelay: `${(i + 4) * 0.03}s` } : undefined}
-                className={`${i < 20 ? "opacity-0 animate-slide-up" : ""} group bg-white rounded-xl border border-gray-100 border-l-[3px] ${config.border} p-4 flex items-center gap-4 hover:shadow-md hover:shadow-gray-900/[0.03] transition-all duration-200`}
+                className={`${i < 20 ? "animate-slide-up opacity-0" : ""} group rounded-xl border border-l-[3px] border-gray-100 bg-white ${config.border} flex items-center gap-4 p-4 transition-all duration-200 hover:shadow-md hover:shadow-gray-900/[0.03]`}
               >
                 {/* Word & translation */}
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="flex items-baseline gap-2">
                     <span className="font-semibold text-gray-900">{word.word}</span>
                     {word.translation && (
                       <span className="text-sm text-gray-400">{word.translation}</span>
                     )}
                   </div>
-                  <div className="flex items-center gap-2 mt-1.5">
+                  <div className="mt-1.5 flex items-center gap-2">
                     {word.topic && (
-                      <span className="text-[11px] bg-gray-50 text-gray-500 px-2 py-0.5 rounded-md border border-gray-100">
+                      <span className="rounded-md border border-gray-100 bg-gray-50 px-2 py-0.5 text-[11px] text-gray-500">
                         {word.topic.replaceAll("_", " ")}
                       </span>
                     )}
@@ -256,17 +256,17 @@ export default function VocabularyPage() {
                 </div>
 
                 {/* Status & delete */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <span className={`text-[11px] px-2.5 py-1 rounded-lg font-semibold uppercase tracking-wider ${config.badge}`}>
+                <div className="flex shrink-0 items-center gap-2">
+                  <span className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider ${config.badge}`}>
                     {config.label}
                   </span>
                   <button
                     type="button"
                     onClick={(e) => { e.stopPropagation(); void handleDelete(word.id); }}
-                    className="text-gray-300 hover:text-red-400 transition-colors p-1"
+                    className="p-1 text-gray-300 transition-colors hover:text-red-400"
                     title="Remove word"
                   >
-                    <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <svg className="size-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
@@ -279,14 +279,14 @@ export default function VocabularyPage() {
 
       {/* Empty state */}
       {!isLoading && words.length === 0 && !error && (
-        <div className="opacity-0 animate-fade-in text-center py-20">
-          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gray-100 flex items-center justify-center">
-            <svg className="w-7 h-7 text-gray-300" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+        <div className="animate-fade-in py-20 text-center opacity-0">
+          <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl bg-gray-100">
+            <svg className="size-7 text-gray-300" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
             </svg>
           </div>
-          <p className="text-lg font-semibold text-gray-300 mb-1">No words yet</p>
-          <p className="text-gray-400 text-sm">
+          <p className="mb-1 text-lg font-semibold text-gray-300">No words yet</p>
+          <p className="text-sm text-gray-400">
             {statusFilter || topicFilter
               ? "No words match your filters"
               : "Words will appear here after your lessons"
