@@ -98,12 +98,33 @@ export function ChatHistory({
   const lastAssistantIdx = messages.length - 1 - [...messages].reverse().findIndex((m) => m.role === "assistant");
   const isLastAssistantNew = lastAssistantIdx >= 0 && lastAssistantIdx === messages.length - 1;
 
+  const containerRef = useRef<HTMLDivElement>(null);
+  const isNearBottomRef = useRef(true);
+
+  // Track if user is near bottom (within 100px)
+  const handleScroll = useCallback(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    isNearBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 100;
+  }, []);
+
+  // Snap scroll on new messages or thinking state change
+  const messageCount = messages.length;
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isThinking]);
+  }, [messageCount, isThinking]);
+
+  // Keep scrolled to bottom during text reveal (only if user hasn't scrolled up)
+  const lastMessageText = messages[messages.length - 1]?.text;
+  useEffect(() => {
+    if (isNearBottomRef.current) {
+      const el = containerRef.current;
+      if (el) el.scrollTop = el.scrollHeight;
+    }
+  }, [lastMessageText]);
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 pb-3 space-y-3">
+    <div ref={containerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto px-4 pb-3 space-y-3">
       {/* eslint-disable-next-line @eslint-react/no-array-index-key -- timestamp alone may not be unique */}
       {messages.map((msg, i) => (
         <div key={`${msg.timestamp}-${i}`}>
