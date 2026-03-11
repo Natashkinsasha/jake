@@ -53,7 +53,9 @@ export class AnthropicLlmProvider extends LlmProvider {
       }
     };
 
-    if (!spanName) return doGenerate();
+    if (!spanName) {
+      return doGenerate();
+    }
 
     return withSpan(spanName, { provider: "anthropic", model: this.MODEL, method: "generate" }, doGenerate, (res) => ({
       input_tokens: res.inputTokens,
@@ -120,7 +122,9 @@ export class AnthropicLlmProvider extends LlmProvider {
       }
     };
 
-    if (!options?.spanName) return doStream();
+    if (!options?.spanName) {
+      return doStream();
+    }
 
     return withSpan(
       options.spanName,
@@ -173,8 +177,9 @@ export class AnthropicLlmProvider extends LlmProvider {
         if (typeof raw === "string") {
           try {
             raw = JSON.parse(raw);
-          } catch {
-            throw new Error("LLM returned a non-JSON string instead of an object");
+          } catch (parseError) {
+            // biome-ignore lint/nursery/useErrorCause: ES2021 target
+            throw new Error(`LLM returned a non-JSON string instead of an object: ${parseError}`);
           }
         }
 
@@ -205,7 +210,9 @@ export class AnthropicLlmProvider extends LlmProvider {
       }
     };
 
-    if (!spanName) return doGenerateJson();
+    if (!spanName) {
+      return doGenerateJson();
+    }
 
     return withSpan(spanName, { provider: "anthropic", model: this.MODEL, method: "generateJson" }, doGenerateJson);
   }
@@ -218,9 +225,13 @@ export class AnthropicLlmProvider extends LlmProvider {
       // biome-ignore lint/suspicious/noExplicitAny: existing code
       let target: any = copy;
       for (let i = 0; i < path.length - 1; i++) {
-        target = target?.[path[i]!];
+        const segment = path[i];
+        target = segment != null ? target?.[segment] : undefined;
       }
-      const key = path[path.length - 1]!;
+      const key = path.at(-1);
+      if (key == null) {
+        continue;
+      }
       if (target != null && !Array.isArray(target[key])) {
         target[key] = target[key] == null ? [] : [target[key]];
       }
@@ -231,8 +242,12 @@ export class AnthropicLlmProvider extends LlmProvider {
   // LLMs sometimes return "null" string instead of JSON null
   // biome-ignore lint/suspicious/noExplicitAny: existing code
   private sanitizeNullStrings(obj: any): any {
-    if (obj === "null") return null;
-    if (Array.isArray(obj)) return obj.map((v: unknown) => this.sanitizeNullStrings(v));
+    if (obj === "null") {
+      return null;
+    }
+    if (Array.isArray(obj)) {
+      return obj.map((v: unknown) => this.sanitizeNullStrings(v));
+    }
     if (obj !== null && typeof obj === "object") {
       const result: Record<string, unknown> = {};
       for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {

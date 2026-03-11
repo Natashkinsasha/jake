@@ -101,7 +101,9 @@ export function useStudentStt(options?: UseStudentSttOptions): UseStudentSttRetu
   }, []);
 
   const startStreaming = useCallback(async () => {
-    if (enabledRef.current) return;
+    if (enabledRef.current) {
+      return;
+    }
     log("enable() called");
     setError(null);
     setFinalText("");
@@ -199,8 +201,9 @@ export function useStudentStt(options?: UseStudentSttOptions): UseStudentSttRetu
         log("streaming started");
       };
 
+      // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: complex WebSocket message handling
       ws.onmessage = (event) => {
-        const msg = JSON.parse(event.data as string) as DeepgramResult;
+        const msg = JSON.parse(event.data) as DeepgramResult;
 
         if (msg.type === "SpeechStarted") {
           if (!speechDetectedRef.current) {
@@ -242,7 +245,9 @@ export function useStudentStt(options?: UseStudentSttOptions): UseStudentSttRetu
                 transcriptLength: transcriptLengthRef.current,
                 segments: segmentCountRef.current,
               })
-              .catch(() => {});
+              .catch(() => {
+                // no-op
+              });
             speechDetectedRef.current = false;
             setIsProcessing(false);
             onSpeechEndRef.current?.();
@@ -283,7 +288,9 @@ export function useStudentStt(options?: UseStudentSttOptions): UseStudentSttRetu
   }, [startStreaming]);
 
   const disable = useCallback(() => {
-    if (!enabledRef.current) return;
+    if (!enabledRef.current) {
+      return;
+    }
     log("disable() called");
 
     enabledRef.current = false;

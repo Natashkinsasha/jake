@@ -240,8 +240,12 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.pendingUserText.delete(client.id);
 
       const messages: LlmMessage[] = [];
-      if (userText?.trim()) messages.push({ role: "user", content: userText.trim() });
-      if (partialText?.trim()) messages.push({ role: "assistant", content: `${partialText.trim()}...` });
+      if (userText?.trim()) {
+        messages.push({ role: "user", content: userText.trim() });
+      }
+      if (partialText?.trim()) {
+        messages.push({ role: "assistant", content: `${partialText.trim()}...` });
+      }
       if (messages.length > 0) {
         await this.sessionService.appendHistory(this.getUserId(client), ...messages);
       }
@@ -259,7 +263,9 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     const session = await this.sessionService.get(this.getUserId(client));
-    if (!session) return;
+    if (!session) {
+      return;
+    }
 
     const speed = toSpeechSpeed(parsed.data.speed);
     await this.sessionService.updateSpeechSpeed(this.getUserId(client), speed);
@@ -269,10 +275,14 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage("voice_sample")
   async handleVoiceSample(@ConnectedSocket() client: Socket, @MessageBody() data: { audio: string }) {
-    if (!data.audio) return;
+    if (!data.audio) {
+      return;
+    }
 
     const socketData = client.data as SocketData;
-    if (socketData.voiceSampleProcessed) return;
+    if (socketData.voiceSampleProcessed) {
+      return;
+    }
     socketData.voiceSampleProcessed = true;
 
     const userId = socketData.userId;
@@ -396,7 +406,9 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage("end_lesson")
   async handleEndLesson(@ConnectedSocket() client: Socket) {
     const session = await this.sessionService.get(this.getUserId(client));
-    if (!session) return;
+    if (!session) {
+      return;
+    }
 
     await this.lessonMaintainer.endLesson(session.lessonId, session.history);
     await this.sessionService.delete(this.getUserId(client));

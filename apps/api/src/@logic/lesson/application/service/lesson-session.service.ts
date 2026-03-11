@@ -37,7 +37,9 @@ export class LessonSessionService {
 
   async get(userId: string): Promise<LessonSession | null> {
     const data = await this.redis.get(KEY_PREFIX + userId);
-    if (!data) return null;
+    if (!data) {
+      return null;
+    }
     try {
       return JSON.parse(data) as LessonSession;
     } catch {
@@ -52,35 +54,45 @@ export class LessonSessionService {
 
   async updateSpeechSpeed(userId: string, speed: number): Promise<void> {
     const session = await this.get(userId);
-    if (!session) return;
+    if (!session) {
+      return;
+    }
     session.speechSpeed = speed;
     await this.save(userId, session);
   }
 
   async setVoiceMismatch(userId: string, mismatch: boolean): Promise<void> {
     const session = await this.get(userId);
-    if (!session) return;
+    if (!session) {
+      return;
+    }
     session.voiceMismatch = mismatch;
     await this.save(userId, session);
   }
 
   async appendHistory(userId: string, ...messages: LlmMessage[]): Promise<void> {
     const session = await this.get(userId);
-    if (!session) return;
+    if (!session) {
+      return;
+    }
     session.history.push(...messages);
     await this.save(userId, session);
   }
 
   async setActiveExercise(userId: string, exerciseId: string, exercise: ParsedExercise): Promise<void> {
     const session = await this.get(userId);
-    if (!session) return;
+    if (!session) {
+      return;
+    }
     session.activeExercise = { id: exerciseId, exercise };
     await this.save(userId, session);
   }
 
   async clearActiveExercise(userId: string): Promise<void> {
     const session = await this.get(userId);
-    if (!session) return;
+    if (!session) {
+      return;
+    }
     session.activeExercise = null;
     await this.save(userId, session);
   }

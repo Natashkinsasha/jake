@@ -15,11 +15,11 @@ import { SharedRedisModule } from "../shared-redis/shared-redis.module";
           defaultJobOptions: {
             removeOnComplete: {
               count: 100,
-              age: 60000,
+              age: 60_000,
             },
             removeOnFail: {
-              count: 10000,
-              age: 60000,
+              count: 10_000,
+              age: 60_000,
             },
           },
         };

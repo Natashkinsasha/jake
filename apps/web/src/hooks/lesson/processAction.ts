@@ -15,10 +15,14 @@ function processSetState(
 ): void {
   setState((prev) => {
     const patch = action.patch;
-    if (event === "status" && patch["status"] === undefined) return prev;
+    if (event === "status" && patch["status"] === undefined) {
+      return prev;
+    }
     return { ...prev, ...patch } as LessonState;
   });
-  if (event === "error") log("ERROR:", data.message);
+  if (event === "error") {
+    log("ERROR:", data.message);
+  }
 }
 
 function processShowMessage(
@@ -85,7 +89,7 @@ function processStreamChunk(
 
   setState((prev) => {
     const messages = [...prev.messages];
-    const last = messages[messages.length - 1];
+    const last = messages.at(-1);
     if (last?.role !== "assistant") {
       messages.push({ role: "assistant", text: "", timestamp: Date.now() });
       return { ...prev, messages, status: "speaking" };
@@ -123,7 +127,7 @@ function processStreamDiscard(refs: LessonRefs, setState: SetLessonState): void 
 
   setState((prev) => {
     const messages = [...prev.messages];
-    const last = messages[messages.length - 1];
+    const last = messages.at(-1);
     if (last?.role === "assistant") {
       messages.pop();
     }
@@ -159,6 +163,8 @@ export function processAction(
       if (event === "tutor_message" || event === "exercise_feedback" || event === "tutor_chunk") {
         log("discarding", event);
       }
+      break;
+    default:
       break;
   }
 }

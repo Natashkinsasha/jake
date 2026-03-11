@@ -22,6 +22,7 @@ export function StatsSkeleton() {
   return (
     <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
       {Array.from({ length: 4 }).map((_, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton list
         <div key={i} className="rounded-2xl border border-gray-100 bg-white p-5 text-center shadow-sm">
           <Skeleton className="mx-auto mb-2 h-8 w-16" />
           <Skeleton className="mx-auto h-3 w-20" />
@@ -35,6 +36,7 @@ export function ListSkeleton({ count = 3 }: { count?: number }) {
   return (
     <div className="space-y-3">
       {Array.from({ length: count }).map((_, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton list
         <div key={i} className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm">
           <div className="flex items-center gap-4">
             <Skeleton className="size-10 rounded-full" />

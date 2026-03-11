@@ -67,6 +67,8 @@ export function getVoicesByGender(gender: TutorGender): TutorVoice[] {
 
 export function getDefaultVoice(gender: TutorGender): TutorVoice {
   const voice = TUTOR_VOICES.find((v) => v.gender === gender);
-  if (!voice) throw new Error(`No voice found for gender: ${gender}`);
+  if (!voice) {
+    throw new Error(`No voice found for gender: ${gender}`);
+  }
   return voice;
 }

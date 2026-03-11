@@ -12,7 +12,7 @@ export function initTracing(): void {
   const publicKey = process.env["LANGFUSE_PUBLIC_KEY"];
   const secretKey = process.env["LANGFUSE_SECRET_KEY"];
 
-  if (!publicKey || !secretKey) {
+  if (!(publicKey && secretKey)) {
     return;
   }
 
@@ -56,7 +56,9 @@ export async function withSpan<T>(
     span.setAttributes(toLangfuseMetadata(attributes));
     try {
       const result = await fn();
-      if (onSuccess) span.setAttributes(toLangfuseMetadata(onSuccess(result)));
+      if (onSuccess) {
+        span.setAttributes(toLangfuseMetadata(onSuccess(result)));
+      }
       span.setStatus({ code: SpanStatusCode.OK });
       return result;
     } catch (error) {

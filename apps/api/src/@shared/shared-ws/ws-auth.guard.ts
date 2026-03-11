@@ -16,13 +16,16 @@ export class WsAuthGuard implements CanActivate {
       (query["token"] as string | undefined) ??
       client.handshake.headers.authorization?.replace("Bearer ", "");
 
-    if (!token) throw new WsException("Unauthorized");
+    if (!token) {
+      throw new WsException("Unauthorized");
+    }
 
     try {
       const payload = await this.jwtService.verifyAsync<{ sub: string }>(token);
       (client.data as { userId: string }) = { userId: payload.sub };
       return true;
     } catch {
+      // biome-ignore lint/nursery/useErrorCause: WsException only accepts string
       throw new WsException("Invalid token");
     }
   }

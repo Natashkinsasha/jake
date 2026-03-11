@@ -28,7 +28,9 @@ export const authOptions: NextAuthOptions = {
             }),
           });
 
-          if (!res.ok) return false;
+          if (!res.ok) {
+            return false;
+          }
 
           const data = (await res.json()) as {
             token: string;

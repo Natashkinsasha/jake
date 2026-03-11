@@ -19,20 +19,31 @@ export function DebugModal({ open, onClose, debugInfo }: DebugModalProps) {
   const [prefs, setPrefs] = useState<UserPreferences | null>(null);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      return;
+    }
     void api.auth
       .me()
       .then((res) => {
         setPrefs(res.user_preferences ?? {});
       })
-      .catch(() => {});
+      .catch(() => {
+        // no-op
+      });
   }, [open]);
 
-  if (!open) return null;
+  if (!open) {
+    return null;
+  }
 
   return (
     <>
-      <div className="fixed inset-0 z-50 bg-black/40" onClick={onClose} />
+      <button
+        type="button"
+        className="fixed inset-0 z-50 bg-black/40"
+        onClick={onClose}
+        aria-label="Close debug modal"
+      />
       <div className="fixed inset-4 z-50 flex items-start justify-center pt-12">
         <div className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-xl border border-white/10 bg-gray-900 shadow-2xl">
           <div className="flex items-center justify-between border-b border-white/10 p-4">

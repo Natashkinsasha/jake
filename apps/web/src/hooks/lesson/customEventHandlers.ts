@@ -12,11 +12,21 @@ function handleLessonStarted(data: LessonEventData, refs: LessonRefs, setState: 
     systemPrompt?: string;
     emotion?: string;
   }>;
-  if (d.voiceId) refs.voiceId.current = d.voiceId;
-  if (d.speechSpeed != null) refs.speechSpeed.current = d.speechSpeed;
-  if (d.ttsModel) refs.ttsModel.current = d.ttsModel;
-  if (d.systemPrompt) refs.systemPrompt.current = d.systemPrompt;
-  if (d.emotion) refs.emotion.current = d.emotion;
+  if (d.voiceId) {
+    refs.voiceId.current = d.voiceId;
+  }
+  if (d.speechSpeed != null) {
+    refs.speechSpeed.current = d.speechSpeed;
+  }
+  if (d.ttsModel) {
+    refs.ttsModel.current = d.ttsModel;
+  }
+  if (d.systemPrompt) {
+    refs.systemPrompt.current = d.systemPrompt;
+  }
+  if (d.emotion) {
+    refs.emotion.current = d.emotion;
+  }
   refs.greetingPlaying.current = true;
   setState((prev) => ({ ...prev, startedAt: Date.now() }));
 }
@@ -29,8 +39,12 @@ function handleLessonResumed(data: LessonEventData, refs: LessonRefs, setState: 
     startedAt?: number;
     history?: Array<{ role: "user" | "assistant"; text: string }>;
   }>;
-  if (d.voiceId) refs.voiceId.current = d.voiceId;
-  if (d.speechSpeed != null) refs.speechSpeed.current = d.speechSpeed;
+  if (d.voiceId) {
+    refs.voiceId.current = d.voiceId;
+  }
+  if (d.speechSpeed != null) {
+    refs.speechSpeed.current = d.speechSpeed;
+  }
 
   const messages: ChatMessage[] = (d.history ?? []).map((msg) => ({
     role: msg.role,
@@ -50,14 +64,18 @@ function handleLessonResumed(data: LessonEventData, refs: LessonRefs, setState: 
 
 function handleTutorEmotion(data: LessonEventData, refs: LessonRefs): void {
   const d = data as ExtendedData<{ emotion?: string }>;
-  if (d.emotion) refs.emotion.current = d.emotion;
+  if (d.emotion) {
+    refs.emotion.current = d.emotion;
+  }
 }
 
 function handleVocabHighlight(data: LessonEventData, refs: LessonRefs, setState: SetLessonState, log: Log): void {
   const d = data as ExtendedData<{ word?: string; translation?: string; topic?: string }>;
   log("vocab_highlight received:", d.word, d.translation, d.topic);
 
-  if (!d.word || !d.translation || !d.topic) return;
+  if (!(d.word && d.translation && d.topic)) {
+    return;
+  }
 
   const key = d.word.toLowerCase();
   if (refs.seenVocab.current.has(key)) {
@@ -69,7 +87,7 @@ function handleVocabHighlight(data: LessonEventData, refs: LessonRefs, setState:
   const highlight = { word: d.word, translation: d.translation, topic: d.topic, saved: false };
   setState((prev) => {
     const messages = [...prev.messages];
-    const last = messages[messages.length - 1];
+    const last = messages.at(-1);
     if (last?.role === "assistant") {
       const existing = last.vocabHighlights ?? [];
       messages[messages.length - 1] = { ...last, vocabHighlights: [...existing, highlight] };
@@ -103,7 +121,9 @@ function handleExercise(data: LessonEventData, setState: SetLessonState): void {
     pairs?: Array<{ word: string; definition: string }>;
   }>;
   const { exerciseId, type, pairs } = d;
-  if (!exerciseId || !type || !pairs) return;
+  if (!(exerciseId && type && pairs)) {
+    return;
+  }
 
   setState((prev) => {
     const messages = prev.messages.filter((m) => !(m.role === "exercise" && !m.exerciseFeedback));
@@ -129,7 +149,9 @@ function handleExerciseFeedback(data: LessonEventData, refs: LessonRefs, setStat
     score?: string;
   }>;
   const { exerciseId, results, score } = d;
-  if (!exerciseId || !results || !score) return;
+  if (!(exerciseId && results && score)) {
+    return;
+  }
 
   setState((prev) => {
     const messages = [...prev.messages];

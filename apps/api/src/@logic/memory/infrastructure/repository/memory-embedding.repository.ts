@@ -19,7 +19,9 @@ export class MemoryEmbeddingRepository {
 
   async create(data: typeof memoryEmbeddingTable.$inferInsert): Promise<MemoryEmbeddingEntity> {
     const [row] = await this.txHost.tx.insert(memoryEmbeddingTable).values(data).returning();
-    if (!row) throw new Error("INSERT into memory_embeddings did not return a row");
+    if (!row) {
+      throw new Error("INSERT into memory_embeddings did not return a row");
+    }
     return MemoryEmbeddingFactory.create(row);
   }
 

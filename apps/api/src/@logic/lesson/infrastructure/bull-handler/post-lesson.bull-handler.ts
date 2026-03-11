@@ -91,7 +91,7 @@ export class PostLessonBullHandler extends ClsWorkerHost {
       newWords: summary.newWords.map((w) => w.word),
       errorsFound: summary.errorsFound,
       levelAssessment: summary.levelAssessment,
-      durationMinutes: Math.max(1, Math.round((Date.now() - lesson.startedAt.getTime()) / 60000)),
+      durationMinutes: Math.max(1, Math.round((Date.now() - lesson.startedAt.getTime()) / 60_000)),
     });
 
     if (summary.levelAssessment) {

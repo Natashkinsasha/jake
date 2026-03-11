@@ -29,7 +29,9 @@ export function handleLessonEvent(event: string, data: LessonEventData, ctx: Eve
 
     case "tutor_message": {
       const shouldDiscard = ctx.userSpeaking || ctx.pendingTurns > 1;
-      if (shouldDiscard) return { type: "discard" };
+      if (shouldDiscard) {
+        return { type: "discard" };
+      }
       return {
         type: "show_message",
         text: data.text ?? "",
@@ -45,7 +47,9 @@ export function handleLessonEvent(event: string, data: LessonEventData, ctx: Eve
       };
 
     case "tutor_chunk": {
-      if (ctx.userSpeaking) return { type: "discard" };
+      if (ctx.userSpeaking) {
+        return { type: "discard" };
+      }
       return {
         type: "stream_chunk",
         chunkIndex: data.chunkIndex ?? 0,

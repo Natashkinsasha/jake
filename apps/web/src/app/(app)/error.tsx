@@ -2,8 +2,10 @@
 
 import { useEffect } from "react";
 
-export default function AppError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
-  useEffect(() => {}, []);
+export default function AppError({ error: _error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
+  useEffect(() => {
+    // no-op
+  }, []);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 p-4">

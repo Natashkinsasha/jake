@@ -55,7 +55,9 @@ export class VocabularyController {
   @Delete(":id")
   async remove(@CurrentUserId() userId: string, @Param("id") id: string) {
     const deleted = await this.vocabularyContract.deleteById(id, userId);
-    if (!deleted) throw new NotFoundException("Word not found");
+    if (!deleted) {
+      throw new NotFoundException("Word not found");
+    }
     return { success: true };
   }
 }

@@ -25,6 +25,7 @@ export async function createApp(): Promise<NestFastifyApplication> {
     credentials: true,
   });
 
+  // biome-ignore lint/correctness/useHookAtTopLevel: NestJS method, not a React hook
   app.useWebSocketAdapter(new CustomIoAdapter(app));
 
   return app;

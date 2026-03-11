@@ -19,7 +19,7 @@ function ProgressRing({
   const offset = circumference - (percent / 100) * circumference;
 
   return (
-    <svg width={size} height={size} className="-rotate-90">
+    <svg width={size} height={size} className="-rotate-90" aria-hidden="true">
       <circle
         cx={size / 2}
         cy={size / 2}
@@ -59,10 +59,14 @@ export function VocabularyWidget() {
     void api.vocabulary
       .stats()
       .then(setStats)
-      .catch(() => {});
+      .catch(() => {
+        // no-op
+      });
   }, []);
 
-  if (!stats || stats.total === 0) return null;
+  if (!stats || stats.total === 0) {
+    return null;
+  }
 
   const learnedPercent = stats.total > 0 ? Math.round((stats.learned / stats.total) * 100) : 0;
 
@@ -93,6 +97,7 @@ export function VocabularyWidget() {
               viewBox="0 0 24 24"
               strokeWidth={2}
               stroke="currentColor"
+              aria-hidden="true"
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
             </svg>

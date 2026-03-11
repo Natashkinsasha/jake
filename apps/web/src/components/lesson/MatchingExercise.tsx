@@ -30,6 +30,26 @@ const PAIR_COLORS = [
   { bg: "bg-cyan-500/35", border: "border-cyan-400/50", text: "text-cyan-100" },
 ];
 
+function getWordButtonClass(isSelected: boolean, isMatched: boolean, color: (typeof PAIR_COLORS)[number] | null) {
+  if (isSelected) {
+    return "bg-white/20 border-white/40 text-white";
+  }
+  if (isMatched && color) {
+    return `${color.bg} ${color.border} ${color.text}`;
+  }
+  return "bg-white/[0.06] border-white/[0.10] text-white/70 hover:bg-white/10 hover:border-white/15";
+}
+
+function getDefButtonClass(isMatched: boolean, color: (typeof PAIR_COLORS)[number] | null, hasSelectedWord: boolean) {
+  if (isMatched && color) {
+    return `${color.bg} ${color.border} ${color.text}`;
+  }
+  if (hasSelectedWord) {
+    return "bg-white/[0.06] border-white/[0.10] text-white/60 hover:bg-white/10 hover:border-white/15 cursor-pointer";
+  }
+  return "bg-white/[0.05] border-white/[0.08] text-white/50";
+}
+
 export function MatchingExercise({ exercise, feedback, onSubmit }: MatchingExerciseProps) {
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [matches, setMatches] = useState<Map<string, string>>(() => new Map());
@@ -42,7 +62,9 @@ export function MatchingExercise({ exercise, feedback, onSubmit }: MatchingExerc
 
   const handleWordClick = useCallback(
     (word: string) => {
-      if (submitted || isComplete) return;
+      if (submitted || isComplete) {
+        return;
+      }
       setSelectedWord((prev) => (prev === word ? null : word));
     },
     [submitted, isComplete],
@@ -50,12 +72,16 @@ export function MatchingExercise({ exercise, feedback, onSubmit }: MatchingExerc
 
   const handleDefinitionClick = useCallback(
     (definition: string) => {
-      if (submitted || isComplete || !selectedWord) return;
+      if (submitted || isComplete || !selectedWord) {
+        return;
+      }
 
       setMatches((prev) => {
         const next = new Map(prev);
         for (const [w, d] of next) {
-          if (d === definition) next.delete(w);
+          if (d === definition) {
+            next.delete(w);
+          }
         }
         next.set(selectedWord, definition);
         return next;
@@ -66,7 +92,9 @@ export function MatchingExercise({ exercise, feedback, onSubmit }: MatchingExerc
   );
 
   const handleSubmit = useCallback(() => {
-    if (matches.size !== words.length) return;
+    if (matches.size !== words.length) {
+      return;
+    }
     setSubmitted(true);
     const answers = Array.from(matches.entries()).map(([word, definition]) => ({ word, definition }));
     onSubmit(exercise.exerciseId, answers);
@@ -79,7 +107,9 @@ export function MatchingExercise({ exercise, feedback, onSubmit }: MatchingExerc
 
   // Reset submitted state if server doesn't respond within 10s
   useEffect(() => {
-    if (!submitted) return;
+    if (!submitted) {
+      return;
+    }
     const timeout = setTimeout(() => {
       setSubmitted(false);
     }, 10_000);
@@ -107,6 +137,7 @@ export function MatchingExercise({ exercise, feedback, onSubmit }: MatchingExerc
                 viewBox="0 0 24 24"
                 strokeWidth={3}
                 stroke="currentColor"
+                aria-hidden="true"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
               </svg>
@@ -117,6 +148,7 @@ export function MatchingExercise({ exercise, feedback, onSubmit }: MatchingExerc
                 viewBox="0 0 24 24"
                 strokeWidth={2.5}
                 stroke="currentColor"
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"
@@ -147,6 +179,7 @@ export function MatchingExercise({ exercise, feedback, onSubmit }: MatchingExerc
                   viewBox="0 0 24 24"
                   strokeWidth={3}
                   stroke="currentColor"
+                  aria-hidden="true"
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                 </svg>
@@ -157,6 +190,7 @@ export function MatchingExercise({ exercise, feedback, onSubmit }: MatchingExerc
                   viewBox="0 0 24 24"
                   strokeWidth={3}
                   stroke="currentColor"
+                  aria-hidden="true"
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -208,11 +242,7 @@ export function MatchingExercise({ exercise, feedback, onSubmit }: MatchingExerc
                 disabled={submitted}
                 className={cn(
                   "w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 border",
-                  isSelected
-                    ? "bg-white/20 border-white/40 text-white"
-                    : isMatched && color
-                      ? `${color.bg} ${color.border} ${color.text}`
-                      : "bg-white/[0.06] border-white/[0.10] text-white/70 hover:bg-white/10 hover:border-white/15",
+                  getWordButtonClass(isSelected, isMatched, color ?? null),
                 )}
               >
                 {word}
@@ -238,11 +268,7 @@ export function MatchingExercise({ exercise, feedback, onSubmit }: MatchingExerc
                 disabled={submitted || !selectedWord}
                 className={cn(
                   "w-full text-left px-3 py-2.5 rounded-xl text-xs leading-relaxed transition-all duration-200 border",
-                  isMatched && color
-                    ? `${color.bg} ${color.border} ${color.text}`
-                    : selectedWord
-                      ? "bg-white/[0.06] border-white/[0.10] text-white/60 hover:bg-white/10 hover:border-white/15 cursor-pointer"
-                      : "bg-white/[0.05] border-white/[0.08] text-white/50",
+                  getDefButtonClass(isMatched, color ?? null, selectedWord != null),
                 )}
               >
                 {def}

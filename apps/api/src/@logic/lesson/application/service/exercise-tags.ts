@@ -16,7 +16,9 @@ export function extractExerciseTag(text: string): {
   exercise: ParsedExercise | null;
 } {
   const match = EXERCISE_TAG_RE.exec(text);
-  if (!match) return { cleanText: text.trim(), exercise: null };
+  if (!match) {
+    return { cleanText: text.trim(), exercise: null };
+  }
 
   const pairs: ExercisePair[] = [];
   const inner = match[1] ?? "";
@@ -32,7 +34,9 @@ export function extractExerciseTag(text: string): {
     pairMatch = PAIR_RE.exec(inner);
   }
 
-  if (pairs.length === 0) return { cleanText: text.trim(), exercise: null };
+  if (pairs.length === 0) {
+    return { cleanText: text.trim(), exercise: null };
+  }
 
   const cleanText = text.replace(EXERCISE_TAG_RE, "").trim();
   return { cleanText, exercise: { type: "matching", pairs } };

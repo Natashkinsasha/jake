@@ -38,7 +38,9 @@ export class UserRepository {
 
   async create(data: InsertUser): Promise<UserEntity> {
     const [user] = await this.txHost.tx.insert(userTable).values(data).returning();
-    if (!user) throw new Error("INSERT into users did not return a row");
+    if (!user) {
+      throw new Error("INSERT into users did not return a row");
+    }
     await this.txHost.tx.insert(userPreferenceTable).values({ userId: user.id });
     return UserFactory.create(user);
   }

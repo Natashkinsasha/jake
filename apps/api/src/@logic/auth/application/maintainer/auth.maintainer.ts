@@ -42,7 +42,9 @@ export class AuthMaintainer {
 
   async getProfile(userId: string) {
     const user = await this.userRepository.findByIdWithPreferences(userId);
-    if (!user) throw new NotFoundException("User not found");
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
     return user;
   }
 

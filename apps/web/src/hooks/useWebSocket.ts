@@ -15,7 +15,9 @@ export function useWebSocket({ url, token, onEvent }: UseWebSocketOptions) {
   const [connected, setConnected] = useState(false);
 
   useEffect(() => {
-    if (!token) return;
+    if (!token) {
+      return;
+    }
 
     const socket = io(url, {
       auth: { token },

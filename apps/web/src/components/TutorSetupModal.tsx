@@ -72,7 +72,9 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
     const v = await api.tutor.voices(g);
     setVoices(v);
     const first = v[0];
-    if (first) setVoiceId(first.id);
+    if (first) {
+      setVoiceId(first.id);
+    }
   }, []);
 
   const togglePreview = (voice: TutorVoice) => {
@@ -108,7 +110,9 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
   };
 
   const handleComplete = async () => {
-    if (!gender || !nationality || !voiceId) return;
+    if (!(gender && nationality && voiceId)) {
+      return;
+    }
     stopPreview();
     setSaving(true);
     try {
@@ -129,12 +133,16 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
       setStep(1);
       setNationality(null);
     }
-    if (step === 3) setStep(2);
+    if (step === 3) {
+      setStep(2);
+    }
   };
 
   const filteredProfiles = profiles.filter((p) => p.gender === gender);
 
-  if (!open) return null;
+  if (!open) {
+    return null;
+  }
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -147,7 +155,13 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
             aria-label="Close"
             className="absolute right-4 top-4 p-1 text-white/60 transition-colors hover:text-white"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="size-5" viewBox="0 0 20 20" fill="currentColor">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="size-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+              aria-hidden="true"
+            >
               <path
                 fillRule="evenodd"
                 d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
@@ -231,9 +245,10 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
           {step === 3 && (
             <div className="space-y-3">
               {voices.map((v) => (
-                <div
+                <button
                   key={v.id}
-                  className={`flex cursor-pointer items-center gap-3 rounded-2xl border-2 p-4 transition-all duration-200 hover:shadow-md ${
+                  type="button"
+                  className={`flex w-full cursor-pointer items-center gap-3 rounded-2xl border-2 p-4 text-left transition-all duration-200 hover:shadow-md ${
                     voiceId === v.id ? "border-primary-500 bg-primary-50" : "border-gray-100 hover:border-primary-200"
                   }`}
                   onClick={() => {
@@ -247,19 +262,31 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
                       togglePreview(v);
                     }}
                     className={`flex size-10 shrink-0 items-center justify-center rounded-xl transition-colors ${
-                      playingVoiceId === v.id
+                      playingVoiceId === v.id || voiceId === v.id
                         ? "bg-primary-500 text-white"
-                        : voiceId === v.id
-                          ? "bg-primary-500 text-white"
-                          : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                        : "bg-gray-100 text-gray-500 hover:bg-gray-200"
                     }`}
                   >
                     {playingVoiceId === v.id ? (
-                      <svg className="size-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <svg
+                        className="size-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={2}
+                        stroke="currentColor"
+                        aria-hidden="true"
+                      >
                         <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 5.25v13.5m-7.5-13.5v13.5" />
                       </svg>
                     ) : (
-                      <svg className="size-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                      <svg
+                        className="size-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={2}
+                        stroke="currentColor"
+                        aria-hidden="true"
+                      >
                         <path
                           strokeLinecap="round"
                           strokeLinejoin="round"
@@ -269,7 +296,7 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
                     )}
                   </button>
                   <p className="font-semibold text-gray-800">{v.name}</p>
-                </div>
+                </button>
               ))}
             </div>
           )}

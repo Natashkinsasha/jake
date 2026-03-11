@@ -94,7 +94,9 @@ export class LessonMaintainer {
 
   async getLesson(lessonId: string) {
     const lesson = await this.lessonRepository.findById(lessonId);
-    if (!lesson) return null;
+    if (!lesson) {
+      return null;
+    }
     const messages = await this.messageRepository.findByLesson(lessonId);
     return {
       id: lesson.id,
@@ -170,7 +172,9 @@ export class LessonMaintainer {
     options?: { signal?: AbortSignal },
   ) {
     const session = await this.sessionService.get(userId);
-    if (!session) return;
+    if (!session) {
+      return;
+    }
 
     // Inject voice mismatch hint into system prompt (one-time)
     let systemPrompt = session.systemPrompt;
@@ -220,8 +224,12 @@ export class LessonMaintainer {
           if (highlights.length > 0) {
             this.logger.log(`Vocab highlights extracted: ${highlights.map((h) => h.word).join(", ")}`);
           }
-          for (const h of highlights) callbacks.onVocabHighlight?.(h);
-          for (const w of reviewedWords) callbacks.onVocabReviewed?.(w);
+          for (const h of highlights) {
+            callbacks.onVocabHighlight?.(h);
+          }
+          for (const w of reviewedWords) {
+            callbacks.onVocabReviewed?.(w);
+          }
 
           const { cleanText: finalText, exercise } = exerciseBuffer.push(cleanText);
           if (exercise) {
@@ -242,8 +250,12 @@ export class LessonMaintainer {
           if (remaining.highlights.length > 0) {
             this.logger.log(`Vocab flush highlights: ${remaining.highlights.map((h) => h.word).join(", ")}`);
           }
-          for (const h of remaining.highlights) callbacks.onVocabHighlight?.(h);
-          for (const w of remaining.reviewedWords) callbacks.onVocabReviewed?.(w);
+          for (const h of remaining.highlights) {
+            callbacks.onVocabHighlight?.(h);
+          }
+          for (const w of remaining.reviewedWords) {
+            callbacks.onVocabReviewed?.(w);
+          }
           if (remaining.cleanText) {
             callbacks.onChunk({ chunkIndex: -1, text: remaining.cleanText });
           }
@@ -274,7 +286,9 @@ export class LessonMaintainer {
           void (async () => {
             const modResult = await moderationPromise;
 
-            if (options?.signal?.aborted) return;
+            if (options?.signal?.aborted) {
+              return;
+            }
 
             if (!modResult.isSafe) {
               if (modResult.confidence < 0.7) {

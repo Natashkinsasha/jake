@@ -4,7 +4,9 @@ import postgres from "postgres";
 
 async function runMigrations() {
   const dbUrl = process.env["DATABASE_URL"];
-  if (!dbUrl) throw new Error("DATABASE_URL is required for migrations");
+  if (!dbUrl) {
+    throw new Error("DATABASE_URL is required for migrations");
+  }
   const client = postgres(dbUrl, { max: 1 });
   const db = drizzle(client);
   await migrate(db, { migrationsFolder: "./drizzle" });

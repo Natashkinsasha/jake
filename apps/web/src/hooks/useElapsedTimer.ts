@@ -13,7 +13,9 @@ export function useElapsedTimer(active: boolean, startedAt?: number | null) {
   }, [startedAt]);
 
   useEffect(() => {
-    if (!active) return;
+    if (!active) {
+      return;
+    }
     setElapsed(offsetRef.current);
     const interval = setInterval(() => {
       setElapsed((s) => s + 1);

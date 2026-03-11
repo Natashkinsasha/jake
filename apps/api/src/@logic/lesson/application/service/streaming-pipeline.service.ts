@@ -62,7 +62,9 @@ export class StreamingPipelineService {
       ) {
         bufferStartTime = null;
         const flushed = sentenceBuffer.flush();
-        if (flushed) emitChunk(flushed);
+        if (flushed) {
+          emitChunk(flushed);
+        }
       }
     };
 
@@ -73,21 +75,22 @@ export class StreamingPipelineService {
         {
           onText: (delta) => {
             // Accumulate raw text to detect emotion tag before passing to sentence buffer
+            let currentDelta = delta;
             if (!emotionExtracted) {
-              rawAccumulator += delta;
+              rawAccumulator += currentDelta;
               const closeIdx = rawAccumulator.indexOf("</emotion>");
               if (closeIdx !== -1) {
                 // Full tag received — extract and strip
                 const { emotion, text } = parseEmotion(rawAccumulator);
                 emotionExtracted = true;
                 callbacks.onEmotion?.(emotion);
-                delta = text;
+                currentDelta = text;
                 rawAccumulator = "";
               } else if (rawAccumulator.length > 100 || !rawAccumulator.trimStart().startsWith("<")) {
                 // No tag coming — flush accumulator as normal text
                 emotionExtracted = true;
                 callbacks.onEmotion?.("neutral");
-                delta = rawAccumulator;
+                currentDelta = rawAccumulator;
                 rawAccumulator = "";
               } else {
                 // Still accumulating, wait for more
@@ -95,7 +98,7 @@ export class StreamingPipelineService {
               }
             }
 
-            const sentences = sentenceBuffer.push(delta);
+            const sentences = sentenceBuffer.push(currentDelta);
 
             for (const sentence of sentences) {
               emitChunk(sentence);
@@ -113,20 +116,26 @@ export class StreamingPipelineService {
           onDone: () => {
             bufferStartTime = null;
             const remaining = sentenceBuffer.flush();
-            if (remaining) emitChunk(remaining);
+            if (remaining) {
+              emitChunk(remaining);
+            }
           },
         },
         { signal: options?.signal, spanName: "lesson.stream" },
       );
 
-      if (options?.signal?.aborted) return;
+      if (options?.signal?.aborted) {
+        return;
+      }
 
       callbacks.onEnd({
         fullText: llmResponse.text,
         tokens: llmResponse,
       });
     } catch (error) {
-      if (options?.signal?.aborted) return;
+      if (options?.signal?.aborted) {
+        return;
+      }
       callbacks.onError(error instanceof Error ? error : new Error(String(error)));
     }
   }

@@ -15,8 +15,12 @@ const PAGE_SIZE = 10;
 
 function getGreeting(): string {
   const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 18) return "Good afternoon";
+  if (hour < 12) {
+    return "Good morning";
+  }
+  if (hour < 18) {
+    return "Good afternoon";
+  }
   return "Good evening";
 }
 
@@ -36,8 +40,11 @@ export default function DashboardPage() {
 
   const fetchLessons = useCallback(async (offset: number) => {
     const isInitial = offset === 0;
-    if (isInitial) setIsLoading(true);
-    else setIsLoadingMore(true);
+    if (isInitial) {
+      setIsLoading(true);
+    } else {
+      setIsLoadingMore(true);
+    }
     setError(null);
 
     try {
@@ -48,8 +55,11 @@ export default function DashboardPage() {
       const message = err instanceof Error ? err.message : "Something went wrong";
       setError(message);
     } finally {
-      if (isInitial) setIsLoading(false);
-      else setIsLoadingMore(false);
+      if (isInitial) {
+        setIsLoading(false);
+      } else {
+        setIsLoadingMore(false);
+      }
     }
   }, []);
 
@@ -63,17 +73,19 @@ export default function DashboardPage() {
   }, [fetchLessons]);
 
   const handleStartLesson = () => {
-    if (!preferences?.tutorGender) {
-      setShowTutorSetup(true);
-    } else {
+    if (preferences?.tutorGender) {
       router.push("/lesson");
+    } else {
+      setShowTutorSetup(true);
     }
   };
 
   // Infinite scroll via IntersectionObserver
   useEffect(() => {
     const sentinel = sentinelRef.current;
-    if (!sentinel || !hasMore || isLoading || isLoadingMore) return;
+    if (!(sentinel && hasMore) || isLoading || isLoadingMore) {
+      return;
+    }
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -120,6 +132,7 @@ export default function DashboardPage() {
                   viewBox="0 0 24 24"
                   strokeWidth={2}
                   stroke="currentColor"
+                  aria-hidden="true"
                 >
                   <path
                     strokeLinecap="round"
@@ -140,6 +153,7 @@ export default function DashboardPage() {
               viewBox="0 0 24 24"
               strokeWidth={2}
               stroke="currentColor"
+              aria-hidden="true"
             >
               <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
             </svg>
@@ -153,17 +167,17 @@ export default function DashboardPage() {
       </div>
 
       {/* Lessons */}
-      {isLoading && <LoadingSpinner className="h-32" />}
-      {error && !isLoadingMore && (
+      {isLoading ? <LoadingSpinner className="h-32" /> : null}
+      {error && !isLoadingMore ? (
         <ErrorMessage
           message={error}
           onRetry={() => {
             void fetchLessons(lessons.length > 0 ? lessons.length : 0);
           }}
         />
-      )}
+      ) : null}
 
-      {!isLoading && lessons.length > 0 && (
+      {!isLoading && lessons.length > 0 ? (
         <div className="animate-stagger-4 animate-slide-up opacity-0">
           <h3 className="mb-4 text-2xl font-bold text-gray-900">Your lessons</h3>
           <div className="space-y-3">
@@ -185,7 +199,7 @@ export default function DashboardPage() {
                   <p className="text-sm font-medium text-gray-800 transition-colors group-hover:text-primary-700">
                     {lesson.topic ?? "Conversation with Jake"}
                   </p>
-                  {lesson.summary && <p className="mt-0.5 truncate text-xs text-gray-400">{lesson.summary}</p>}
+                  {lesson.summary ? <p className="mt-0.5 truncate text-xs text-gray-400">{lesson.summary}</p> : null}
                 </div>
 
                 <div className="shrink-0 text-right">
@@ -199,6 +213,7 @@ export default function DashboardPage() {
                   viewBox="0 0 24 24"
                   strokeWidth={2}
                   stroke="currentColor"
+                  aria-hidden="true"
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                 </svg>
@@ -207,10 +222,10 @@ export default function DashboardPage() {
           </div>
 
           {/* Infinite scroll sentinel */}
-          {hasMore && <div ref={sentinelRef} className="h-1" />}
-          {isLoadingMore && <LoadingSpinner className="mt-4 h-16" />}
+          {hasMore ? <div ref={sentinelRef} className="h-1" /> : null}
+          {isLoadingMore ? <LoadingSpinner className="mt-4 h-16" /> : null}
         </div>
-      )}
+      ) : null}
 
       {/* Empty state */}
       {!isLoading && lessons.length === 0 && !error && (

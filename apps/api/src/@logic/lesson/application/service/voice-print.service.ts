@@ -32,8 +32,12 @@ export class VoicePrintService {
   constructor(private voicePrintRepository: VoicePrintRepository) {}
 
   private async ensureLoaded(): Promise<void> {
-    if (this.model && this.featureExtractor) return;
-    if (this.loading) return this.loading;
+    if (this.model && this.featureExtractor) {
+      return;
+    }
+    if (this.loading) {
+      return this.loading;
+    }
 
     this.loading = (async () => {
       const m = await AutoModel.from_pretrained(MODEL_ID, { dtype: "fp32" });
@@ -72,7 +76,7 @@ export class VoicePrintService {
     const tmpPath = join(tmpdir(), `voice-sample-${randomUUID()}.webm`);
     try {
       writeFileSync(tmpPath, buffer);
-      return await read_audio(tmpPath, 16000);
+      return await read_audio(tmpPath, 16_000);
     } finally {
       try {
         unlinkSync(tmpPath);
@@ -85,7 +89,9 @@ export class VoicePrintService {
   private async extractEmbedding(pcm: Float32Array): Promise<number[] | null> {
     try {
       await this.ensureLoaded();
-      if (!this.featureExtractor || !this.model) throw new Error("Model not loaded");
+      if (!(this.featureExtractor && this.model)) {
+        throw new Error("Model not loaded");
+      }
       const inputs = await this.featureExtractor(pcm);
       const output = await this.model(inputs);
       const embeddings = output.last_hidden_state;
@@ -131,9 +137,9 @@ export class VoicePrintService {
   }
 
   private cosineSimilarity(a: number[], b: number[]): number {
-    let dot = 0,
-      normA = 0,
-      normB = 0;
+    let dot = 0;
+    let normA = 0;
+    let normB = 0;
     for (const [i, av] of a.entries()) {
       const bv = b[i] ?? 0;
       dot += av * bv;

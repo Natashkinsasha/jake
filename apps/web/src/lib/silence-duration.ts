@@ -24,14 +24,24 @@ export const SILENCE_DURATIONS: SilenceDurationConfig = {
 
 export function getSilenceDuration(text: string): number {
   const trimmed = text.trimEnd();
-  if (!trimmed) return SILENCE_DURATIONS.noPunctuation;
+  if (!trimmed) {
+    return SILENCE_DURATIONS.noPunctuation;
+  }
 
-  if (trimmed.endsWith("...") || trimmed.endsWith("\u2026")) return SILENCE_DURATIONS.ellipsis;
+  if (trimmed.endsWith("...") || trimmed.endsWith("\u2026")) {
+    return SILENCE_DURATIONS.ellipsis;
+  }
 
-  const lastChar = trimmed[trimmed.length - 1];
-  if (lastChar === ".") return SILENCE_DURATIONS.period;
-  if (lastChar === "?") return SILENCE_DURATIONS.question;
-  if (lastChar === "!") return SILENCE_DURATIONS.exclamation;
+  const lastChar = trimmed.at(-1);
+  if (lastChar === ".") {
+    return SILENCE_DURATIONS.period;
+  }
+  if (lastChar === "?") {
+    return SILENCE_DURATIONS.question;
+  }
+  if (lastChar === "!") {
+    return SILENCE_DURATIONS.exclamation;
+  }
 
   return SILENCE_DURATIONS.noPunctuation;
 }

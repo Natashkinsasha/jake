@@ -120,8 +120,12 @@ export default function VocabularyPage() {
     setError(null);
     try {
       const filters: { status?: string; topic?: string } = {};
-      if (statusFilter) filters.status = statusFilter;
-      if (topicFilter) filters.topic = topicFilter;
+      if (statusFilter) {
+        filters.status = statusFilter;
+      }
+      if (topicFilter) {
+        filters.topic = topicFilter;
+      }
 
       const [wordsData, statsData, topicsData] = await Promise.all([
         api.vocabulary.list(filters),
@@ -150,12 +154,18 @@ export default function VocabularyPage() {
         const word = words.find((w) => w.id === id);
         const status = word?.status ?? "new";
         const updated = { ...stats, total: stats.total - 1 };
-        if (status === "new") updated["new"] = Math.max(0, updated["new"] - 1);
-        else if (status === "learning") updated.learning = Math.max(0, updated.learning - 1);
-        else updated.learned = Math.max(0, updated.learned - 1);
+        if (status === "new") {
+          updated["new"] = Math.max(0, updated["new"] - 1);
+        } else if (status === "learning") {
+          updated.learning = Math.max(0, updated.learning - 1);
+        } else {
+          updated.learned = Math.max(0, updated.learned - 1);
+        }
         setStats(updated);
       }
-    } catch {}
+    } catch {
+      // no-op
+    }
   };
 
   return (
@@ -172,6 +182,7 @@ export default function VocabularyPage() {
             viewBox="0 0 24 24"
             strokeWidth={2.5}
             stroke="currentColor"
+            aria-hidden="true"
           >
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
           </svg>
@@ -202,7 +213,7 @@ export default function VocabularyPage() {
                 statusFilter === f.value ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
               }`}
             >
-              {"dot" in f && <div className={`size-1.5 rounded-full ${f.dot}`} />}
+              {"dot" in f ? <div className={`size-1.5 rounded-full ${f.dot}`} /> : null}
               {f.label}
             </button>
           ))}
@@ -235,18 +246,18 @@ export default function VocabularyPage() {
       </div>
 
       {/* Loading / Error */}
-      {isLoading && <LoadingSpinner className="h-32" />}
-      {error && (
+      {isLoading ? <LoadingSpinner className="h-32" /> : null}
+      {error ? (
         <ErrorMessage
           message={error}
           onRetry={() => {
             void fetchData();
           }}
         />
-      )}
+      ) : null}
 
       {/* Word list */}
-      {!isLoading && words.length > 0 && (
+      {!isLoading && words.length > 0 ? (
         <div className="space-y-2">
           {words.map((word, i) => {
             const config = STATUS_CONFIG[word.status] ?? DEFAULT_STATUS_CONFIG;
@@ -260,14 +271,14 @@ export default function VocabularyPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline gap-2">
                     <span className="font-semibold text-gray-900">{word.word}</span>
-                    {word.translation && <span className="text-sm text-gray-400">{word.translation}</span>}
+                    {word.translation ? <span className="text-sm text-gray-400">{word.translation}</span> : null}
                   </div>
                   <div className="mt-1.5 flex items-center gap-2">
-                    {word.topic && (
+                    {word.topic ? (
                       <span className="rounded-md border border-gray-100 bg-gray-50 px-2 py-0.5 text-[11px] text-gray-500">
                         {word.topic.replaceAll("_", " ")}
                       </span>
-                    )}
+                    ) : null}
                     <ReviewBar count={word.reviewCount} />
                   </div>
                 </div>
@@ -288,7 +299,14 @@ export default function VocabularyPage() {
                     className="p-1 text-gray-300 transition-colors hover:text-red-400"
                     title="Remove word"
                   >
-                    <svg className="size-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                    <svg
+                      className="size-3.5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      strokeWidth={2}
+                      stroke="currentColor"
+                      aria-hidden="true"
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
                   </button>
@@ -297,7 +315,7 @@ export default function VocabularyPage() {
             );
           })}
         </div>
-      )}
+      ) : null}
 
       {/* Empty state */}
       {!isLoading && words.length === 0 && !error && (
@@ -309,6 +327,7 @@ export default function VocabularyPage() {
               viewBox="0 0 24 24"
               strokeWidth={1.5}
               stroke="currentColor"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"

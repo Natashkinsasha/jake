@@ -12,7 +12,9 @@ interface VocabCardProps {
 }
 
 export function VocabCard({ highlights, reviewedWords }: VocabCardProps) {
-  if (highlights.length === 0) return null;
+  if (highlights.length === 0) {
+    return null;
+  }
 
   return (
     <div className="fixed bottom-24 left-1/2 z-30 flex max-w-md -translate-x-1/2 flex-wrap justify-center gap-2">
@@ -33,6 +35,7 @@ export function VocabCard({ highlights, reviewedWords }: VocabCardProps) {
                   viewBox="0 0 24 24"
                   strokeWidth={2}
                   stroke="currentColor"
+                  aria-hidden="true"
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                 </svg>

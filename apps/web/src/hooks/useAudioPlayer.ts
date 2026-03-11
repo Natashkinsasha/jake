@@ -10,5 +10,7 @@ export function unlockAudio() {
       log("AudioContext unlocked, state:", ctx.state);
       void ctx.close();
     });
-  } catch {}
+  } catch {
+    // no-op
+  }
 }

@@ -18,14 +18,16 @@ export class JwtAuthGuard implements CanActivate {
       const payload = await this.jwtService.verifyAsync<{ sub: string }>(token);
       (request as FastifyRequest & { user: { sub: string } }).user = payload;
       return true;
-    } catch {
-      throw new UnauthorizedException();
+    } catch (error) {
+      throw new UnauthorizedException(undefined, { cause: error });
     }
   }
 
   private extractToken(request: FastifyRequest): string | null {
     const auth = request.headers.authorization;
-    if (!auth) return null;
+    if (!auth) {
+      return null;
+    }
     const [type, token] = auth.split(" ");
     return type === "Bearer" ? (token ?? null) : null;
   }

@@ -3,10 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 
-export default function LessonError({ error }: { error: Error & { digest?: string }; reset: () => void }) {
+export default function LessonError({ error: _error }: { error: Error & { digest?: string }; reset: () => void }) {
   const router = useRouter();
 
-  useEffect(() => {}, []);
+  useEffect(() => {
+    // no-op
+  }, []);
 
   return (
     <div className="lesson-bg flex min-h-screen items-center justify-center p-4">

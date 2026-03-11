@@ -52,7 +52,11 @@ export function isBackchannel(text: string): boolean {
     .trim()
     .toLowerCase()
     .replaceAll(/[.,!?]/g, "");
-  if (ACTION_PHRASES.has(normalized)) return false;
-  if (BACKCHANNEL_PHRASES.has(normalized)) return true;
+  if (ACTION_PHRASES.has(normalized)) {
+    return false;
+  }
+  if (BACKCHANNEL_PHRASES.has(normalized)) {
+    return true;
+  }
   return normalized.split(/\s+/).filter(Boolean).length < 2;
 }

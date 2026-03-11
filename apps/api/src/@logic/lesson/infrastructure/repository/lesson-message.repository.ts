@@ -11,7 +11,9 @@ export class LessonMessageRepository {
 
   async create(data: typeof lessonMessageTable.$inferInsert): Promise<LessonMessageEntity> {
     const [row] = await this.txHost.tx.insert(lessonMessageTable).values(data).returning();
-    if (!row) throw new Error("INSERT into lesson_messages did not return a row");
+    if (!row) {
+      throw new Error("INSERT into lesson_messages did not return a row");
+    }
     return LessonMessageFactory.create(row);
   }
 

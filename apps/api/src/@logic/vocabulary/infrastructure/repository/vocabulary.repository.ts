@@ -25,9 +25,15 @@ export class VocabularyRepository {
     const existingRow = existing[0];
     if (existingRow) {
       const updates: Partial<typeof vocabularyTable.$inferInsert> = { updatedAt: new Date() };
-      if (data.translation && !existingRow.translation) updates.translation = data.translation;
-      if (data.topic && !existingRow.topic) updates.topic = data.topic;
-      if (data.lessonId && !existingRow.lessonId) updates.lessonId = data.lessonId;
+      if (data.translation && !existingRow.translation) {
+        updates.translation = data.translation;
+      }
+      if (data.topic && !existingRow.topic) {
+        updates.topic = data.topic;
+      }
+      if (data.lessonId && !existingRow.lessonId) {
+        updates.lessonId = data.lessonId;
+      }
 
       await this.txHost.tx.update(vocabularyTable).set(updates).where(eq(vocabularyTable.id, existingRow.id));
       return VocabularyFactory.create({ ...existingRow, ...updates } as typeof existingRow);
@@ -45,12 +51,16 @@ export class VocabularyRepository {
         reviewCount: 0,
       })
       .returning();
-    if (!row) throw new Error("INSERT into vocabulary did not return a row");
+    if (!row) {
+      throw new Error("INSERT into vocabulary did not return a row");
+    }
     return VocabularyFactory.create(row);
   }
 
   async incrementReview(userId: string, words: string[]): Promise<void> {
-    if (words.length === 0) return;
+    if (words.length === 0) {
+      return;
+    }
 
     await this.txHost.tx
       .update(vocabularyTable)
@@ -70,9 +80,15 @@ export class VocabularyRepository {
     limit = 50,
   ): Promise<VocabularyEntity[]> {
     const conditions = [eq(vocabularyTable.userId, userId)];
-    if (filters?.status) conditions.push(eq(vocabularyTable.status, filters.status));
-    if (filters?.topic) conditions.push(eq(vocabularyTable.topic, filters.topic));
-    if (filters?.lessonId) conditions.push(eq(vocabularyTable.lessonId, filters.lessonId));
+    if (filters?.status) {
+      conditions.push(eq(vocabularyTable.status, filters.status));
+    }
+    if (filters?.topic) {
+      conditions.push(eq(vocabularyTable.topic, filters.topic));
+    }
+    if (filters?.lessonId) {
+      conditions.push(eq(vocabularyTable.lessonId, filters.lessonId));
+    }
 
     const rows = await this.txHost.tx
       .select()
@@ -129,7 +145,9 @@ export class VocabularyRepository {
     const stats = { total: 0, new: 0, learning: 0, learned: 0 };
     for (const row of rows) {
       const key = row.status as keyof typeof stats;
-      if (key in stats && key !== "total") stats[key] = row.count;
+      if (key in stats && key !== "total") {
+        stats[key] = row.count;
+      }
       stats.total += row.count;
     }
     return stats;

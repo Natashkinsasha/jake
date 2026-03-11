@@ -69,7 +69,9 @@ export class ModerationService {
   /** Convenience: regex + LLM sequentially. For consumers that don't need parallel pattern. */
   async check(text: string, meta?: { userId?: string; lessonId?: string }): Promise<ModerationCheckResult> {
     const quick = this.quickCheck(text);
-    if (!quick.isSafe) return quick;
+    if (!quick.isSafe) {
+      return quick;
+    }
     return this.llmCheck(text, meta);
   }
 

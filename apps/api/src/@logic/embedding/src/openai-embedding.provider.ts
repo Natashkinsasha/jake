@@ -18,7 +18,9 @@ export class OpenAiEmbeddingProvider extends EmbeddingProvider {
         input: text,
       });
       const embedding = response.data[0];
-      if (!embedding) throw new Error("OpenAI returned no embeddings");
+      if (!embedding) {
+        throw new Error("OpenAI returned no embeddings");
+      }
       return embedding.embedding;
     } catch (error) {
       this.logger.error(`OpenAI embedding failed: ${error instanceof Error ? error.message : String(error)}`);

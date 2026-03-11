@@ -105,7 +105,9 @@ export class LessonController {
   @Get(":id")
   async getLesson(@Param("id") id: string) {
     const lesson = await this.lessonMaintainer.getLesson(id);
-    if (!lesson) throw new NotFoundException("Lesson not found");
+    if (!lesson) {
+      throw new NotFoundException("Lesson not found");
+    }
     return lesson;
   }
 
@@ -126,7 +128,9 @@ export class LessonController {
         transcript_length: body.transcriptLength,
         segments: body.segments,
       },
-      async () => {},
+      async () => {
+        // no-op
+      },
     );
     return { success: true };
   }

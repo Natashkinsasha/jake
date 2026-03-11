@@ -28,7 +28,9 @@ export class LessonContextService {
       this.lessonRepository.findRecentByUser(userId, 1),
     ]);
 
-    if (!user) throw new NotFoundException("User not found");
+    if (!user) {
+      throw new NotFoundException("User not found");
+    }
 
     const prefs = user.user_preferences;
 
@@ -44,11 +46,15 @@ export class LessonContextService {
     const medium = grammarProgress.filter((g) => g.level >= 30 && g.level < 50).sort((a, b) => a.level - b.level);
 
     for (const g of weak) {
-      if (suggestedTopics.length >= 3) break;
+      if (suggestedTopics.length >= 3) {
+        break;
+      }
       suggestedTopics.push(g.topic);
     }
     for (const g of medium) {
-      if (suggestedTopics.length >= 3) break;
+      if (suggestedTopics.length >= 3) {
+        break;
+      }
       suggestedTopics.push(g.topic);
     }
 

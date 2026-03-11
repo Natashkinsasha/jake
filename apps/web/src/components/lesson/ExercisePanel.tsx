@@ -19,7 +19,14 @@ export function ExercisePanel({ exercise, onSubmit, onDismiss }: ExercisePanelPr
           className="absolute right-2.5 top-2.5 flex size-6 items-center justify-center rounded-full text-white/20 transition-colors hover:bg-white/10 hover:text-white/50"
           aria-label="Dismiss exercise"
         >
-          <svg className="size-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+          <svg
+            className="size-3.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2.5}
+            stroke="currentColor"
+            aria-hidden="true"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>

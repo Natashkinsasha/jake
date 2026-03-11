@@ -49,14 +49,16 @@ export function useLessonState(token?: string | null) {
 
       // If a new stream already started (e.g. exercise feedback response),
       // this onAllDone is from a stale TTS — don't overwrite the new stream's message.
-      if (streamStartedRef.current) return;
+      if (streamStartedRef.current) {
+        return;
+      }
 
       // Use server's authoritative fullText for the final snap (corrected punctuation etc.)
       const text = finalFullTextRef.current ?? pendingRevealTextRef.current;
       if (text) {
         setState((prev) => {
           const messages = [...prev.messages];
-          const last = messages[messages.length - 1];
+          const last = messages.at(-1);
           if (last?.role === "assistant") {
             messages[messages.length - 1] = { ...last, text };
           }
@@ -71,7 +73,9 @@ export function useLessonState(token?: string | null) {
     },
     onPlaybackProgress: (playedSec, totalDecodedSec, allReceived) => {
       const fullText = pendingRevealTextRef.current;
-      if (!fullText) return;
+      if (!fullText) {
+        return;
+      }
 
       let targetLen: number;
       if (allReceived && totalDecodedSec > 0) {
@@ -85,7 +89,9 @@ export function useLessonState(token?: string | null) {
 
       // Never go backward, never exceed text length
       targetLen = Math.max(revealedLenRef.current, Math.min(targetLen, fullText.length));
-      if (targetLen <= revealedLenRef.current) return;
+      if (targetLen <= revealedLenRef.current) {
+        return;
+      }
 
       // Snap forward to word boundary
       while (targetLen < fullText.length && fullText[targetLen] !== " ") {
@@ -97,7 +103,7 @@ export function useLessonState(token?: string | null) {
 
       setState((prev) => {
         const messages = [...prev.messages];
-        const last = messages[messages.length - 1];
+        const last = messages.at(-1);
         if (last?.role === "assistant") {
           messages[messages.length - 1] = { ...last, text: revealed };
         } else {
@@ -137,7 +143,9 @@ export function useLessonState(token?: string | null) {
     (event: string, data: LessonEventData) => {
       log("event:", event, data.text ? `"${data.text.slice(0, 50)}..."` : "");
 
-      if (handleCustomEvent(event, data, refs, setState, log)) return;
+      if (handleCustomEvent(event, data, refs, setState, log)) {
+        return;
+      }
 
       if (event === "tutor_message") {
         refs.pendingTurns.current = Math.max(0, refs.pendingTurns.current - 1);
@@ -161,7 +169,9 @@ export function useLessonState(token?: string | null) {
 
   const sendText = useCallback(
     (text: string) => {
-      if (!text.trim()) return;
+      if (!text.trim()) {
+        return;
+      }
       pendingTurnsRef.current++;
       emotionRef.current = "neutral";
       const trimmed = text.trim();
@@ -175,7 +185,7 @@ export function useLessonState(token?: string | null) {
 
       setState((prev) => {
         const messages = [...prev.messages];
-        const last = messages[messages.length - 1];
+        const last = messages.at(-1);
         if (last?.role === "user") {
           messages[messages.length - 1] = { ...last, text: `${last.text} ${trimmed}` };
         } else {
@@ -200,7 +210,9 @@ export function useLessonState(token?: string | null) {
   }, [emit]);
 
   const interruptTutor = useCallback(() => {
-    if (greetingPlayingRef.current) return;
+    if (greetingPlayingRef.current) {
+      return;
+    }
     tts.stop();
     emit("interrupt", {});
     activeMessageIdRef.current = null;
@@ -212,7 +224,7 @@ export function useLessonState(token?: string | null) {
 
     setState((prev) => {
       const messages = [...prev.messages];
-      const last = messages[messages.length - 1];
+      const last = messages.at(-1);
       if (last?.role === "assistant") {
         if (last.text) {
           messages[messages.length - 1] = { ...last, text: `${last.text}...` };

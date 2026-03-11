@@ -36,7 +36,9 @@ const EMOTION_RE = /<emotion>(\w+)<\/emotion>/;
 
 export function parseEmotion(text: string): { emotion: Emotion; text: string } {
   const match = EMOTION_RE.exec(text);
-  if (!match) return { emotion: "neutral", text: text.trim() };
+  if (!match) {
+    return { emotion: "neutral", text: text.trim() };
+  }
 
   const emotionName = match[1] as string;
   const isValid = EMOTIONS.includes(emotionName as Emotion);

@@ -66,7 +66,9 @@ export function LessonScreen({ token }: LessonScreenProps) {
     for (let i = messages.length - 1; i >= 0; i--) {
       const msg = messages[i];
       if (msg?.role === "exercise" && msg.exercise && !msg.exerciseFeedback) {
-        if (msg.exercise.exerciseId === dismissedExerciseId) return null;
+        if (msg.exercise.exerciseId === dismissedExerciseId) {
+          return null;
+        }
         return msg.exercise;
       }
     }
@@ -150,7 +152,9 @@ export function LessonScreen({ token }: LessonScreenProps) {
   const handleTogglePause = useCallback(() => {
     if (isPaused) {
       setIsPaused(false);
-      if (!isMuted) stt.enable();
+      if (!isMuted) {
+        stt.enable();
+      }
     } else {
       setIsPaused(true);
       interruptTutor();
@@ -163,7 +167,9 @@ export function LessonScreen({ token }: LessonScreenProps) {
   const handleToggleMute = useCallback(() => {
     if (isMuted) {
       setIsMuted(false);
-      if (!isPaused) stt.enable();
+      if (!isPaused) {
+        stt.enable();
+      }
     } else {
       setIsMuted(true);
       stt.disable();
@@ -215,8 +221,12 @@ export function LessonScreen({ token }: LessonScreenProps) {
     }
   }, [lessonError, stt, stopAllAudio, router, showToast]);
 
-  if (!connected) return <LessonConnecting />;
-  if (!hasReceivedFirstMessage) return <LessonWaiting />;
+  if (!connected) {
+    return <LessonConnecting />;
+  }
+  if (!hasReceivedFirstMessage) {
+    return <LessonWaiting />;
+  }
 
   return (
     <div className="lesson-bg flex h-dvh flex-col overflow-hidden">
@@ -230,7 +240,13 @@ export function LessonScreen({ token }: LessonScreenProps) {
           className="-m-1 rounded-lg p-2 text-white/15 transition-colors hover:text-white/40"
           title="Debug"
         >
-          <svg xmlns="http://www.w3.org/2000/svg" className="size-4" viewBox="0 0 20 20" fill="currentColor">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="size-4"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            aria-hidden="true"
+          >
             <path
               fillRule="evenodd"
               d="M6.56 1.14a.75.75 0 01.177 1.045 3.989 3.989 0 00-.464.886c.482.4.882.93 1.159 1.528h3.136a3.997 3.997 0 011.16-1.528 3.989 3.989 0 00-.465-.886.75.75 0 111.222-.868c.274.386.5.819.664 1.283A4.003 4.003 0 0114.75 7h.5a.75.75 0 010 1.5h-.227a4.984 4.984 0 01.227 1.5v.5h.5a.75.75 0 010 1.5h-.5v.5a4.984 4.984 0 01-.227 1.5h.227a.75.75 0 010 1.5h-.5a4.003 4.003 0 01-1.7 2.47.75.75 0 01-.868-1.222c.149-.105.29-.22.424-.344A3.001 3.001 0 0013 12.5v-2A3.001 3.001 0 0010 7.5H9.5A3.001 3.001 0 006.5 10.5v2a3.001 3.001 0 00.606 1.904c.134.124.275.239.424.344a.75.75 0 01-.868 1.222A4.003 4.003 0 015 13.5h-.5a.75.75 0 010-1.5h.227A4.984 4.984 0 014.5 10.5V10h-.5a.75.75 0 010-1.5h.5V8a4.984 4.984 0 01.227-1.5H4.5a.75.75 0 010-1.5h.5a4.003 4.003 0 011.7-2.47 3.989 3.989 0 01-.664-1.283.75.75 0 011.045-.177z"
@@ -258,7 +274,7 @@ export function LessonScreen({ token }: LessonScreenProps) {
       />
 
       {/* Exercise panel — slides up from bottom, above controls */}
-      {activeExercise && (
+      {activeExercise != null && (
         <ExercisePanel
           exercise={activeExercise}
           onSubmit={submitExerciseAnswer}
@@ -270,7 +286,7 @@ export function LessonScreen({ token }: LessonScreenProps) {
 
       {/* Live transcript preview — always rendered to avoid layout shift */}
       <div className="min-h-7 shrink-0 px-4 pb-2">
-        {liveTranscript && <p className="truncate text-center text-sm italic text-white/40">{liveTranscript}</p>}
+        {liveTranscript ? <p className="truncate text-center text-sm italic text-white/40">{liveTranscript}</p> : null}
       </div>
 
       {/* Bottom controls */}

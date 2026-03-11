@@ -541,6 +541,8 @@ You're passionate about making learning creative and accessible. You believe eve
 export function getTutorProfile(nationality: TutorNationality, gender: TutorGender): TutorProfile {
   const key = `${nationality}_${gender}`;
   const profile = TUTOR_PROFILES[key];
-  if (!profile) throw new Error(`Unknown tutor profile: ${key}`);
+  if (!profile) {
+    throw new Error(`Unknown tutor profile: ${key}`);
+  }
   return profile;
 }

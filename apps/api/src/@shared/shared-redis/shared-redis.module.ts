@@ -22,7 +22,7 @@ import { SharedConfigModule } from "../shared-config/shared-config.module";
               {
                 url: redisUrl,
                 db: redisDbNumber,
-                connectTimeout: 10000,
+                connectTimeout: 10_000,
                 onClientCreated: (client: Redis) => {
                   Logger.debug(`Connected to redis: ${redisUrl}/${redisDbNumber}`, "RedisModule");
                   client.on("error", (error: Error) => {

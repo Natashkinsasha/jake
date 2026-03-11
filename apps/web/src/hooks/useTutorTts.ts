@@ -23,7 +23,7 @@ function pcmToAudioBuffer(ctx: AudioContext, raw: ArrayBuffer): AudioBuffer {
     } else if (i >= int16.length - fadeSamples) {
       gain = (int16.length - 1 - i) / fadeSamples;
     }
-    channel[i] = (sample / 32768) * gain;
+    channel[i] = (sample / 32_768) * gain;
   }
 
   return audioBuffer;
@@ -115,11 +115,15 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
 
   const scheduleBuffers = useCallback(() => {
     const ctx = audioCtxRef.current;
-    if (!ctx) return;
+    if (!ctx) {
+      return;
+    }
 
     while (decodedQueueRef.current.length > 0) {
       const audioBuffer = decodedQueueRef.current.shift();
-      if (!audioBuffer) break;
+      if (!audioBuffer) {
+        break;
+      }
 
       const source = ctx.createBufferSource();
       source.buffer = audioBuffer;
@@ -137,7 +141,9 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
         optionsRef.current?.onPlaybackStart?.();
         progressTimerRef.current = setInterval(() => {
           const c = audioCtxRef.current;
-          if (!c) return;
+          if (!c) {
+            return;
+          }
           const elapsed = c.currentTime - batchStartTimeRef.current;
           optionsRef.current?.onPlaybackProgress?.(
             Math.max(0, elapsed),
@@ -318,15 +324,19 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
         };
 
         ws.onmessage = (event) => {
-          const msg = JSON.parse(event.data as string) as {
+          const msg = JSON.parse(event.data) as {
             audio?: string;
             isFinal?: boolean;
             message?: string;
             error?: string;
           };
 
-          if (msg.error) log("WS error from server:", msg.error);
-          if (msg.message) log("WS server message:", msg.message);
+          if (msg.error) {
+            log("WS error from server:", msg.error);
+          }
+          if (msg.message) {
+            log("WS server message:", msg.message);
+          }
 
           if (msg.audio) {
             const buf = decodeBase64(msg.audio);
@@ -394,7 +404,9 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   /** Speak a single message (greeting, exercise feedback). Opens WS, sends text, closes. */
   const speak = useCallback(
     (text: string, voiceId: string, speechSpeed?: number, model?: string, voiceSettings?: VoiceSettingsOverride) => {
-      if (!text.trim()) return;
+      if (!text.trim()) {
+        return;
+      }
       log("speak:", text.slice(0, 50), "voiceId:", voiceId);
 
       void openWs(
@@ -414,9 +426,18 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   /** Pre-warm: fetch token + open WS to ElevenLabs before first chunk arrives. */
   const preWarm = useCallback(
     (voiceId: string, speechSpeed?: number, model?: string) => {
-      if (wsRef.current || connectingRef.current) return;
+      if (wsRef.current || connectingRef.current) {
+        return;
+      }
       log("preWarm");
-      void openWs(voiceId, speechSpeed ?? 1.0, () => {}, model);
+      void openWs(
+        voiceId,
+        speechSpeed ?? 1.0,
+        () => {
+          // no-op
+        },
+        model,
+      );
     },
     [openWs],
   );
@@ -447,7 +468,15 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
 
       // No pre-warm, open normally
       pendingTextRef.current = [];
-      void openWs(voiceId, speechSpeed ?? 1.0, () => {}, model, voiceSettings);
+      void openWs(
+        voiceId,
+        speechSpeed ?? 1.0,
+        () => {
+          // no-op
+        },
+        model,
+        voiceSettings,
+      );
     },
     [openWs, closeWs, stopAudio],
   );
@@ -455,7 +484,9 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   /** Send a text chunk (sentence) during a streaming session. No flush — let ElevenLabs maintain consistent prosody. */
   const sendChunk = useCallback(
     (text: string) => {
-      if (!text.trim()) return;
+      if (!text.trim()) {
+        return;
+      }
 
       if (wsReadyRef.current) {
         sendTextToWs(text, false);

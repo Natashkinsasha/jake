@@ -3,13 +3,19 @@ export const API_URL =
   process.env["NEXT_PUBLIC_API_URL"] ?? (typeof window !== "undefined" ? "/api" : "http://localhost:4000");
 
 function resolveWsUrl(): string {
-  if (process.env["NEXT_PUBLIC_WS_URL"]) return process.env["NEXT_PUBLIC_WS_URL"];
-  if (typeof window === "undefined") return "http://localhost:4000/ws/lesson";
+  if (process.env["NEXT_PUBLIC_WS_URL"]) {
+    return process.env["NEXT_PUBLIC_WS_URL"];
+  }
+  if (typeof window === "undefined") {
+    return "http://localhost:4000/ws/lesson";
+  }
   // Dev: connect directly to API on port 4000 (Next.js rewrites don't support WebSocket)
   // Prod: same origin via nginx proxy
   const { protocol, hostname, port } = window.location;
   const isLocalDev = hostname === "localhost" && port === "3000";
-  if (isLocalDev) return "http://localhost:4000/ws/lesson";
+  if (isLocalDev) {
+    return "http://localhost:4000/ws/lesson";
+  }
   const wsProtocol = protocol === "https:" ? "wss:" : "ws:";
   return `${wsProtocol}//${hostname}/ws/lesson`;
 }
@@ -47,7 +53,7 @@ export const TOAST_CONFIG = {
 export const TTS_CONFIG = {
   MODEL: "eleven_turbo_v2_5",
   OUTPUT_FORMAT: "pcm_24000",
-  SAMPLE_RATE: 24000,
+  SAMPLE_RATE: 24_000,
   VOICE_SETTINGS: { stability: 0.65, similarity_boost: 0.75, style: 0.4 },
   CHUNK_LENGTH_SCHEDULE: [120, 160, 250],
   CROSSFADE_MS: 5,

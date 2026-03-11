@@ -23,7 +23,9 @@ export function useSpeechBuffer({ onFlush, onSpeechDone }: UseSpeechBufferOption
   const push = useCallback(
     (segment: string) => {
       bufferRef.current.push(segment);
-      if (timerRef.current) clearTimeout(timerRef.current);
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
       const silenceMs = getSilenceDuration(segment);
       timerRef.current = setTimeout(flush, silenceMs);
     },
@@ -44,7 +46,9 @@ export function useSpeechBuffer({ onFlush, onSpeechDone }: UseSpeechBufferOption
 
   useEffect(() => {
     return () => {
-      if (timerRef.current) clearTimeout(timerRef.current);
+      if (timerRef.current) {
+        clearTimeout(timerRef.current);
+      }
     };
   }, []);
 

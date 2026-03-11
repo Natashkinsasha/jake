@@ -9,7 +9,7 @@ export function ErrorMessage({ message, onRetry, className = "" }: ErrorMessageP
     <div className={`card py-8 text-center ${className}`}>
       <p className="mb-2 font-medium text-red-500">Something went wrong</p>
       <p className="mb-4 text-sm text-gray-500">{message}</p>
-      {onRetry && (
+      {onRetry != null && (
         <button type="button" onClick={onRetry} className="btn-primary px-6 py-2 text-sm">
           Try again
         </button>

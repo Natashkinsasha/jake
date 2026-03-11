@@ -32,7 +32,9 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     try {
       const body = (await res.json()) as { message?: string; error?: string };
       detail = body.message ?? body.error ?? "";
-    } catch {}
+    } catch {
+      // no-op
+    }
     throw new Error(`API Error ${String(res.status)} ${path}${detail ? `: ${detail}` : ""}`);
   }
 
@@ -86,11 +88,21 @@ export const api = {
   vocabulary: {
     list: (params?: { status?: string; topic?: string; lessonId?: string; offset?: number; limit?: number }) => {
       const query = new URLSearchParams();
-      if (params?.status) query.set("status", params.status);
-      if (params?.topic) query.set("topic", params.topic);
-      if (params?.lessonId) query.set("lessonId", params.lessonId);
-      if (params?.offset != null) query.set("offset", String(params.offset));
-      if (params?.limit != null) query.set("limit", String(params.limit));
+      if (params?.status) {
+        query.set("status", params.status);
+      }
+      if (params?.topic) {
+        query.set("topic", params.topic);
+      }
+      if (params?.lessonId) {
+        query.set("lessonId", params.lessonId);
+      }
+      if (params?.offset != null) {
+        query.set("offset", String(params.offset));
+      }
+      if (params?.limit != null) {
+        query.set("limit", String(params.limit));
+      }
       const qs = query.toString();
       return request<VocabularyItem[]>(`/vocabulary${qs ? `?${qs}` : ""}`);
     },

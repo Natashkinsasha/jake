@@ -20,8 +20,12 @@ export default function LessonHistoryPage() {
     );
   }
 
-  if (error) return <ErrorMessage message={error} onRetry={refetch} />;
-  if (!lesson) return null;
+  if (error) {
+    return <ErrorMessage message={error} onRetry={refetch} />;
+  }
+  if (!lesson) {
+    return null;
+  }
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
@@ -41,8 +45,8 @@ export default function LessonHistoryPage() {
           {lesson.topic ? `: ${lesson.topic}` : ""}
         </h1>
         <div className="mt-1 flex items-center gap-3 text-sm text-gray-500">
-          {lesson.createdAt && <span>{formatLessonDate(lesson.createdAt)}</span>}
-          {lesson.duration != null && lesson.duration > 0 && <span>{Math.max(1, lesson.duration)} min</span>}
+          {lesson.createdAt ? <span>{formatLessonDate(lesson.createdAt)}</span> : null}
+          {lesson.duration != null && lesson.duration > 0 ? <span>{Math.max(1, lesson.duration)} min</span> : null}
           <span
             className={`rounded-full px-2 py-0.5 text-xs ${
               lesson.status === "completed" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
@@ -54,11 +58,11 @@ export default function LessonHistoryPage() {
       </div>
 
       {/* Summary */}
-      {lesson.summary && (
+      {lesson.summary ? (
         <div className="card border border-blue-100 bg-blue-50">
           <p className="text-sm text-gray-700">{lesson.summary}</p>
         </div>
-      )}
+      ) : null}
 
       {/* Messages */}
       <div className="card">
