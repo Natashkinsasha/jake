@@ -138,6 +138,7 @@ export class AnthropicLlmProvider extends LlmProvider {
     spanName?: string,
   ): Promise<T> {
     const doGenerateJson = async (): Promise<T> => {
+      // biome-ignore lint/suspicious/noExplicitAny: existing code
       const jsonSchema = zodToJsonSchema(schema as any, { target: "openApi3" });
       this.logger.debug(`LLM tool_use request: model=${this.MODEL}, maxTokens=${maxTokens}`);
 
@@ -167,6 +168,7 @@ export class AnthropicLlmProvider extends LlmProvider {
         );
 
         // LLMs sometimes return stringified JSON instead of an object
+        // biome-ignore lint/suspicious/noExplicitAny: existing code
         let raw: any = toolBlock.input;
         if (typeof raw === "string") {
           try {
@@ -209,9 +211,11 @@ export class AnthropicLlmProvider extends LlmProvider {
   }
 
   // Wrap bare values in arrays at the specified paths
+  // biome-ignore lint/suspicious/noExplicitAny: existing code
   private coerceToArrays(obj: any, paths: (string | number)[][]): any {
     const copy = JSON.parse(JSON.stringify(obj));
     for (const path of paths) {
+      // biome-ignore lint/suspicious/noExplicitAny: existing code
       let target: any = copy;
       for (let i = 0; i < path.length - 1; i++) {
         target = target?.[path[i]!];
@@ -225,6 +229,7 @@ export class AnthropicLlmProvider extends LlmProvider {
   }
 
   // LLMs sometimes return "null" string instead of JSON null
+  // biome-ignore lint/suspicious/noExplicitAny: existing code
   private sanitizeNullStrings(obj: any): any {
     if (obj === "null") return null;
     if (Array.isArray(obj)) return obj.map((v: unknown) => this.sanitizeNullStrings(v));

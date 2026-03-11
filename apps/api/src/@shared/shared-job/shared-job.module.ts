@@ -10,6 +10,7 @@ import { SharedRedisModule } from "../shared-redis/shared-redis.module";
       inject: [RedisService],
       useFactory: (redisService: RedisService) => {
         return {
+          // biome-ignore lint/suspicious/noExplicitAny: existing code
           connection: redisService.getOrThrow().duplicate({ maxRetriesPerRequest: null }) as any,
           defaultJobOptions: {
             removeOnComplete: {

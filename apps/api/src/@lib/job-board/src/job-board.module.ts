@@ -18,7 +18,9 @@ export interface JobBoardModuleOptions {
 }
 
 export interface JobBoardModuleAsyncOptions extends Pick<ModuleMetadata, "imports"> {
+  // biome-ignore lint/suspicious/noExplicitAny: existing code
   useFactory?: (...args: any[]) => Promise<JobBoardModuleOptions> | JobBoardModuleOptions;
+  // biome-ignore lint/suspicious/noExplicitAny: existing code
   inject?: any[];
   useClass?: Type<JobBoardModuleOptionsFactory>;
   useExisting?: Type<JobBoardModuleOptionsFactory>;
@@ -52,6 +54,7 @@ export class JobBoardModule implements NestModule {
       return [
         {
           provide: JOB_BOARD_OPTIONS,
+          // biome-ignore lint/suspicious/noExplicitAny: existing code
           useFactory: async (...args: any[]) => {
             const config = await userFactory(...args);
             return {

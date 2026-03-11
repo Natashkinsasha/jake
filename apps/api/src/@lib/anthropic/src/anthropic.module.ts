@@ -6,7 +6,9 @@ export const ANTHROPIC_CLIENT = Symbol("ANTHROPIC_CLIENT");
 
 export interface AnthropicModuleAsyncOptions {
   imports?: DynamicModule["imports"];
+  // biome-ignore lint/suspicious/noExplicitAny: existing code
   inject?: any[];
+  // biome-ignore lint/suspicious/noExplicitAny: existing code
   useFactory: (...args: any[]) => Anthropic | Promise<Anthropic>;
 }
 

@@ -60,7 +60,7 @@
       "suspicious": {
         "noConsole": "warn",
         "noDoubleEquals": "error",
-        "noExplicitAny": "warn",
+        "noExplicitAny": "error",
         "noArrayIndexKey": "warn",
         "noUnknownAtRules": "off",
         "useIterableCallbackReturn": "off"
