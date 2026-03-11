@@ -1,5 +1,5 @@
-import { type z } from "zod";
 import { createInsertSchema } from "drizzle-zod";
+import type { z } from "zod";
 import { memoryEmbeddingTable } from "../table/memory-embedding.table";
 
 export const insertMemoryEmbeddingSchema = createInsertSchema(memoryEmbeddingTable);

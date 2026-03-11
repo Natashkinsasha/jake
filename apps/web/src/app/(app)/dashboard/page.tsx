@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { TutorSetupModal } from "@/components/TutorSetupModal";
+import { ErrorMessage } from "@/components/ui/ErrorMessage";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { VocabularyWidget } from "@/components/VocabularyWidget";
+import { useBackendSession } from "@/hooks/useBackendSession";
 import { api } from "@/lib/api";
 import { formatLessonDate } from "@/lib/utils";
-import { useBackendSession } from "@/hooks/useBackendSession";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { ErrorMessage } from "@/components/ui/ErrorMessage";
-import { TutorSetupModal } from "@/components/TutorSetupModal";
-import { VocabularyWidget } from "@/components/VocabularyWidget";
 import type { LessonListItem, UserPreferences } from "@/types";
 
 const PAGE_SIZE = 10;
@@ -42,7 +42,7 @@ export default function DashboardPage() {
 
     try {
       const data = await api.lessons.list(offset, PAGE_SIZE);
-      setLessons((prev) => isInitial ? data : [...prev, ...data]);
+      setLessons((prev) => (isInitial ? data : [...prev, ...data]));
       setHasMore(data.length === PAGE_SIZE);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Something went wrong";
@@ -85,7 +85,9 @@ export default function DashboardPage() {
     );
 
     observer.observe(sentinel);
-    return () => { observer.disconnect(); };
+    return () => {
+      observer.disconnect();
+    };
   }, [hasMore, isLoading, isLoadingMore, lessons.length, fetchLessons]);
 
   const firstName = user?.name.split(" ")[0];
@@ -95,11 +97,10 @@ export default function DashboardPage() {
       {/* Greeting */}
       <div className="animate-fade-in pt-2 opacity-0">
         <h1 className="text-4xl font-bold tracking-tight text-gray-900 lg:text-5xl">
-          {greeting}{firstName ? `, ${firstName}` : ""}
+          {greeting}
+          {firstName ? `, ${firstName}` : ""}
         </h1>
-        <p className="mt-2 text-lg text-gray-400">
-          Ready for today&apos;s session?
-        </p>
+        <p className="mt-2 text-lg text-gray-400">Ready for today&apos;s session?</p>
       </div>
 
       {/* Start Lesson CTA */}
@@ -113,21 +114,33 @@ export default function DashboardPage() {
           <div>
             <div className="mb-3 flex items-center gap-3">
               <div className="flex size-10 items-center justify-center rounded-full bg-white/15">
-                <svg className="size-5 text-blue-100" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+                <svg
+                  className="size-5 text-blue-100"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z"
+                  />
                 </svg>
               </div>
               <span className="text-sm font-medium uppercase tracking-wide text-blue-200">Voice Lesson</span>
             </div>
-            <h2 className="mb-1 text-3xl font-bold text-white">
-              Start a conversation
-            </h2>
-            <p className="text-base text-blue-200">
-              Practice your English with Jake
-            </p>
+            <h2 className="mb-1 text-3xl font-bold text-white">Start a conversation</h2>
+            <p className="text-base text-blue-200">Practice your English with Jake</p>
           </div>
           <div className="hidden size-14 items-center justify-center rounded-2xl bg-white/10 transition-colors group-hover:bg-white/20 sm:flex">
-            <svg className="size-6 text-white transition-transform group-hover:translate-x-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <svg
+              className="size-6 text-white transition-transform group-hover:translate-x-0.5"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
             </svg>
           </div>
@@ -141,7 +154,14 @@ export default function DashboardPage() {
 
       {/* Lessons */}
       {isLoading && <LoadingSpinner className="h-32" />}
-      {error && !isLoadingMore && <ErrorMessage message={error} onRetry={() => { void fetchLessons(lessons.length > 0 ? lessons.length : 0); }} />}
+      {error && !isLoadingMore && (
+        <ErrorMessage
+          message={error}
+          onRetry={() => {
+            void fetchLessons(lessons.length > 0 ? lessons.length : 0);
+          }}
+        />
+      )}
 
       {!isLoading && lessons.length > 0 && (
         <div className="animate-stagger-4 animate-slide-up opacity-0">
@@ -151,7 +171,9 @@ export default function DashboardPage() {
               <button
                 type="button"
                 key={lesson.id}
-                onClick={() => { router.push(`/lessons/${lesson.id}`); }}
+                onClick={() => {
+                  router.push(`/lessons/${lesson.id}`);
+                }}
                 style={i < PAGE_SIZE ? { animationDelay: `${(i + 5) * 0.05}s` } : undefined}
                 className={`${i < PAGE_SIZE ? "animate-slide-up opacity-0" : ""} group flex w-full items-center gap-4 rounded-2xl border border-gray-100 bg-white p-4 text-left transition-all duration-200 hover:border-primary-200 hover:shadow-md hover:shadow-primary-900/5`}
               >
@@ -163,23 +185,21 @@ export default function DashboardPage() {
                   <p className="text-sm font-medium text-gray-800 transition-colors group-hover:text-primary-700">
                     {lesson.topic ?? "Conversation with Jake"}
                   </p>
-                  {lesson.summary && (
-                    <p className="mt-0.5 truncate text-xs text-gray-400">
-                      {lesson.summary}
-                    </p>
-                  )}
+                  {lesson.summary && <p className="mt-0.5 truncate text-xs text-gray-400">{lesson.summary}</p>}
                 </div>
 
                 <div className="shrink-0 text-right">
-                  <p className="text-xs text-gray-400">
-                    {lesson.createdAt ? formatLessonDate(lesson.createdAt) : ""}
-                  </p>
-                  <p className="mt-0.5 text-xs text-gray-300">
-                    {Math.max(1, lesson.duration ?? 0)} min
-                  </p>
+                  <p className="text-xs text-gray-400">{lesson.createdAt ? formatLessonDate(lesson.createdAt) : ""}</p>
+                  <p className="mt-0.5 text-xs text-gray-300">{Math.max(1, lesson.duration ?? 0)} min</p>
                 </div>
 
-                <svg className="size-4 shrink-0 text-gray-300 transition-all group-hover:translate-x-0.5 group-hover:text-primary-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <svg
+                  className="size-4 shrink-0 text-gray-300 transition-all group-hover:translate-x-0.5 group-hover:text-primary-500"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                  stroke="currentColor"
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
                 </svg>
               </button>
@@ -202,7 +222,9 @@ export default function DashboardPage() {
 
       <TutorSetupModal
         open={showTutorSetup}
-        onClose={() => { setShowTutorSetup(false); }}
+        onClose={() => {
+          setShowTutorSetup(false);
+        }}
         onComplete={() => {
           setShowTutorSetup(false);
           router.push("/lesson");

@@ -1,5 +1,5 @@
-import { CanActivate, ExecutionContext, Injectable } from "@nestjs/common";
-import { JwtService } from "@nestjs/jwt";
+import { type CanActivate, type ExecutionContext, Injectable } from "@nestjs/common";
+import type { JwtService } from "@nestjs/jwt";
 import { WsException } from "@nestjs/websockets";
 import type { Socket } from "socket.io";
 

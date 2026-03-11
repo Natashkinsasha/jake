@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { api } from "@/lib/api";
 
@@ -33,7 +33,10 @@ interface TutorSetupModalProps {
 const NATIONALITY_LABELS: Record<string, { label: string; flag: string }> = {
   australian: { label: "Australian", flag: "\uD83C\uDDE6\uD83C\uDDFA" },
   british: { label: "British", flag: "\uD83C\uDDEC\uD83C\uDDE7" },
-  scottish: { label: "Scottish", flag: "\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC73\uDB40\uDC63\uDB40\uDC74\uDB40\uDC7F" },
+  scottish: {
+    label: "Scottish",
+    flag: "\uD83C\uDFF4\uDB40\uDC67\uDB40\uDC62\uDB40\uDC73\uDB40\uDC63\uDB40\uDC74\uDB40\uDC7F",
+  },
   american: { label: "American", flag: "\uD83C\uDDFA\uD83C\uDDF8" },
 };
 
@@ -49,13 +52,21 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
   const [playingVoiceId, setPlayingVoiceId] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  const stopPreview = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    setPlayingVoiceId(null);
+  }, []);
+
   useEffect(() => {
     if (!open) {
       stopPreview();
       return;
     }
     void api.tutor.profiles().then(setProfiles);
-  }, [open]);
+  }, [open, stopPreview]);
 
   const fetchVoices = useCallback(async (g: string) => {
     const v = await api.tutor.voices(g);
@@ -63,14 +74,6 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
     const first = v[0];
     if (first) setVoiceId(first.id);
   }, []);
-
-  const stopPreview = () => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current = null;
-    }
-    setPlayingVoiceId(null);
-  };
 
   const togglePreview = (voice: TutorVoice) => {
     if (playingVoiceId === voice.id) {
@@ -82,8 +85,12 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
     const audio = new Audio(voice.previewUrl);
     audioRef.current = audio;
     setPlayingVoiceId(voice.id);
-    audio.addEventListener("ended", () => { setPlayingVoiceId(null); });
-    audio.play().catch(() => { setPlayingVoiceId(null); });
+    audio.addEventListener("ended", () => {
+      setPlayingVoiceId(null);
+    });
+    audio.play().catch(() => {
+      setPlayingVoiceId(null);
+    });
   };
 
   const handleGenderSelect = (g: string) => {
@@ -118,7 +125,10 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
 
   const handleBack = () => {
     stopPreview();
-    if (step === 2) { setStep(1); setNationality(null); }
+    if (step === 2) {
+      setStep(1);
+      setNationality(null);
+    }
     if (step === 3) setStep(2);
   };
 
@@ -138,7 +148,11 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
             className="absolute right-4 top-4 p-1 text-white/60 transition-colors hover:text-white"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="size-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
+              <path
+                fillRule="evenodd"
+                d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
             </svg>
           </button>
           <h2 className="text-xl font-bold text-white">Customize your tutor</h2>
@@ -166,14 +180,16 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
                 <button
                   key={g}
                   type="button"
-                  onClick={() => { handleGenderSelect(g); }}
+                  onClick={() => {
+                    handleGenderSelect(g);
+                  }}
                   className={`rounded-2xl border-2 p-5 transition-all duration-200 hover:shadow-md ${
-                    gender === g
-                      ? "border-primary-500 bg-primary-50"
-                      : "border-gray-100 hover:border-primary-200"
+                    gender === g ? "border-primary-500 bg-primary-50" : "border-gray-100 hover:border-primary-200"
                   }`}
                 >
-                  <div className="mb-2 text-3xl">{g === "male" ? "\uD83D\uDC68\u200D\uD83C\uDFEB" : "\uD83D\uDC69\u200D\uD83C\uDFEB"}</div>
+                  <div className="mb-2 text-3xl">
+                    {g === "male" ? "\uD83D\uDC68\u200D\uD83C\uDFEB" : "\uD83D\uDC69\u200D\uD83C\uDFEB"}
+                  </div>
                   <p className="font-semibold capitalize text-gray-800">{g}</p>
                 </button>
               ))}
@@ -189,7 +205,9 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
                   <button
                     key={p.nationality}
                     type="button"
-                    onClick={() => { handleNationalitySelect(p.nationality); }}
+                    onClick={() => {
+                      handleNationalitySelect(p.nationality);
+                    }}
                     className={`w-full rounded-2xl border-2 p-4 text-left transition-all duration-200 hover:shadow-md ${
                       nationality === p.nationality
                         ? "border-primary-500 bg-primary-50"
@@ -216,11 +234,11 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
                 <div
                   key={v.id}
                   className={`flex cursor-pointer items-center gap-3 rounded-2xl border-2 p-4 transition-all duration-200 hover:shadow-md ${
-                    voiceId === v.id
-                      ? "border-primary-500 bg-primary-50"
-                      : "border-gray-100 hover:border-primary-200"
+                    voiceId === v.id ? "border-primary-500 bg-primary-50" : "border-gray-100 hover:border-primary-200"
                   }`}
-                  onClick={() => { setVoiceId(v.id); }}
+                  onClick={() => {
+                    setVoiceId(v.id);
+                  }}
                 >
                   <button
                     type="button"
@@ -242,7 +260,11 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
                       </svg>
                     ) : (
                       <svg className="size-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z" />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.348a1.125 1.125 0 010 1.971l-11.54 6.347a1.125 1.125 0 01-1.667-.985V5.653z"
+                        />
                       </svg>
                     )}
                   </button>
@@ -267,7 +289,9 @@ export function TutorSetupModal({ open, onComplete, onClose }: TutorSetupModalPr
           {step === 3 && (
             <button
               type="button"
-              onClick={() => { void handleComplete(); }}
+              onClick={() => {
+                void handleComplete();
+              }}
               disabled={saving || !voiceId}
               className="gradient-bg flex-1 rounded-xl px-5 py-2.5 font-medium text-white transition-all hover:shadow-lg disabled:opacity-50"
             >

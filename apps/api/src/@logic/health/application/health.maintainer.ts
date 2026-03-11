@@ -1,7 +1,7 @@
+import type { RedisService } from "@liaoliaots/nestjs-redis";
 import { Injectable } from "@nestjs/common";
+import type { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
 import { sql } from "drizzle-orm";
-import { RedisService } from "@liaoliaots/nestjs-redis";
-import { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
 import type Redis from "ioredis";
 
 @Injectable()
@@ -16,10 +16,7 @@ export class HealthMaintainer {
   }
 
   async check() {
-    const [dbOk, redisOk] = await Promise.all([
-      this.checkDb(),
-      this.checkRedis(),
-    ]);
+    const [dbOk, redisOk] = await Promise.all([this.checkDb(), this.checkRedis()]);
 
     const allUp = dbOk && redisOk;
 

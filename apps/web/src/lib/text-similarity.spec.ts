@@ -1,4 +1,4 @@
-import { textSimilarity, shouldAbortForRevision } from "./text-similarity";
+import { shouldAbortForRevision, textSimilarity } from "./text-similarity";
 
 describe("textSimilarity", () => {
   it("returns 1.0 for identical text", () => {
@@ -27,16 +27,10 @@ describe("shouldAbortForRevision", () => {
   });
 
   it("returns false for similar text", () => {
-    expect(shouldAbortForRevision(
-      "I want to practice my English",
-      "I want to practice my English today",
-    )).toBe(false);
+    expect(shouldAbortForRevision("I want to practice my English", "I want to practice my English today")).toBe(false);
   });
 
   it("returns true for very different text", () => {
-    expect(shouldAbortForRevision(
-      "I want to practice my English",
-      "Let's talk about cooking recipes",
-    )).toBe(true);
+    expect(shouldAbortForRevision("I want to practice my English", "Let's talk about cooking recipes")).toBe(true);
   });
 });

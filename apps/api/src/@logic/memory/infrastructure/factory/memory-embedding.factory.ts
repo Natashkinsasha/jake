@@ -1,5 +1,5 @@
-import { type MemoryEmbeddingEntity } from "../../domain/entity/memory-embedding.entity";
-import { type memoryEmbeddingTable } from "../table/memory-embedding.table";
+import type { MemoryEmbeddingEntity } from "../../domain/entity/memory-embedding.entity";
+import type { memoryEmbeddingTable } from "../table/memory-embedding.table";
 
 type MemoryEmbeddingRow = typeof memoryEmbeddingTable.$inferSelect;
 

@@ -1,9 +1,9 @@
-import { NodeSDK } from "@opentelemetry/sdk-node";
-import { LangfuseSpanProcessor } from "@langfuse/otel";
+import Anthropic from "@anthropic-ai/sdk";
 import { AnthropicInstrumentation } from "@arizeai/openinference-instrumentation-anthropic";
 import { OpenAIInstrumentation } from "@arizeai/openinference-instrumentation-openai";
-import { trace, SpanStatusCode, type Attributes } from "@opentelemetry/api";
-import Anthropic from "@anthropic-ai/sdk";
+import { LangfuseSpanProcessor } from "@langfuse/otel";
+import { type Attributes, SpanStatusCode, trace } from "@opentelemetry/api";
+import { NodeSDK } from "@opentelemetry/sdk-node";
 import OpenAI from "openai";
 
 let sdk: NodeSDK | null = null;
@@ -13,7 +13,6 @@ export function initTracing(): void {
   const secretKey = process.env["LANGFUSE_SECRET_KEY"];
 
   if (!publicKey || !secretKey) {
-    console.log("Langfuse keys not set — tracing disabled");
     return;
   }
 
@@ -30,13 +29,11 @@ export function initTracing(): void {
   });
 
   sdk.start();
-  console.log("Langfuse tracing initialized");
 }
 
 export async function shutdownTracing(): Promise<void> {
   if (sdk) {
     await sdk.shutdown();
-    console.log("Langfuse tracing shut down");
   }
 }
 

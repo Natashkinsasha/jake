@@ -20,9 +20,12 @@ export function DebugModal({ open, onClose, debugInfo }: DebugModalProps) {
 
   useEffect(() => {
     if (!open) return;
-    void api.auth.me().then((res) => {
-      setPrefs(res.user_preferences ?? {});
-    }).catch(() => {});
+    void api.auth
+      .me()
+      .then((res) => {
+        setPrefs(res.user_preferences ?? {});
+      })
+      .catch(() => {});
   }, [open]);
 
   if (!open) return null;
@@ -34,11 +37,7 @@ export function DebugModal({ open, onClose, debugInfo }: DebugModalProps) {
         <div className="max-h-[80vh] w-full max-w-md overflow-y-auto rounded-xl border border-white/10 bg-gray-900 shadow-2xl">
           <div className="flex items-center justify-between border-b border-white/10 p-4">
             <h2 className="font-mono text-sm text-white/80">Debug Info</h2>
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-sm text-white/40 hover:text-white/80"
-            >
+            <button type="button" onClick={onClose} className="text-sm text-white/40 hover:text-white/80">
               Close
             </button>
           </div>

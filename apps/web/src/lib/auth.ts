@@ -15,7 +15,8 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user, account }) {
       if (account?.provider === "google") {
         try {
-          const API_URL = process.env["INTERNAL_API_URL"] ?? process.env["NEXT_PUBLIC_API_URL"] ?? "http://localhost:4000";
+          const API_URL =
+            process.env["INTERNAL_API_URL"] ?? process.env["NEXT_PUBLIC_API_URL"] ?? "http://localhost:4000";
           const res = await fetch(`${API_URL}/auth/google`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -29,7 +30,10 @@ export const authOptions: NextAuthOptions = {
 
           if (!res.ok) return false;
 
-          const data = (await res.json()) as { token: string; user: { id: string; email: string; name: string; avatarUrl: string | null; currentLevel: string | null } };
+          const data = (await res.json()) as {
+            token: string;
+            user: { id: string; email: string; name: string; avatarUrl: string | null; currentLevel: string | null };
+          };
           user.backendToken = data.token;
           user.backendUser = data.user;
           return true;

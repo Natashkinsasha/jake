@@ -1,5 +1,5 @@
-import { type JwtService } from "@nestjs/jwt";
 import { type ExecutionContext, UnauthorizedException } from "@nestjs/common";
+import type { JwtService } from "@nestjs/jwt";
 import { JwtAuthGuard } from "./jwt-auth.guard";
 
 describe("JwtAuthGuard", () => {
@@ -11,14 +11,15 @@ describe("JwtAuthGuard", () => {
     guard = new JwtAuthGuard(jwtService);
   });
 
-  const mockContext = (authHeader?: string): ExecutionContext => ({
-    switchToHttp: () => ({
-      getRequest: () => ({
-        headers: authHeader ? { authorization: authHeader } : {},
-        user: null,
+  const mockContext = (authHeader?: string): ExecutionContext =>
+    ({
+      switchToHttp: () => ({
+        getRequest: () => ({
+          headers: authHeader ? { authorization: authHeader } : {},
+          user: null,
+        }),
       }),
-    }),
-  }) as any;
+    }) as any;
 
   it("should allow valid token", async () => {
     const payload = { sub: "user-1", email: "test@test.com" };

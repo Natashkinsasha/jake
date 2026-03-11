@@ -1,6 +1,6 @@
 import { WorkerHost } from "@nestjs/bullmq";
-import type { ClsService } from "nestjs-cls";
 import type { Job } from "bullmq";
+import type { ClsService } from "nestjs-cls";
 
 export abstract class ClsWorkerHost extends WorkerHost {
   protected abstract readonly cls: ClsService;

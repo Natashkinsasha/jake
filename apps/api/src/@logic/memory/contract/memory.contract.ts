@@ -1,9 +1,9 @@
 import { Injectable } from "@nestjs/common";
-import { MemoryRetrievalService } from "../application/service/memory-retrieval.service";
-import { MemoryEmbeddingRepository } from "../infrastructure/repository/memory-embedding.repository";
-import { MemoryFactRepository } from "../infrastructure/repository/memory-fact.repository";
-import { memoryEmbeddingTable } from "../infrastructure/table/memory-embedding.table";
-import { MemoryEmbeddingEntity } from "../domain/entity/memory-embedding.entity";
+import type { MemoryRetrievalService } from "../application/service/memory-retrieval.service";
+import type { MemoryEmbeddingEntity } from "../domain/entity/memory-embedding.entity";
+import type { MemoryEmbeddingRepository } from "../infrastructure/repository/memory-embedding.repository";
+import type { MemoryFactRepository } from "../infrastructure/repository/memory-fact.repository";
+import type { memoryEmbeddingTable } from "../infrastructure/table/memory-embedding.table";
 
 @Injectable()
 export class MemoryContract {

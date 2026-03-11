@@ -1,11 +1,19 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import type { VocabularyStats } from "@/types";
 
-function ProgressRing({ percent, size = 64, strokeWidth = 5 }: { percent: number; size?: number; strokeWidth?: number }) {
+function ProgressRing({
+  percent,
+  size = 64,
+  strokeWidth = 5,
+}: {
+  percent: number;
+  size?: number;
+  strokeWidth?: number;
+}) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (percent / 100) * circumference;
@@ -48,7 +56,10 @@ export function VocabularyWidget() {
   const [stats, setStats] = useState<VocabularyStats | null>(null);
 
   useEffect(() => {
-    void api.vocabulary.stats().then(setStats).catch(() => {});
+    void api.vocabulary
+      .stats()
+      .then(setStats)
+      .catch(() => {});
   }, []);
 
   if (!stats || stats.total === 0) return null;
@@ -58,7 +69,9 @@ export function VocabularyWidget() {
   return (
     <button
       type="button"
-      onClick={() => { router.push("/vocabulary"); }}
+      onClick={() => {
+        router.push("/vocabulary");
+      }}
       className="group w-full rounded-2xl border border-gray-100 bg-white p-5 text-left transition-all duration-300 hover:border-primary-200 hover:shadow-lg hover:shadow-primary-900/5"
     >
       <div className="flex items-start gap-5">
@@ -74,7 +87,13 @@ export function VocabularyWidget() {
         <div className="min-w-0 flex-1">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">Vocabulary</h3>
-            <svg className="size-4 text-gray-300 transition-all group-hover:translate-x-0.5 group-hover:text-primary-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <svg
+              className="size-4 text-gray-300 transition-all group-hover:translate-x-0.5 group-hover:text-primary-500"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={2}
+              stroke="currentColor"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
             </svg>
           </div>

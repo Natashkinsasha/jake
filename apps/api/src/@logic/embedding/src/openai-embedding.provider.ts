@@ -1,8 +1,7 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
-import OpenAI from "openai";
 import { OPENAI_CLIENT } from "@lib/openai/src";
-
 import { EmbeddingProvider } from "@lib/provider/src";
+import { Inject, Injectable, Logger } from "@nestjs/common";
+import type OpenAI from "openai";
 
 @Injectable()
 export class OpenAiEmbeddingProvider extends EmbeddingProvider {

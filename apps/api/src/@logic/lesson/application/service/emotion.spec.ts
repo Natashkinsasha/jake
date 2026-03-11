@@ -1,4 +1,4 @@
-import { parseEmotion, getVoiceSettingsForEmotion, EMOTIONS, type Emotion } from "./emotion";
+import { EMOTIONS, type Emotion, getVoiceSettingsForEmotion, parseEmotion } from "./emotion";
 
 describe("parseEmotion", () => {
   it("should extract emotion tag from start of text", () => {

@@ -35,10 +35,7 @@ describe("api", () => {
   describe("tutor.profiles", () => {
     it("fetches /tutor/profiles", async () => {
       await api.tutor.profiles();
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining("/tutor/profiles"),
-        expect.any(Object),
-      );
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining("/tutor/profiles"), expect.any(Object));
     });
   });
 

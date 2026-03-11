@@ -1,5 +1,5 @@
-import { type LessonEntity } from "../../domain/entity/lesson.entity";
-import { type lessonTable } from "../table/lesson.table";
+import type { LessonEntity } from "../../domain/entity/lesson.entity";
+import type { lessonTable } from "../table/lesson.table";
 
 type LessonRow = typeof lessonTable.$inferSelect;
 

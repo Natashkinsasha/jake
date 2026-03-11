@@ -1,13 +1,13 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import { AuthContract } from "../../../auth/contract/auth.contract";
-import { LessonRepository } from "../../infrastructure/repository/lesson.repository";
-import { MemoryContract } from "../../../memory/contract/memory.contract";
-import { ProgressContract } from "../../../progress/contract/progress.contract";
-import { VocabularyContract } from "../../../vocabulary/contract/vocabulary.contract";
+import type { AuthContract } from "../../../auth/contract/auth.contract";
+import type { MemoryContract } from "../../../memory/contract/memory.contract";
+import type { ProgressContract } from "../../../progress/contract/progress.contract";
 import { getTutorProfile } from "../../../tutor/domain/tutor-profiles";
-import { getDefaultVoice, getVoicesByGender } from "../../../tutor/domain/tutor-voices";
 import type { TutorGender, TutorNationality } from "../../../tutor/domain/tutor-types";
-import { LessonContext } from "../dto/lesson-context";
+import { getDefaultVoice, getVoicesByGender } from "../../../tutor/domain/tutor-voices";
+import type { VocabularyContract } from "../../../vocabulary/contract/vocabulary.contract";
+import type { LessonRepository } from "../../infrastructure/repository/lesson.repository";
+import type { LessonContext } from "../dto/lesson-context";
 
 @Injectable()
 export class LessonContextService {
@@ -20,13 +20,7 @@ export class LessonContextService {
   ) {}
 
   async build(userId: string): Promise<LessonContext> {
-    const [
-      user,
-      grammarProgress,
-      vocabToReview,
-      lessonCount,
-      recentLessons,
-    ] = await Promise.all([
+    const [user, grammarProgress, vocabToReview, lessonCount, recentLessons] = await Promise.all([
       this.authContract.findByIdWithPreferences(userId),
       this.progressContract.findByUser(userId),
       this.vocabularyContract.findNotLearned(userId, 30),
@@ -42,18 +36,12 @@ export class LessonContextService {
     const nationality = (prefs?.tutorNationality ?? "australian") as TutorNationality;
     const storedVoiceId = prefs?.tutorVoiceId;
     const validVoiceIds = getVoicesByGender(gender).map((v) => v.id);
-    const voiceId = storedVoiceId && validVoiceIds.includes(storedVoiceId)
-      ? storedVoiceId
-      : getDefaultVoice(gender).id;
+    const voiceId = storedVoiceId && validVoiceIds.includes(storedVoiceId) ? storedVoiceId : getDefaultVoice(gender).id;
     const profile = getTutorProfile(nationality, gender);
 
     const suggestedTopics: string[] = [];
-    const weak = grammarProgress
-      .filter((g) => g.level < 30)
-      .sort((a, b) => a.level - b.level);
-    const medium = grammarProgress
-      .filter((g) => g.level >= 30 && g.level < 50)
-      .sort((a, b) => a.level - b.level);
+    const weak = grammarProgress.filter((g) => g.level < 30).sort((a, b) => a.level - b.level);
+    const medium = grammarProgress.filter((g) => g.level >= 30 && g.level < 50).sort((a, b) => a.level - b.level);
 
     for (const g of weak) {
       if (suggestedTopics.length >= 3) break;
@@ -92,7 +80,7 @@ export class LessonContextService {
         fact: f.fact,
       })),
       recentEmotionalContext: relevantMemories.map(
-         (e) => `- Lesson (relevance: ${(e.similarity * 100).toFixed(0)}%): ${e.emotional_tone} — ${e.content}`,
+        (e) => `- Lesson (relevance: ${(e.similarity * 100).toFixed(0)}%): ${e.emotional_tone} — ${e.content}`,
       ),
       learningFocus: {
         weakAreas: grammarProgress.filter((g) => g.level < 50).map((g) => g.topic),

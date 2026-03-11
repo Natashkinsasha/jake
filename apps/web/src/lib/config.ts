@@ -1,7 +1,6 @@
 // API & WebSocket URLs
 export const API_URL =
-  process.env["NEXT_PUBLIC_API_URL"] ??
-  (typeof window !== "undefined" ? "/api" : "http://localhost:4000");
+  process.env["NEXT_PUBLIC_API_URL"] ?? (typeof window !== "undefined" ? "/api" : "http://localhost:4000");
 
 function resolveWsUrl(): string {
   if (process.env["NEXT_PUBLIC_WS_URL"]) return process.env["NEXT_PUBLIC_WS_URL"];
@@ -57,14 +56,14 @@ export const TTS_CONFIG = {
 
 // Emotion → ElevenLabs voice_settings map
 export const EMOTION_VOICE_SETTINGS: Record<string, { stability: number; similarity_boost: number; style: number }> = {
-  neutral: { stability: 0.5,  similarity_boost: 0.75, style: 0.0 },
+  neutral: { stability: 0.5, similarity_boost: 0.75, style: 0.0 },
   happy: { stability: 0.35, similarity_boost: 0.75, style: 0.6 },
-  encouraging: { stability: 0.4,  similarity_boost: 0.75, style: 0.5 },
-  empathetic: { stability: 0.55, similarity_boost: 0.8,  style: 0.3 },
-  excited: { stability: 0.3,  similarity_boost: 0.7,  style: 0.8 },
+  encouraging: { stability: 0.4, similarity_boost: 0.75, style: 0.5 },
+  empathetic: { stability: 0.55, similarity_boost: 0.8, style: 0.3 },
+  excited: { stability: 0.3, similarity_boost: 0.7, style: 0.8 },
   curious: { stability: 0.45, similarity_boost: 0.75, style: 0.4 },
-  playful: { stability: 0.35, similarity_boost: 0.7,  style: 0.7 },
+  playful: { stability: 0.35, similarity_boost: 0.7, style: 0.7 },
   proud: { stability: 0.35, similarity_boost: 0.75, style: 0.65 },
-  thoughtful: { stability: 0.55, similarity_boost: 0.8,  style: 0.2 },
-  surprised: { stability: 0.3,  similarity_boost: 0.7,  style: 0.7 },
+  thoughtful: { stability: 0.55, similarity_boost: 0.8, style: 0.2 },
+  surprised: { stability: 0.3, similarity_boost: 0.7, style: 0.7 },
 };

@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { Queue } from "bullmq";
+import type { Queue } from "bullmq";
 
 @Injectable()
 export class QueueRegistryService {

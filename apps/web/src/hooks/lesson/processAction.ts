@@ -1,11 +1,9 @@
-import type { LessonAction, LessonEventData } from "./handleLessonEvent";
-import type { LessonRefs, LessonState, SetLessonState, Log } from "./types";
 import { EMOTION_VOICE_SETTINGS } from "@/lib/config";
+import type { LessonAction, LessonEventData } from "./handleLessonEvent";
+import type { LessonRefs, LessonState, Log, SetLessonState } from "./types";
 
 function getVoiceSettings(refs: LessonRefs) {
-  return refs.emotion.current !== "neutral"
-    ? EMOTION_VOICE_SETTINGS[refs.emotion.current]
-    : undefined;
+  return refs.emotion.current !== "neutral" ? EMOTION_VOICE_SETTINGS[refs.emotion.current] : undefined;
 }
 
 function processSetState(
@@ -36,7 +34,13 @@ function processShowMessage(
       messages: [...prev.messages, { role: "assistant" as const, text: "", timestamp: Date.now() }],
       status: "speaking",
     }));
-    refs.tts.current.speak(action.text, refs.voiceId.current, refs.speechSpeed.current, refs.ttsModel.current, getVoiceSettings(refs));
+    refs.tts.current.speak(
+      action.text,
+      refs.voiceId.current,
+      refs.speechSpeed.current,
+      refs.ttsModel.current,
+      getVoiceSettings(refs),
+    );
   } else {
     setState((prev) => ({
       ...prev,
@@ -65,7 +69,12 @@ function processStreamChunk(
     refs.streamStarted.current = true;
     refs.revealedLen.current = 0;
     refs.finalFullText.current = null;
-    refs.tts.current.startStream(refs.voiceId.current, refs.speechSpeed.current, refs.ttsModel.current, getVoiceSettings(refs));
+    refs.tts.current.startStream(
+      refs.voiceId.current,
+      refs.speechSpeed.current,
+      refs.ttsModel.current,
+      getVoiceSettings(refs),
+    );
   }
 
   refs.tts.current.sendChunk(action.text);
@@ -85,11 +94,7 @@ function processStreamChunk(
   });
 }
 
-function processStreamEnd(
-  action: Extract<LessonAction, { type: "stream_end" }>,
-  refs: LessonRefs,
-  log: Log,
-): void {
+function processStreamEnd(action: Extract<LessonAction, { type: "stream_end" }>, refs: LessonRefs, log: Log): void {
   if (action.messageId && refs.activeMessageId.current && action.messageId !== refs.activeMessageId.current) {
     log("discarding stale stream_end, messageId mismatch");
     return;

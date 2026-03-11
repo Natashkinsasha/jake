@@ -22,11 +22,7 @@ export type LessonAction =
   | { type: "stream_discard" }
   | { type: "discard" };
 
-export function handleLessonEvent(
-  event: string,
-  data: LessonEventData,
-  ctx: EventContext,
-): LessonAction {
+export function handleLessonEvent(event: string, data: LessonEventData, ctx: EventContext): LessonAction {
   switch (event) {
     case "lesson_started":
       return { type: "set_state", patch: { lessonId: data.lessonId, status: "idle" } };

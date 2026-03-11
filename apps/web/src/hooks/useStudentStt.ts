@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { api } from "@/lib/api";
+import { STT_CONFIG } from "@/lib/config";
+import { createLogger } from "./logger";
 import { unlockAudio } from "./useAudioPlayer";
 import { useCallbackRef } from "./useCallbackRef";
-import { createLogger } from "./logger";
-import { STT_CONFIG } from "@/lib/config";
-import { api } from "@/lib/api";
 
 interface UseStudentSttReturn {
   enable: () => void;
@@ -45,9 +45,7 @@ const DG_PARAMS = new URLSearchParams({
   vad_events: String(STT_CONFIG.VAD_EVENTS),
 }).toString();
 
-export function useStudentStt(
-  options?: UseStudentSttOptions,
-): UseStudentSttReturn {
+export function useStudentStt(options?: UseStudentSttOptions): UseStudentSttReturn {
   const [finalText, setFinalText] = useState("");
   const [isEnabled, setIsEnabled] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -93,7 +91,9 @@ export function useStudentStt(
       wsRef.current = null;
     }
 
-    streamRef.current?.getTracks().forEach((t) => { t.stop(); });
+    streamRef.current?.getTracks().forEach((t) => {
+      t.stop();
+    });
     streamRef.current = null;
     speechDetectedRef.current = false;
     voiceSampleChunksRef.current = [];
@@ -176,15 +176,20 @@ export function useStudentStt(
               const blob = new Blob(voiceSampleChunksRef.current, { type: recorder.mimeType });
               voiceSampleChunksRef.current = [];
 
-              void blob.arrayBuffer().then((buf) => {
-                const bytes = new Uint8Array(buf);
-                let binary = "";
-                const chunkSize = 8192;
-                for (let offset = 0; offset < bytes.length; offset += chunkSize) {
-                  binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
-                }
-                onVoiceSampleRef.current?.(btoa(binary));
-              }).catch(() => { /* ignore encoding errors */ });
+              void blob
+                .arrayBuffer()
+                .then((buf) => {
+                  const bytes = new Uint8Array(buf);
+                  let binary = "";
+                  const chunkSize = 8192;
+                  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+                    binary += String.fromCharCode(...bytes.subarray(offset, offset + chunkSize));
+                  }
+                  onVoiceSampleRef.current?.(btoa(binary));
+                })
+                .catch(() => {
+                  /* ignore encoding errors */
+                });
             }
           }
         };
@@ -211,8 +216,7 @@ export function useStudentStt(
         }
 
         if (msg.type === "Results") {
-          const transcript: string =
-            msg.channel?.alternatives?.[0]?.transcript ?? "";
+          const transcript: string = msg.channel?.alternatives?.[0]?.transcript ?? "";
           const isFinal: boolean = msg.is_final ?? false;
           const speechFinal: boolean = msg.speech_final ?? false;
 
@@ -232,11 +236,13 @@ export function useStudentStt(
           if (speechFinal) {
             log("speech_final:", transcript || "(empty)");
             const durationMs = Date.now() - speechStartTimeRef.current;
-            api.stt.metrics({
-              durationMs,
-              transcriptLength: transcriptLengthRef.current,
-              segments: segmentCountRef.current,
-            }).catch(() => {});
+            api.stt
+              .metrics({
+                durationMs,
+                transcriptLength: transcriptLengthRef.current,
+                segments: segmentCountRef.current,
+              })
+              .catch(() => {});
             speechDetectedRef.current = false;
             setIsProcessing(false);
             onSpeechEndRef.current?.();
@@ -265,8 +271,7 @@ export function useStudentStt(
       setIsEnabled(true);
       log("continuous streaming enabled");
     } catch (e) {
-      const message =
-        e instanceof Error ? e.message : "Failed to access microphone";
+      const message = e instanceof Error ? e.message : "Failed to access microphone";
       log("error:", message);
       setError(message);
       cleanup();

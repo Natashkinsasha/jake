@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
-import { useCallbackRef } from "./useCallbackRef";
 import type { LessonEventData } from "./lesson/handleLessonEvent";
+import { useCallbackRef } from "./useCallbackRef";
 
 interface UseWebSocketOptions {
   url: string;
@@ -22,24 +22,44 @@ export function useWebSocket({ url, token, onEvent }: UseWebSocketOptions) {
       transports: ["websocket"],
     });
 
-    socket.on("connect", () => { setConnected(true); });
-    socket.on("disconnect", () => { setConnected(false); });
-    socket.on("connect_error", (err) => {
-      console.error("WS connect error:", err.message);
+    socket.on("connect", () => {
+      setConnected(true);
+    });
+    socket.on("disconnect", () => {
+      setConnected(false);
+    });
+    socket.on("connect_error", (_err) => {
       onEventRef.current("error", { message: "Connection failed" });
     });
 
     const events = [
-      "lesson_started", "lesson_resumed", "tutor_message", "transcript",
-      "exercise", "exercise_feedback", "lesson_ended", "status", "error",
-      "tutor_chunk", "tutor_stream_end",
-      "vocab_highlight", "vocab_reviewed",
-      "tutor_emotion", "speed_updated", "onboarding_completed",
+      "lesson_started",
+      "lesson_resumed",
+      "tutor_message",
+      "transcript",
+      "exercise",
+      "exercise_feedback",
+      "lesson_ended",
+      "status",
+      "error",
+      "tutor_chunk",
+      "tutor_stream_end",
+      "vocab_highlight",
+      "vocab_reviewed",
+      "tutor_emotion",
+      "speed_updated",
+      "onboarding_completed",
     ];
-    events.forEach((event) => socket.on(event, (data: LessonEventData) => { onEventRef.current(event, data); }));
+    events.forEach((event) =>
+      socket.on(event, (data: LessonEventData) => {
+        onEventRef.current(event, data);
+      }),
+    );
 
     socketRef.current = socket;
-    return () => { socket.disconnect(); };
+    return () => {
+      socket.disconnect();
+    };
   }, [url, token, onEventRef]);
 
   const emit = useCallback((event: string, data: Record<string, unknown>) => {

@@ -3,17 +3,12 @@ import { BullMQAdapter } from "@bull-board/api/bullMQAdapter";
 import { FastifyAdapter } from "@bull-board/fastify";
 import type { FastifyBasicAuthOptions } from "@fastify/basic-auth";
 import basicAuth from "@fastify/basic-auth";
-import type {
-  DynamicModule,
-  ModuleMetadata,
-  NestModule,
-  Type,
-} from "@nestjs/common";
+import type { DynamicModule, ModuleMetadata, NestModule, Type } from "@nestjs/common";
 import { HttpStatus, Module, UnauthorizedException } from "@nestjs/common";
-import { HttpAdapterHost, ModuleRef } from "@nestjs/core";
-import type { FastifyInstance, FastifyRequest, FastifyReply } from "fastify";
+import type { HttpAdapterHost, ModuleRef } from "@nestjs/core";
+import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
-import { QueueRegistryService } from "../../job/src";
+import type { QueueRegistryService } from "../../job/src";
 
 export interface JobBoardModuleOptions {
   route: string;
@@ -22,20 +17,15 @@ export interface JobBoardModuleOptions {
   enabled?: boolean;
 }
 
-export interface JobBoardModuleAsyncOptions
-  extends Pick<ModuleMetadata, "imports"> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- NestJS DI requires any[] for factory args
+export interface JobBoardModuleAsyncOptions extends Pick<ModuleMetadata, "imports"> {
   useFactory?: (...args: any[]) => Promise<JobBoardModuleOptions> | JobBoardModuleOptions;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- NestJS DI injection tokens
   inject?: any[];
   useClass?: Type<JobBoardModuleOptionsFactory>;
   useExisting?: Type<JobBoardModuleOptionsFactory>;
 }
 
 export interface JobBoardModuleOptionsFactory {
-  createJobBoardOptions():
-    | Promise<JobBoardModuleOptions>
-    | JobBoardModuleOptions;
+  createJobBoardOptions(): Promise<JobBoardModuleOptions> | JobBoardModuleOptions;
 }
 
 const JOB_BOARD_OPTIONS = "JOB_BOARD_OPTIONS";
@@ -52,7 +42,7 @@ export class JobBoardModule implements NestModule {
     return {
       module: JobBoardModule,
       imports: options.imports,
-      providers: [...this.createAsyncProviders(options)],
+      providers: [...JobBoardModule.createAsyncProviders(options)],
     };
   }
 
@@ -62,9 +52,7 @@ export class JobBoardModule implements NestModule {
       return [
         {
           provide: JOB_BOARD_OPTIONS,
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- NestJS DI pattern
           useFactory: async (...args: any[]) => {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- NestJS DI pattern passes any[] args
             const config = await userFactory(...args);
             return {
               enabled: true,
@@ -116,12 +104,9 @@ export class JobBoardModule implements NestModule {
   }
 
   configure() {
-    const options = this.moduleRef.get<JobBoardModuleOptions>(
-      JOB_BOARD_OPTIONS,
-      {
-        strict: false,
-      },
-    );
+    const options = this.moduleRef.get<JobBoardModuleOptions>(JOB_BOARD_OPTIONS, {
+      strict: false,
+    });
 
     if (!options.enabled) {
       return;
@@ -144,10 +129,7 @@ export class JobBoardModule implements NestModule {
 
     const authenticate: FastifyBasicAuthOptions["authenticate"] = true;
 
-    const validate: FastifyBasicAuthOptions["validate"] = (
-      user: string,
-      pass: string,
-    ) => {
+    const validate: FastifyBasicAuthOptions["validate"] = (user: string, pass: string) => {
       if (user !== username || pass !== password) {
         throw new UnauthorizedException();
       }
@@ -162,13 +144,17 @@ export class JobBoardModule implements NestModule {
 
     void app.register((instance: FastifyInstance, _opts: Record<string, unknown>, done: (err?: Error) => void) => {
       instance.addHook("onRequest", (req: FastifyRequest, reply: FastifyReply, next: (err?: Error) => void) => {
-        (instance as FastifyInstance & { basicAuth: (req: FastifyRequest, reply: FastifyReply, cb: (err?: Error) => void) => void }).basicAuth(req, reply, function (error?: Error) {
+        (
+          instance as FastifyInstance & {
+            basicAuth: (req: FastifyRequest, reply: FastifyReply, cb: (err?: Error) => void) => void;
+          }
+        ).basicAuth(req, reply, (error?: Error) => {
           if (!error) {
-            next(); return;
+            next();
+            return;
           }
 
-          const statusCode =
-            (error as Error & { statusCode?: number }).statusCode ?? HttpStatus.INTERNAL_SERVER_ERROR;
+          const statusCode = (error as Error & { statusCode?: number }).statusCode ?? HttpStatus.INTERNAL_SERVER_ERROR;
           void reply.code(statusCode).send({ error: error.name });
         });
       });

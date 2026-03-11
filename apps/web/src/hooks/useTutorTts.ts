@@ -1,10 +1,10 @@
 "use client";
 
-import { useRef, useState, useCallback, useEffect } from "react";
-import { useCallbackRef } from "./useCallbackRef";
-import { createLogger } from "./logger";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
 import { TTS_CONFIG } from "@/lib/config";
+import { createLogger } from "./logger";
+import { useCallbackRef } from "./useCallbackRef";
 
 function pcmToAudioBuffer(ctx: AudioContext, raw: ArrayBuffer): AudioBuffer {
   const int16 = new Int16Array(raw);
@@ -39,7 +39,13 @@ interface UseTutorTtsOptions {
 type VoiceSettingsOverride = { stability: number; similarity_boost: number; style: number };
 
 interface UseTutorTtsReturn {
-  speak: (text: string, voiceId: string, speechSpeed?: number, model?: string, voiceSettings?: VoiceSettingsOverride) => void;
+  speak: (
+    text: string,
+    voiceId: string,
+    speechSpeed?: number,
+    model?: string,
+    voiceSettings?: VoiceSettingsOverride,
+  ) => void;
   preWarm: (voiceId: string, speechSpeed?: number, model?: string) => void;
   startStream: (voiceId: string, speechSpeed?: number, model?: string, voiceSettings?: VoiceSettingsOverride) => void;
   sendChunk: (text: string) => void;
@@ -90,11 +96,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   }, []);
 
   const checkDone = useCallback(() => {
-    if (
-      allReceivedRef.current &&
-      decodedQueueRef.current.length === 0 &&
-      !currentSourceRef.current
-    ) {
+    if (allReceivedRef.current && decodedQueueRef.current.length === 0 && !currentSourceRef.current) {
       if (progressTimerRef.current) {
         clearInterval(progressTimerRef.current);
         progressTimerRef.current = null;
@@ -236,7 +238,7 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   const sendTextToWs = useCallback((text: string, flush: boolean) => {
     const ws = wsRef.current;
     if (ws && ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify({ text: text + " ", flush }));
+      ws.send(JSON.stringify({ text: `${text} `, flush }));
       log("sent text:", text.slice(0, 50));
     } else {
       log("sendTextToWs: WS not open, skipping");
@@ -254,7 +256,13 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   }, []);
 
   const openWs = useCallback(
-    async (voiceId: string, speechSpeed: number, onReady: () => void, model?: string, voiceSettings?: VoiceSettingsOverride) => {
+    async (
+      voiceId: string,
+      speechSpeed: number,
+      onReady: () => void,
+      model?: string,
+      voiceSettings?: VoiceSettingsOverride,
+    ) => {
       // Close any existing WS before opening a new one
       closeWs();
       connectingRef.current = true;
@@ -389,10 +397,16 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
       if (!text.trim()) return;
       log("speak:", text.slice(0, 50), "voiceId:", voiceId);
 
-      void openWs(voiceId, speechSpeed ?? 1.0, () => {
-        sendTextToWs(text, true);
-        sendEos();
-      }, model, voiceSettings);
+      void openWs(
+        voiceId,
+        speechSpeed ?? 1.0,
+        () => {
+          sendTextToWs(text, true);
+          sendEos();
+        },
+        model,
+        voiceSettings,
+      );
     },
     [openWs, sendTextToWs, sendEos],
   );
@@ -400,7 +414,6 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
   /** Pre-warm: fetch token + open WS to ElevenLabs before first chunk arrives. */
   const preWarm = useCallback(
     (voiceId: string, speechSpeed?: number, model?: string) => {
-      // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
       if (wsRef.current || connectingRef.current) return;
       log("preWarm");
       void openWs(voiceId, speechSpeed ?? 1.0, () => {}, model);
@@ -421,14 +434,12 @@ export function useTutorTts(options?: UseTutorTtsOptions): UseTutorTtsReturn {
       stopAudio();
 
       // If voice settings provided, close pre-warmed WS (it has default settings)
-      // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
       if (voiceSettings && (wsRef.current || connectingRef.current)) {
         log("startStream: closing pre-warmed WS for emotion-specific settings");
         closeWs();
       }
 
       // If WS already exists or token fetch in progress (pre-warmed), reuse it
-      // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
       if (wsRef.current || connectingRef.current) {
         log("startStream: reusing pre-warmed WS");
         return;

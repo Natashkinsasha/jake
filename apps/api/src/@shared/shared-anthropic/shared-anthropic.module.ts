@@ -1,8 +1,8 @@
-import { Module } from "@nestjs/common";
 import Anthropic from "@anthropic-ai/sdk";
 import { AnthropicModule } from "@lib/anthropic/src";
-import { SharedConfigModule } from "../shared-config/shared-config.module";
+import { Module } from "@nestjs/common";
 import { EnvService } from "../shared-config/env.service";
+import { SharedConfigModule } from "../shared-config/shared-config.module";
 
 @Module({
   imports: [

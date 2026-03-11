@@ -1,9 +1,9 @@
 import { Injectable } from "@nestjs/common";
-import { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
-import { eq, and, sql } from "drizzle-orm";
-import { grammarProgressTable } from "../table/grammar-progress.table";
-import { GrammarProgressEntity } from "../../domain/entity/grammar-progress.entity";
+import type { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
+import { and, eq, sql } from "drizzle-orm";
+import type { GrammarProgressEntity } from "../../domain/entity/grammar-progress.entity";
 import { GrammarProgressFactory } from "../factory/grammar-progress.factory";
+import { grammarProgressTable } from "../table/grammar-progress.table";
 
 @Injectable()
 export class GrammarProgressRepository {
@@ -25,12 +25,7 @@ export class GrammarProgressRepository {
     const existing = await this.txHost.tx
       .select()
       .from(grammarProgressTable)
-      .where(
-        and(
-          eq(grammarProgressTable.userId, userId),
-          eq(grammarProgressTable.topic, topic),
-        ),
-      )
+      .where(and(eq(grammarProgressTable.userId, userId), eq(grammarProgressTable.topic, topic)))
       .limit(1);
 
     const existingRow = existing[0];
@@ -57,12 +52,7 @@ export class GrammarProgressRepository {
     const existing = await this.txHost.tx
       .select()
       .from(grammarProgressTable)
-      .where(
-        and(
-          eq(grammarProgressTable.userId, userId),
-          eq(grammarProgressTable.topic, topic),
-        ),
-      )
+      .where(and(eq(grammarProgressTable.userId, userId), eq(grammarProgressTable.topic, topic)))
       .limit(1);
 
     const existingRow = existing[0];

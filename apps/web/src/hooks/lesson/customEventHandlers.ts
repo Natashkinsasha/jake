@@ -1,15 +1,17 @@
-import type { LessonEventData } from "./handleLessonEvent";
-import type { LessonRefs, SetLessonState, Log } from "./types";
 import type { ChatMessage } from "@/types";
+import type { LessonEventData } from "./handleLessonEvent";
+import type { LessonRefs, Log, SetLessonState } from "./types";
 
 type ExtendedData<T> = LessonEventData & T;
 
-function handleLessonStarted(
-  data: LessonEventData,
-  refs: LessonRefs,
-  setState: SetLessonState,
-): void {
-  const d = data as ExtendedData<{ voiceId?: string; speechSpeed?: number; ttsModel?: string; systemPrompt?: string; emotion?: string }>;
+function handleLessonStarted(data: LessonEventData, refs: LessonRefs, setState: SetLessonState): void {
+  const d = data as ExtendedData<{
+    voiceId?: string;
+    speechSpeed?: number;
+    ttsModel?: string;
+    systemPrompt?: string;
+    emotion?: string;
+  }>;
   if (d.voiceId) refs.voiceId.current = d.voiceId;
   if (d.speechSpeed != null) refs.speechSpeed.current = d.speechSpeed;
   if (d.ttsModel) refs.ttsModel.current = d.ttsModel;
@@ -19,11 +21,7 @@ function handleLessonStarted(
   setState((prev) => ({ ...prev, startedAt: Date.now() }));
 }
 
-function handleLessonResumed(
-  data: LessonEventData,
-  refs: LessonRefs,
-  setState: SetLessonState,
-): void {
+function handleLessonResumed(data: LessonEventData, refs: LessonRefs, setState: SetLessonState): void {
   const d = data as ExtendedData<{
     lessonId?: string;
     voiceId?: string;
@@ -55,12 +53,7 @@ function handleTutorEmotion(data: LessonEventData, refs: LessonRefs): void {
   if (d.emotion) refs.emotion.current = d.emotion;
 }
 
-function handleVocabHighlight(
-  data: LessonEventData,
-  refs: LessonRefs,
-  setState: SetLessonState,
-  log: Log,
-): void {
+function handleVocabHighlight(data: LessonEventData, refs: LessonRefs, setState: SetLessonState, log: Log): void {
   const d = data as ExtendedData<{ word?: string; translation?: string; topic?: string }>;
   log("vocab_highlight received:", d.word, d.translation, d.topic);
 
@@ -88,7 +81,14 @@ function handleVocabHighlight(
 }
 
 function handleSpeedUpdated(data: LessonEventData, refs: LessonRefs, log: Log): void {
-  const speedMap: Record<string, number> = { very_slow: 0.7, slow: 0.85, normal: 1.0, natural: 1.0, fast: 1.15, very_fast: 1.3 };
+  const speedMap: Record<string, number> = {
+    very_slow: 0.7,
+    slow: 0.85,
+    normal: 1.0,
+    natural: 1.0,
+    fast: 1.15,
+    very_fast: 1.3,
+  };
   const d = data as ExtendedData<{ speed?: string }>;
   if (d.speed && speedMap[d.speed] != null) {
     refs.speechSpeed.current = speedMap[d.speed] ?? 1.0;
@@ -97,14 +97,16 @@ function handleSpeedUpdated(data: LessonEventData, refs: LessonRefs, log: Log): 
 }
 
 function handleExercise(data: LessonEventData, setState: SetLessonState): void {
-  const d = data as ExtendedData<{ exerciseId?: string; type?: string; pairs?: Array<{ word: string; definition: string }> }>;
+  const d = data as ExtendedData<{
+    exerciseId?: string;
+    type?: string;
+    pairs?: Array<{ word: string; definition: string }>;
+  }>;
   const { exerciseId, type, pairs } = d;
   if (!exerciseId || !type || !pairs) return;
 
   setState((prev) => {
-    const messages = prev.messages.filter(
-      (m) => !(m.role === "exercise" && !m.exerciseFeedback),
-    );
+    const messages = prev.messages.filter((m) => !(m.role === "exercise" && !m.exerciseFeedback));
     return {
       ...prev,
       messages: [
@@ -120,12 +122,12 @@ function handleExercise(data: LessonEventData, setState: SetLessonState): void {
   });
 }
 
-function handleExerciseFeedback(
-  data: LessonEventData,
-  refs: LessonRefs,
-  setState: SetLessonState,
-): void {
-  const d = data as ExtendedData<{ exerciseId?: string; results?: Array<{ word: string; correct: boolean; correctDefinition: string }>; score?: string }>;
+function handleExerciseFeedback(data: LessonEventData, refs: LessonRefs, setState: SetLessonState): void {
+  const d = data as ExtendedData<{
+    exerciseId?: string;
+    results?: Array<{ word: string; correct: boolean; correctDefinition: string }>;
+    score?: string;
+  }>;
   const { exerciseId, results, score } = d;
   if (!exerciseId || !results || !score) return;
 

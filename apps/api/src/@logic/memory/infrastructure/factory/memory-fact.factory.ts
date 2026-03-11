@@ -1,5 +1,5 @@
-import { type MemoryFactEntity } from "../../domain/entity/memory-fact.entity";
-import { type memoryFactTable } from "../table/memory-fact.table";
+import type { MemoryFactEntity } from "../../domain/entity/memory-fact.entity";
+import type { memoryFactTable } from "../table/memory-fact.table";
 
 type MemoryFactRow = typeof memoryFactTable.$inferSelect;
 

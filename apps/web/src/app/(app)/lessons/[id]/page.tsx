@@ -1,19 +1,16 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
+import { ErrorMessage } from "@/components/ui/ErrorMessage";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { useApiQuery } from "@/hooks/useApiQuery";
 import { api } from "@/lib/api";
 import { formatLessonDate } from "@/lib/utils";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { ErrorMessage } from "@/components/ui/ErrorMessage";
-import { useApiQuery } from "@/hooks/useApiQuery";
 
 export default function LessonHistoryPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
-  const { data: lesson, isLoading, error, refetch } = useApiQuery(
-    () => api.lessons.get(id),
-    [id],
-  );
+  const { data: lesson, isLoading, error, refetch } = useApiQuery(() => api.lessons.get(id), [id]);
 
   if (isLoading) {
     return (
@@ -32,7 +29,9 @@ export default function LessonHistoryPage() {
       <div>
         <button
           type="button"
-          onClick={() => { router.push("/dashboard"); }}
+          onClick={() => {
+            router.push("/dashboard");
+          }}
           className="mb-2 inline-block text-sm text-gray-400 hover:text-gray-600"
         >
           &larr; Back to dashboard
@@ -42,15 +41,11 @@ export default function LessonHistoryPage() {
           {lesson.topic ? `: ${lesson.topic}` : ""}
         </h1>
         <div className="mt-1 flex items-center gap-3 text-sm text-gray-500">
-          {lesson.createdAt && (
-            <span>{formatLessonDate(lesson.createdAt)}</span>
-          )}
+          {lesson.createdAt && <span>{formatLessonDate(lesson.createdAt)}</span>}
           {lesson.duration != null && lesson.duration > 0 && <span>{Math.max(1, lesson.duration)} min</span>}
           <span
             className={`rounded-full px-2 py-0.5 text-xs ${
-              lesson.status === "completed"
-                ? "bg-green-100 text-green-700"
-                : "bg-yellow-100 text-yellow-700"
+              lesson.status === "completed" ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
             }`}
           >
             {lesson.status}
@@ -69,16 +64,11 @@ export default function LessonHistoryPage() {
       <div className="card">
         <h3 className="mb-4 font-semibold text-gray-900">Conversation</h3>
         {lesson.messages.length === 0 ? (
-          <p className="text-sm text-gray-400">
-            No messages yet. Summary will appear after the lesson is processed.
-          </p>
+          <p className="text-sm text-gray-400">No messages yet. Summary will appear after the lesson is processed.</p>
         ) : (
           <div className="space-y-3">
             {lesson.messages.map((msg) => (
-              <div
-                key={msg.timestamp}
-                className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
-              >
+              <div key={msg.timestamp} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                 <div
                   className={`max-w-[80%] rounded-2xl px-4 py-2 text-sm ${
                     msg.role === "user"
@@ -87,11 +77,7 @@ export default function LessonHistoryPage() {
                   }`}
                 >
                   <p>{msg.content}</p>
-                  <p
-                    className={`mt-1 text-[10px] ${
-                      msg.role === "user" ? "text-blue-100" : "text-gray-400"
-                    }`}
-                  >
+                  <p className={`mt-1 text-[10px] ${msg.role === "user" ? "text-blue-100" : "text-gray-400"}`}>
                     {new Date(msg.timestamp).toLocaleTimeString([], {
                       hour: "2-digit",
                       minute: "2-digit",

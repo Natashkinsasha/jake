@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import { getSilenceDuration } from "@/lib/silence-duration";
 
 interface UseSpeechBufferOptions {
@@ -20,12 +20,15 @@ export function useSpeechBuffer({ onFlush, onSpeechDone }: UseSpeechBufferOption
     onSpeechDone();
   }, [onFlush, onSpeechDone]);
 
-  const push = useCallback((segment: string) => {
-    bufferRef.current.push(segment);
-    if (timerRef.current) clearTimeout(timerRef.current);
-    const silenceMs = getSilenceDuration(segment);
-    timerRef.current = setTimeout(flush, silenceMs);
-  }, [flush]);
+  const push = useCallback(
+    (segment: string) => {
+      bufferRef.current.push(segment);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      const silenceMs = getSilenceDuration(segment);
+      timerRef.current = setTimeout(flush, silenceMs);
+    },
+    [flush],
+  );
 
   const clear = useCallback(() => {
     bufferRef.current = [];

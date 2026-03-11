@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useCallbackRef } from "./useCallbackRef";
 
 interface UseApiQueryResult<T> {
@@ -8,10 +8,7 @@ interface UseApiQueryResult<T> {
   refetch: () => void;
 }
 
-export function useApiQuery<T>(
-  fetcher: (() => Promise<T>) | null,
-  deps?: unknown[],
-): UseApiQueryResult<T> {
+export function useApiQuery<T>(fetcher: (() => Promise<T>) | null, deps?: unknown[]): UseApiQueryResult<T> {
   const [data, setData] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,13 +33,15 @@ export function useApiQuery<T>(
         const message = err instanceof Error ? err.message : "Something went wrong";
         setError(message);
       })
-      .finally(() => { setIsLoading(false); });
+      .finally(() => {
+        setIsLoading(false);
+      });
   }, [fetcherRef]);
 
-  const depsKey = deps !== undefined ? JSON.stringify(deps) : "@@none";
+  const _depsKey = deps !== undefined ? JSON.stringify(deps) : "@@none";
   useEffect(() => {
     execute();
-  }, [depsKey, execute]);
+  }, [execute]);
 
   return { data, isLoading, error, refetch: execute };
 }

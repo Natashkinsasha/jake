@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
+import type { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
 import { eq } from "drizzle-orm";
 import { voicePrintTable } from "../table/voice-print.table";
 
@@ -8,11 +8,7 @@ export class VoicePrintRepository {
   constructor(private readonly txHost: AppDrizzleTransactionHost<{ voicePrint: typeof voicePrintTable }>) {}
 
   async findByUser(userId: string) {
-    const rows = await this.txHost.tx
-      .select()
-      .from(voicePrintTable)
-      .where(eq(voicePrintTable.userId, userId))
-      .limit(1);
+    const rows = await this.txHost.tx.select().from(voicePrintTable).where(eq(voicePrintTable.userId, userId)).limit(1);
     return rows[0] ?? null;
   }
 

@@ -1,19 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-export default function LessonError({
-  error,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
+export default function LessonError({ error }: { error: Error & { digest?: string }; reset: () => void }) {
   const router = useRouter();
 
-  useEffect(() => {
-    console.error("Lesson error:", error);
-  }, [error]);
+  useEffect(() => {}, []);
 
   return (
     <div className="lesson-bg flex min-h-screen items-center justify-center p-4">
@@ -22,7 +15,9 @@ export default function LessonError({
         <p className="mb-6 text-white/60">Something went wrong during your lesson.</p>
         <button
           type="button"
-          onClick={() => { router.push("/dashboard"); }}
+          onClick={() => {
+            router.push("/dashboard");
+          }}
           className="rounded-xl bg-white px-6 py-3 font-semibold text-primary-600 transition-colors hover:bg-blue-50"
         >
           Back to dashboard

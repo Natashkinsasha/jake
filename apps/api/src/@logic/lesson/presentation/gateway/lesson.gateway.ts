@@ -1,21 +1,21 @@
+import type { LlmMessage } from "@lib/provider/src";
+import { Logger, UseGuards } from "@nestjs/common";
+import type { JwtService } from "@nestjs/jwt";
 import {
-  WebSocketGateway,
-  WebSocketServer,
-  SubscribeMessage,
-  OnGatewayConnection,
-  OnGatewayDisconnect,
   ConnectedSocket,
   MessageBody,
+  type OnGatewayConnection,
+  type OnGatewayDisconnect,
+  SubscribeMessage,
+  WebSocketGateway,
+  WebSocketServer,
 } from "@nestjs/websockets";
-import { Logger, UseGuards } from "@nestjs/common";
-import { Server, Socket } from "socket.io";
-import { JwtService } from "@nestjs/jwt";
-import { z } from "zod";
 import { WsAuthGuard } from "@shared/shared-ws/ws-auth.guard";
-import type { LlmMessage } from "@lib/provider/src";
-import { LessonMaintainer, toSpeechSpeed } from "../../application/maintainer/lesson.maintainer";
-import { LessonSessionService } from "../../application/service/lesson-session.service";
-import { VoicePrintService } from "../../application/service/voice-print.service";
+import type { Server, Socket } from "socket.io";
+import { z } from "zod";
+import { type LessonMaintainer, toSpeechSpeed } from "../../application/maintainer/lesson.maintainer";
+import type { LessonSessionService } from "../../application/service/lesson-session.service";
+import type { VoicePrintService } from "../../application/service/voice-print.service";
 
 interface SocketData {
   userId: string;
@@ -35,10 +35,14 @@ const wsSetSpeedSchema = z.object({
 
 const wsExerciseAnswerSchema = z.object({
   exerciseId: z.string().uuid(),
-  answers: z.array(z.object({
-    word: z.string().max(200),
-    definition: z.string().max(500),
-  })).max(20),
+  answers: z
+    .array(
+      z.object({
+        word: z.string().max(200),
+        definition: z.string().max(500),
+      }),
+    )
+    .max(20),
 });
 
 @WebSocketGateway({ namespace: "/ws/lesson", cors: true })
@@ -65,9 +69,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   async handleConnection(client: Socket) {
     // Guards don't run for handleConnection, authenticate manually
-    const token =
-      (client.handshake.auth as Record<string, unknown>)["token"] ??
-      client.handshake.query["token"];
+    const token = (client.handshake.auth as Record<string, unknown>)["token"] ?? client.handshake.query["token"];
 
     if (token == null) {
       client.emit("error", { message: "No auth token" });
@@ -146,10 +148,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage("text")
-  async handleText(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() data: unknown,
-  ) {
+  async handleText(@ConnectedSocket() client: Socket, @MessageBody() data: unknown) {
     const parsed = wsTextMessageSchema.safeParse(data);
     if (!parsed.success) {
       client.emit("error", { message: "Invalid text message" });
@@ -242,7 +241,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       const messages: LlmMessage[] = [];
       if (userText?.trim()) messages.push({ role: "user", content: userText.trim() });
-      if (partialText?.trim()) messages.push({ role: "assistant", content: partialText.trim() + "..." });
+      if (partialText?.trim()) messages.push({ role: "assistant", content: `${partialText.trim()}...` });
       if (messages.length > 0) {
         await this.sessionService.appendHistory(this.getUserId(client), ...messages);
       }
@@ -252,10 +251,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage("set_speed")
-  async handleSetSpeed(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() data: unknown,
-  ) {
+  async handleSetSpeed(@ConnectedSocket() client: Socket, @MessageBody() data: unknown) {
     const parsed = wsSetSpeedSchema.safeParse(data);
     if (!parsed.success) {
       client.emit("error", { message: "Invalid speed value" });
@@ -272,10 +268,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage("voice_sample")
-  async handleVoiceSample(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() data: { audio: string },
-  ) {
+  async handleVoiceSample(@ConnectedSocket() client: Socket, @MessageBody() data: { audio: string }) {
     if (!data.audio) return;
 
     const socketData = client.data as SocketData;
@@ -302,10 +295,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage("exercise_answer")
-  async handleExerciseAnswer(
-    @ConnectedSocket() client: Socket,
-    @MessageBody() data: unknown,
-  ) {
+  async handleExerciseAnswer(@ConnectedSocket() client: Socket, @MessageBody() data: unknown) {
     const parsed = wsExerciseAnswerSchema.safeParse(data);
     if (!parsed.success) {
       client.emit("error", { message: "Invalid exercise answer" });
@@ -346,9 +336,10 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return `"${r.word}" -> student matched with "${studentDef}" (correct: "${r.correctDefinition}")`;
       });
 
-    const historyEntry = mistakes.length > 0
-      ? `[Exercise result: ${score} correct. Mistakes: ${mistakes.join("; ")}]`
-      : `[Exercise result: ${score} correct. Perfect score!]`;
+    const historyEntry =
+      mistakes.length > 0
+        ? `[Exercise result: ${score} correct. Mistakes: ${mistakes.join("; ")}]`
+        : `[Exercise result: ${score} correct. Perfect score!]`;
 
     await this.sessionService.appendHistory(userId, { role: "user", content: historyEntry });
     await this.sessionService.clearActiveExercise(userId);
@@ -382,11 +373,21 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
           this.sentChunksText.delete(client.id);
           this.logger.error(`Streaming failed: ${error.message}`);
         },
-        onSpeedChange: (speed) => { client.emit("speed_updated", { speed }); },
-        onEmotion: (emotion) => { client.emit("tutor_emotion", { emotion }); },
-        onVocabHighlight: (highlight) => { client.emit("vocab_highlight", highlight); },
-        onVocabReviewed: (word) => { client.emit("vocab_reviewed", { word }); },
-        onExercise: (exercise) => { client.emit("exercise", exercise); },
+        onSpeedChange: (speed) => {
+          client.emit("speed_updated", { speed });
+        },
+        onEmotion: (emotion) => {
+          client.emit("tutor_emotion", { emotion });
+        },
+        onVocabHighlight: (highlight) => {
+          client.emit("vocab_highlight", highlight);
+        },
+        onVocabReviewed: (word) => {
+          client.emit("vocab_reviewed", { word });
+        },
+        onExercise: (exercise) => {
+          client.emit("exercise", exercise);
+        },
       },
       { signal: abortController.signal },
     );

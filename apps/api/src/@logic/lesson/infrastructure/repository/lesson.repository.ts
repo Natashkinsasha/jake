@@ -1,14 +1,19 @@
 import { Injectable } from "@nestjs/common";
-import { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
-import { eq, sql, desc } from "drizzle-orm";
+import type { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
+import { desc, eq, sql } from "drizzle-orm";
+import type { LessonEntity } from "../../domain/entity/lesson.entity";
+import { LessonFactory } from "../factory/lesson.factory";
 import { lessonTable } from "../table/lesson.table";
 import { lessonMessageTable } from "../table/lesson-message.table";
-import { LessonEntity } from "../../domain/entity/lesson.entity";
-import { LessonFactory } from "../factory/lesson.factory";
 
 @Injectable()
 export class LessonRepository {
-  constructor(private readonly txHost: AppDrizzleTransactionHost<{ lesson: typeof lessonTable; lessonMessage: typeof lessonMessageTable }>) {}
+  constructor(
+    private readonly txHost: AppDrizzleTransactionHost<{
+      lesson: typeof lessonTable;
+      lessonMessage: typeof lessonMessageTable;
+    }>,
+  ) {}
 
   async create(data: typeof lessonTable.$inferInsert): Promise<LessonEntity> {
     const [row] = await this.txHost.tx.insert(lessonTable).values(data).returning();
@@ -16,10 +21,7 @@ export class LessonRepository {
     return LessonFactory.create(row);
   }
 
-  async createWithGreeting(
-    lessonData: typeof lessonTable.$inferInsert,
-    greeting: string,
-  ): Promise<LessonEntity> {
+  async createWithGreeting(lessonData: typeof lessonTable.$inferInsert, greeting: string): Promise<LessonEntity> {
     const lesson = await this.create(lessonData);
     await this.txHost.tx.insert(lessonMessageTable).values({
       lessonId: lesson.id,
@@ -30,11 +32,7 @@ export class LessonRepository {
   }
 
   async findById(id: string): Promise<LessonEntity | null> {
-    const [row] = await this.txHost.tx
-      .select()
-      .from(lessonTable)
-      .where(eq(lessonTable.id, id))
-      .limit(1);
+    const [row] = await this.txHost.tx.select().from(lessonTable).where(eq(lessonTable.id, id)).limit(1);
     return row ? LessonFactory.create(row) : null;
   }
 

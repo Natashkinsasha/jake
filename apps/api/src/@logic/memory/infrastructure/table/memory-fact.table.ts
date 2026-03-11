@@ -1,11 +1,13 @@
-import { pgTable, uuid, varchar, text, timestamp, boolean, index } from "drizzle-orm/pg-core";
+import { boolean, index, pgTable, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 import { userTable } from "../../../auth/infrastructure/table/user.table";
 
 export const memoryFactTable = pgTable(
   "memory_facts",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id").references(() => userTable.id, { onDelete: "cascade" }).notNull(),
+    userId: uuid("user_id")
+      .references(() => userTable.id, { onDelete: "cascade" })
+      .notNull(),
     category: varchar("category", { length: 50 }).notNull(),
     fact: text("fact").notNull(),
     source: varchar("source", { length: 255 }).notNull(),

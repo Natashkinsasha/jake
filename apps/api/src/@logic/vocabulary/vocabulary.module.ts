@@ -1,8 +1,8 @@
 import { Module } from "@nestjs/common";
-import { SharedDrizzlePgModule } from "@shared/shared-drizzle-pg/shared-drizzle-pg.module";
 import { SharedAuthModule } from "@shared/shared-auth/shared-auth.module";
-import { VocabularyRepository } from "./infrastructure/repository/vocabulary.repository";
+import { SharedDrizzlePgModule } from "@shared/shared-drizzle-pg/shared-drizzle-pg.module";
 import { VocabularyContract } from "./contract/vocabulary.contract";
+import { VocabularyRepository } from "./infrastructure/repository/vocabulary.repository";
 import { VocabularyController } from "./presentation/controller/vocabulary.controller";
 
 @Module({

@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { EnvService } from "@shared/shared-config/env.service";
+import type { EnvService } from "@shared/shared-config/env.service";
 
 @Injectable()
 export class DrizzlePgConfig {

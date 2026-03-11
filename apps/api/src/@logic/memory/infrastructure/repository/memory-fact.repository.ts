@@ -1,9 +1,9 @@
 import { Injectable } from "@nestjs/common";
-import { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
-import { eq, and, desc, or, isNull, gt } from "drizzle-orm";
-import { memoryFactTable } from "../table/memory-fact.table";
-import { MemoryFactEntity } from "../../domain/entity/memory-fact.entity";
+import type { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
+import { and, desc, eq, gt, isNull, or } from "drizzle-orm";
+import type { MemoryFactEntity } from "../../domain/entity/memory-fact.entity";
 import { MemoryFactFactory } from "../factory/memory-fact.factory";
+import { memoryFactTable } from "../table/memory-fact.table";
 
 @Injectable()
 export class MemoryFactRepository {
@@ -27,10 +27,7 @@ export class MemoryFactRepository {
         and(
           eq(memoryFactTable.userId, userId),
           eq(memoryFactTable.isActive, true),
-          or(
-            isNull(memoryFactTable.expiresAt),
-            gt(memoryFactTable.expiresAt, new Date()),
-          ),
+          or(isNull(memoryFactTable.expiresAt), gt(memoryFactTable.expiresAt, new Date())),
         ),
       )
       .orderBy(desc(memoryFactTable.createdAt))

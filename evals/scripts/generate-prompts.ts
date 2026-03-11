@@ -1,11 +1,8 @@
 import { writeFileSync } from "node:fs";
-import { resolve, dirname } from "node:path";
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { buildFullSystemPrompt } from "../../apps/api/src/@logic/lesson/application/service/prompt-builder";
-import {
-  returningStudentContext,
-  firstLessonContext,
-} from "../fixtures/lesson-contexts";
+import { firstLessonContext, returningStudentContext } from "../fixtures/lesson-contexts";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const promptsDir = resolve(__dirname, "../prompts");

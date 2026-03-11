@@ -1,55 +1,65 @@
 import { randomUUID } from "node:crypto";
-import { Injectable, Logger } from "@nestjs/common";
-import { Queue } from "bullmq";
-import { InjectQueue } from "@nestjs/bullmq";
 import type { LlmMessage } from "@lib/provider/src";
+import { InjectQueue } from "@nestjs/bullmq";
+import { Injectable, Logger } from "@nestjs/common";
 import { QUEUE_NAMES } from "@shared/shared-job/queue-names";
-import { LessonRepository } from "../../infrastructure/repository/lesson.repository";
-import { LessonMessageRepository } from "../../infrastructure/repository/lesson-message.repository";
-import { AuthContract } from "../../../auth/contract/auth.contract";
-import { LessonContextService } from "../service/lesson-context.service";
-import { LessonResponseService } from "../service/lesson-response.service";
-import { StreamingPipelineService } from "../service/streaming-pipeline.service";
-import type { StreamCallbacks } from "../service/streaming-pipeline.service";
-import { buildFullSystemPrompt } from "../service/prompt-builder";
-import { ModerationService, SAFETY_RESPONSE } from "../../../llm/src/moderation/moderation.service";
-import { LessonSessionService } from "../service/lesson-session.service";
+import type { Queue } from "bullmq";
+import type { AuthContract } from "../../../auth/contract/auth.contract";
+import { type ModerationService, SAFETY_RESPONSE } from "../../../llm/src/moderation/moderation.service";
+import type { LessonRepository } from "../../infrastructure/repository/lesson.repository";
+import type { LessonMessageRepository } from "../../infrastructure/repository/lesson-message.repository";
 import { parseEmotion } from "../service/emotion";
-import { extractVocabTags, VocabTagBuffer } from "../service/vocab-tags";
 import { ExerciseTagBuffer, extractExerciseTag } from "../service/exercise-tags";
-import { UnknownTagBuffer, stripUnknownTags } from "../service/unknown-tags";
+import type { LessonContextService } from "../service/lesson-context.service";
+import type { LessonResponseService } from "../service/lesson-response.service";
+import type { LessonSessionService } from "../service/lesson-session.service";
+import { buildFullSystemPrompt } from "../service/prompt-builder";
+import type { StreamCallbacks, StreamingPipelineService } from "../service/streaming-pipeline.service";
+import { stripUnknownTags, UnknownTagBuffer } from "../service/unknown-tags";
+import { extractVocabTags, VocabTagBuffer } from "../service/vocab-tags";
 
 const SET_SPEED_RE = /<set_speed>(very_slow|slow|natural|fast|very_fast)<\/set_speed>/g;
 
-// eslint-disable-next-line security/detect-unsafe-regex -- bounded input from LLM response
 const ONBOARDING_RE = /<onboarding\s+status="(complete|in_progress)"(?:\s+level="(A1|A2|B1|B2|C1|C2)")?\s*\/>/g;
 
 function stripOnboardingTags(text: string): { cleanText: string; onboardingComplete: boolean; level: string | null } {
   let onboardingComplete = false;
   let level: string | null = null;
-  const cleanText = text.replaceAll(ONBOARDING_RE, (_, status: string, lvl: string | undefined) => {
-    if (status === "complete" && lvl) {
-      onboardingComplete = true;
-      level = lvl;
-    }
-    return "";
-  }).trim();
+  const cleanText = text
+    .replaceAll(ONBOARDING_RE, (_, status: string, lvl: string | undefined) => {
+      if (status === "complete" && lvl) {
+        onboardingComplete = true;
+        level = lvl;
+      }
+      return "";
+    })
+    .trim();
   return { cleanText, onboardingComplete, level };
 }
 
 function stripSpeedTags(text: string): { cleanText: string; speed: string | null } {
   let speed: string | null = null;
-  const cleanText = text.replaceAll(SET_SPEED_RE, (_, s: string) => { speed = s; return ""; }).trim();
+  const cleanText = text
+    .replaceAll(SET_SPEED_RE, (_, s: string) => {
+      speed = s;
+      return "";
+    })
+    .trim();
   return { cleanText, speed };
 }
 
 export function toSpeechSpeed(pref: string): number {
   switch (pref) {
-    case "very_slow": return 0.7;
-    case "slow": return 0.85;
-    case "fast": return 1.15;
-    case "very_fast": return 1.3;
-    default: return 1.0;
+    case "very_slow":
+      return 0.7;
+    case "slow":
+      return 0.85;
+    case "fast":
+      return 1.15;
+    case "very_fast":
+      return 1.3;
+    default:
+      return 1.0;
   }
 }
 
@@ -62,7 +72,6 @@ const GREETING_PROMPTS = [
 ];
 
 function pickGreetingPrompt(): string {
-  // eslint-disable-next-line sonarjs/pseudo-random -- non-security random for greeting variety
   return GREETING_PROMPTS[Math.floor(Math.random() * GREETING_PROMPTS.length)] ?? GREETING_PROMPTS[0] ?? "";
 }
 
@@ -123,9 +132,11 @@ export class LessonMaintainer {
 
     const systemPrompt = buildFullSystemPrompt(context);
 
-    const greeting = await this.responseService.generate(systemPrompt, [
-      { role: "user", content: pickGreetingPrompt() },
-    ], "lesson.greeting");
+    const greeting = await this.responseService.generate(
+      systemPrompt,
+      [{ role: "user", content: pickGreetingPrompt() }],
+      "lesson.greeting",
+    );
 
     const { cleanText: greetingText, speed: greetingSpeed } = stripSpeedTags(greeting.text);
     const { emotion: greetingEmotion, text: greetingTextNoEmotion } = parseEmotion(greetingText);
@@ -164,7 +175,8 @@ export class LessonMaintainer {
     // Inject voice mismatch hint into system prompt (one-time)
     let systemPrompt = session.systemPrompt;
     if (session.voiceMismatch) {
-      systemPrompt += "\n\n=== VOICE OBSERVATION ===\nThe student's voice sounds noticeably different from their usual voice today. They might be sick, tired, or feeling off. You can gently and naturally ask if they're feeling okay — don't make a big deal of it, just show you noticed. One brief mention is enough.";
+      systemPrompt +=
+        "\n\n=== VOICE OBSERVATION ===\nThe student's voice sounds noticeably different from their usual voice today. They might be sick, tired, or feeling off. You can gently and naturally ask if they're feeling okay — don't make a big deal of it, just show you noticed. One brief mention is enough.";
       await this.sessionService.setVoiceMismatch(userId, false);
     }
 
@@ -176,10 +188,7 @@ export class LessonMaintainer {
       return;
     }
 
-    const updatedHistory: LlmMessage[] = [
-      ...session.history,
-      { role: "user", content: text },
-    ];
+    const updatedHistory: LlmMessage[] = [...session.history, { role: "user", content: text }];
 
     // Layer 2: LLM moderation runs in parallel with streaming.
     // Optimistic strategy: chunks are sent to client immediately (no buffering).
@@ -187,7 +196,9 @@ export class LessonMaintainer {
     const moderationPromise = this.moderationService
       .llmCheck(text, { userId, lessonId: session.lessonId })
       .catch((err: unknown) => {
-        this.logger.error(`LLM moderation failed, allowing message: ${err instanceof Error ? err.message : String(err)}`);
+        this.logger.error(
+          `LLM moderation failed, allowing message: ${err instanceof Error ? err.message : String(err)}`,
+        );
         return { isSafe: true as const, reason: null };
       });
 
@@ -207,7 +218,7 @@ export class LessonMaintainer {
           const { cleanText, highlights, reviewedWords } = vocabBuffer.push(noOnboarding);
 
           if (highlights.length > 0) {
-            this.logger.log(`Vocab highlights extracted: ${highlights.map(h => h.word).join(", ")}`);
+            this.logger.log(`Vocab highlights extracted: ${highlights.map((h) => h.word).join(", ")}`);
           }
           for (const h of highlights) callbacks.onVocabHighlight?.(h);
           for (const w of reviewedWords) callbacks.onVocabReviewed?.(w);
@@ -229,7 +240,7 @@ export class LessonMaintainer {
           // Flush any remaining buffered vocab tags
           const remaining = vocabBuffer.flush();
           if (remaining.highlights.length > 0) {
-            this.logger.log(`Vocab flush highlights: ${remaining.highlights.map(h => h.word).join(", ")}`);
+            this.logger.log(`Vocab flush highlights: ${remaining.highlights.map((h) => h.word).join(", ")}`);
           }
           for (const h of remaining.highlights) callbacks.onVocabHighlight?.(h);
           for (const w of remaining.reviewedWords) callbacks.onVocabReviewed?.(w);
@@ -241,7 +252,11 @@ export class LessonMaintainer {
           if (exerciseRemaining.exercise) {
             const exerciseId = randomUUID();
             void this.sessionService.setActiveExercise(userId, exerciseId, exerciseRemaining.exercise);
-            callbacks.onExercise?.({ exerciseId, type: exerciseRemaining.exercise.type, pairs: exerciseRemaining.exercise.pairs });
+            callbacks.onExercise?.({
+              exerciseId,
+              type: exerciseRemaining.exercise.type,
+              pairs: exerciseRemaining.exercise.pairs,
+            });
           }
           if (exerciseRemaining.cleanText) {
             const safeRemaining = unknownTagBuffer.push(exerciseRemaining.cleanText);
@@ -263,9 +278,13 @@ export class LessonMaintainer {
 
             if (!modResult.isSafe) {
               if (modResult.confidence < 0.7) {
-                this.logger.warn(`LLM moderation below threshold, allowing: reason=${modResult.reason}, confidence=${modResult.confidence}`);
+                this.logger.warn(
+                  `LLM moderation below threshold, allowing: reason=${modResult.reason}, confidence=${modResult.confidence}`,
+                );
               } else {
-                this.logger.warn(`LLM flagged input from ${userId}: reason=${modResult.reason}, confidence=${modResult.confidence}`);
+                this.logger.warn(
+                  `LLM flagged input from ${userId}: reason=${modResult.reason}, confidence=${modResult.confidence}`,
+                );
 
                 await this.sessionService.appendHistory(
                   userId,
@@ -281,7 +300,11 @@ export class LessonMaintainer {
             this.logger.log(`RAW fullText: "${result.fullText}"`);
             const { cleanText: textWithoutSpeed, speed } = stripSpeedTags(result.fullText);
             const { text: textWithoutEmotion } = parseEmotion(textWithoutSpeed);
-            const { cleanText: textWithoutOnboarding, onboardingComplete, level: onboardingLevel } = stripOnboardingTags(textWithoutEmotion);
+            const {
+              cleanText: textWithoutOnboarding,
+              onboardingComplete,
+              level: onboardingLevel,
+            } = stripOnboardingTags(textWithoutEmotion);
             if (onboardingComplete && onboardingLevel) {
               await this.authContract.completeOnboarding(userId, onboardingLevel);
               callbacks.onOnboardingComplete?.({ level: onboardingLevel });
@@ -290,7 +313,7 @@ export class LessonMaintainer {
             const { cleanText: textWithoutVocab, highlights: endHighlights } = extractVocabTags(textWithoutExercise);
             const cleanText = stripUnknownTags(textWithoutVocab);
             if (endHighlights.length > 0) {
-              this.logger.log(`Vocab from fullText: ${endHighlights.map(h => h.word).join(", ")}`);
+              this.logger.log(`Vocab from fullText: ${endHighlights.map((h) => h.word).join(", ")}`);
             }
 
             if (speed) {

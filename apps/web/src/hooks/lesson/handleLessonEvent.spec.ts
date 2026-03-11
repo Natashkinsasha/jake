@@ -9,11 +9,7 @@ describe("handleLessonEvent", () => {
   });
 
   it("tutor_message → show_message", () => {
-    const action = handleLessonEvent(
-      "tutor_message",
-      { text: "Hello" },
-      idle,
-    );
+    const action = handleLessonEvent("tutor_message", { text: "Hello" }, idle);
     expect(action).toEqual({
       type: "show_message",
       text: "Hello",
@@ -22,20 +18,12 @@ describe("handleLessonEvent", () => {
   });
 
   it("tutor_message discarded when user is speaking", () => {
-    const action = handleLessonEvent(
-      "tutor_message",
-      { text: "Hello" },
-      { userSpeaking: true, pendingTurns: 0 },
-    );
+    const action = handleLessonEvent("tutor_message", { text: "Hello" }, { userSpeaking: true, pendingTurns: 0 });
     expect(action).toEqual({ type: "discard" });
   });
 
   it("tutor_message discarded when pendingTurns > 1", () => {
-    const action = handleLessonEvent(
-      "tutor_message",
-      { text: "Hello" },
-      { userSpeaking: false, pendingTurns: 2 },
-    );
+    const action = handleLessonEvent("tutor_message", { text: "Hello" }, { userSpeaking: false, pendingTurns: 2 });
     expect(action).toEqual({ type: "discard" });
   });
 

@@ -1,4 +1,4 @@
-import { type LessonContext } from "../dto/lesson-context";
+import type { LessonContext } from "../dto/lesson-context";
 
 function formatTimeSince(date: Date): string {
   const diffMs = Date.now() - date.getTime();
@@ -118,7 +118,7 @@ Interests: ${context.preferences.interests.join(", ") || "not specified"}`);
 
   if (context.facts.length > 0) {
     parts.push(`\n=== KNOWN FACTS ===
-${context.facts.map((f) => "- [" + f.category + "] " + f.fact).join("\n")}`);
+${context.facts.map((f) => `- [${f.category}] ${f.fact}`).join("\n")}`);
   }
 
   if (context.recentEmotionalContext.length > 0) {

@@ -1,8 +1,8 @@
 "use client";
 
-import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from "react";
-import { cn } from "@/lib/utils";
+import { createContext, type ReactNode, useCallback, useContext, useMemo, useState } from "react";
 import { TOAST_CONFIG } from "@/lib/config";
+import { cn } from "@/lib/utils";
 
 interface Toast {
   id: number;
@@ -42,7 +42,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               "px-4 py-3 rounded-xl shadow-lg text-sm font-medium animate-slide-up",
               toast.type === "success" && "bg-green-500 text-white",
               toast.type === "error" && "bg-red-500 text-white",
-              toast.type === "info" && "bg-gray-800 text-white"
+              toast.type === "info" && "bg-gray-800 text-white",
             )}
           >
             {toast.message}

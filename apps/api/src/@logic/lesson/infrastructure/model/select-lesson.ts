@@ -1,5 +1,5 @@
-import { type z } from "zod";
 import { createSelectSchema } from "drizzle-zod";
+import type { z } from "zod";
 import { lessonTable } from "../table/lesson.table";
 
 export const selectLessonSchema = createSelectSchema(lessonTable);

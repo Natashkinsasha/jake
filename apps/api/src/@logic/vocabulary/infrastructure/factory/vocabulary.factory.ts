@@ -1,5 +1,5 @@
-import { type VocabularyEntity } from "../../domain/entity/vocabulary.entity";
-import { type vocabularyTable } from "../table/vocabulary.table";
+import type { VocabularyEntity } from "../../domain/entity/vocabulary.entity";
+import type { vocabularyTable } from "../table/vocabulary.table";
 
 type VocabularyRow = typeof vocabularyTable.$inferSelect;
 

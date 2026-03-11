@@ -1,4 +1,4 @@
-import { extractExerciseTag, ExerciseTagBuffer } from "./exercise-tags";
+import { ExerciseTagBuffer, extractExerciseTag } from "./exercise-tags";
 
 describe("extractExerciseTag", () => {
   it("extracts a matching exercise from text", () => {
@@ -26,7 +26,8 @@ describe("extractExerciseTag", () => {
   });
 
   it("handles single-line pairs", () => {
-    const text = "Practice time! <exercise type=\"matching\"><pair word=\"a\" definition=\"b\"/><pair word=\"c\" definition=\"d\"/></exercise>";
+    const text =
+      'Practice time! <exercise type="matching"><pair word="a" definition="b"/><pair word="c" definition="d"/></exercise>';
     const result = extractExerciseTag(text);
     expect(result.exercise?.pairs).toHaveLength(2);
     expect(result.cleanText).toBe("Practice time!");

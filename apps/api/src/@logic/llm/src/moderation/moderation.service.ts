@@ -1,6 +1,6 @@
+import type { LlmProvider } from "@lib/provider/src";
 import { Injectable, Logger } from "@nestjs/common";
 import { z } from "zod";
-import { LlmProvider } from "@lib/provider/src";
 import { withSpan } from "../llm-tracing";
 import { quickInjectionCheck } from "./injection-patterns";
 
@@ -49,10 +49,7 @@ export class ModerationService {
   }
 
   /** Async LLM classifier only (no regex). Use for parallel moderation. */
-  async llmCheck(
-    text: string,
-    meta?: { userId?: string; lessonId?: string },
-  ): Promise<ModerationCheckResult> {
+  async llmCheck(text: string, meta?: { userId?: string; lessonId?: string }): Promise<ModerationCheckResult> {
     return withSpan(
       "moderation.llm-check",
       {
@@ -70,10 +67,7 @@ export class ModerationService {
   }
 
   /** Convenience: regex + LLM sequentially. For consumers that don't need parallel pattern. */
-  async check(
-    text: string,
-    meta?: { userId?: string; lessonId?: string },
-  ): Promise<ModerationCheckResult> {
+  async check(text: string, meta?: { userId?: string; lessonId?: string }): Promise<ModerationCheckResult> {
     const quick = this.quickCheck(text);
     if (!quick.isSafe) return quick;
     return this.llmCheck(text, meta);
@@ -95,9 +89,7 @@ export class ModerationService {
         confidence: result.confidence,
       };
     } catch (error) {
-      this.logger.error(
-        `LLM moderation failed: ${error instanceof Error ? error.message : String(error)}`,
-      );
+      this.logger.error(`LLM moderation failed: ${error instanceof Error ? error.message : String(error)}`);
       // Fail open — don't block if classifier is down
       return { isSafe: true, reason: null, confidence: 0 };
     }

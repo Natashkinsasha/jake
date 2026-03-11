@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { TutorService } from "../application/service/tutor.service";
+import type { TutorService } from "../application/service/tutor.service";
 import type { TutorGender, TutorNationality, TutorProfile, TutorVoice } from "../domain/tutor-types";
 
 @Injectable()

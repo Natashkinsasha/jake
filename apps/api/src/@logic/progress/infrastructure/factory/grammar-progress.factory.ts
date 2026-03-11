@@ -1,5 +1,5 @@
-import { type GrammarProgressEntity } from "../../domain/entity/grammar-progress.entity";
-import { type grammarProgressTable } from "../table/grammar-progress.table";
+import type { GrammarProgressEntity } from "../../domain/entity/grammar-progress.entity";
+import type { grammarProgressTable } from "../table/grammar-progress.table";
 
 type GrammarProgressRow = typeof grammarProgressTable.$inferSelect;
 

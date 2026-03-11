@@ -1,4 +1,4 @@
-import { pgTable, uuid, integer, timestamp, uniqueIndex, customType } from "drizzle-orm/pg-core";
+import { customType, integer, pgTable, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { userTable } from "../../../auth/infrastructure/table/user.table";
 
 const vector = customType<{ data: number[]; driverType: string }>({
@@ -14,7 +14,9 @@ export const voicePrintTable = pgTable(
   "voice_prints",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id").references(() => userTable.id, { onDelete: "cascade" }).notNull(),
+    userId: uuid("user_id")
+      .references(() => userTable.id, { onDelete: "cascade" })
+      .notNull(),
     embedding: vector("embedding"),
     sampleCount: integer("sample_count").default(0).notNull(),
     createdAt: timestamp("created_at").defaultNow().notNull(),

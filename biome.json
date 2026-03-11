@@ -1,0 +1,104 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.4.6/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "includes": [
+      "**/*.ts",
+      "**/*.tsx",
+      "**/*.js",
+      "**/*.jsx",
+      "**/*.json",
+      "!dist",
+      "!.next",
+      "!out",
+      "!node_modules",
+      "!.turbo",
+      "!drizzle",
+      "!coverage",
+      "!src/__mocks__",
+      "!evals"
+    ]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 120
+  },
+  "javascript": {
+    "parser": {
+      "unsafeParameterDecoratorsEnabled": true
+    },
+    "formatter": {
+      "quoteStyle": "double",
+      "trailingCommas": "all",
+      "semicolons": "always",
+      "arrowParentheses": "always"
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "recommended": true,
+      "correctness": {
+        "noUnusedImports": "error",
+        "noUnusedVariables": "error",
+        "noInvalidUseBeforeDeclaration": "off"
+      },
+      "style": {
+        "noUselessElse": "error",
+        "useCollapsedElseIf": "error",
+        "useForOf": "error",
+        "useFragmentSyntax": "error",
+        "useTemplate": "error",
+        "noNonNullAssertion": "warn"
+      },
+      "suspicious": {
+        "noConsole": "warn",
+        "noDoubleEquals": "error",
+        "noExplicitAny": "warn",
+        "noArrayIndexKey": "warn",
+        "noUnknownAtRules": "off",
+        "useIterableCallbackReturn": "off"
+      },
+      "complexity": {
+        "noForEach": "off",
+        "noStaticOnlyClass": "off",
+        "useLiteralKeys": "off",
+        "useFlatMap": "error",
+        "useOptionalChain": "error"
+      },
+      "performance": {
+        "noAccumulatingSpread": "error",
+        "noDelete": "warn"
+      },
+      "a11y": {
+        "noSvgWithoutTitle": "warn",
+        "useKeyWithClickEvents": "warn",
+        "noStaticElementInteractions": "warn",
+        "noLabelWithoutControl": "off"
+      }
+    }
+  },
+  "css": {
+    "linter": {
+      "enabled": false
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["**/*.spec.ts", "**/*.spec.tsx", "**/*.test.ts", "**/*.test.tsx"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noExplicitAny": "off"
+          }
+        }
+      }
+    }
+  ]
+}

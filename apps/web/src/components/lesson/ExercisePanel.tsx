@@ -1,7 +1,7 @@
 "use client";
 
-import { MatchingExercise } from "./MatchingExercise";
 import type { ExerciseData } from "@/types";
+import { MatchingExercise } from "./MatchingExercise";
 
 interface ExercisePanelProps {
   exercise: ExerciseData;
@@ -23,10 +23,7 @@ export function ExercisePanel({ exercise, onSubmit, onDismiss }: ExercisePanelPr
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
-        <MatchingExercise
-          exercise={exercise}
-          onSubmit={onSubmit}
-        />
+        <MatchingExercise exercise={exercise} onSubmit={onSubmit} />
       </div>
     </div>
   );

@@ -11,8 +11,19 @@ export interface LessonState {
 }
 
 export interface TtsApi {
-  speak: (text: string, voiceId: string, speed: number, model?: string, voiceSettings?: { stability: number; similarity_boost: number; style: number }) => void;
-  startStream: (voiceId: string, speed: number, model?: string, voiceSettings?: { stability: number; similarity_boost: number; style: number }) => void;
+  speak: (
+    text: string,
+    voiceId: string,
+    speed: number,
+    model?: string,
+    voiceSettings?: { stability: number; similarity_boost: number; style: number },
+  ) => void;
+  startStream: (
+    voiceId: string,
+    speed: number,
+    model?: string,
+    voiceSettings?: { stability: number; similarity_boost: number; style: number },
+  ) => void;
   sendChunk: (text: string) => void;
   endStream: () => void;
   stop: () => void;

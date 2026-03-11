@@ -22,13 +22,14 @@ export function extractExerciseTag(text: string): {
   const inner = match[1] ?? "";
 
   PAIR_RE.lastIndex = 0;
-  let pairMatch: RegExpExecArray | null;
-  while ((pairMatch = PAIR_RE.exec(inner)) !== null) {
+  let pairMatch: RegExpExecArray | null = PAIR_RE.exec(inner);
+  while (pairMatch !== null) {
     const word = pairMatch[1];
     const definition = pairMatch[2];
     if (word && definition) {
       pairs.push({ word, definition });
     }
+    pairMatch = PAIR_RE.exec(inner);
   }
 
   if (pairs.length === 0) return { cleanText: text.trim(), exercise: null };

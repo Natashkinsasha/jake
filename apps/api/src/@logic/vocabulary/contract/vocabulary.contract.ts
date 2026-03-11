@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import { VocabularyRepository } from "../infrastructure/repository/vocabulary.repository";
-import { VocabularyEntity } from "../domain/entity/vocabulary.entity";
+import type { VocabularyEntity } from "../domain/entity/vocabulary.entity";
+import type { VocabularyRepository } from "../infrastructure/repository/vocabulary.repository";
 
 @Injectable()
 export class VocabularyContract {

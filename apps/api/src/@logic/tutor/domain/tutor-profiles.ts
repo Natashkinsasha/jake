@@ -1,4 +1,4 @@
-import type { TutorNationality, TutorGender, TutorProfile } from "./tutor-types";
+import type { TutorGender, TutorNationality, TutorProfile } from "./tutor-types";
 
 export const TUTOR_PROFILES: Record<string, TutorProfile> = {
   australian_male: {

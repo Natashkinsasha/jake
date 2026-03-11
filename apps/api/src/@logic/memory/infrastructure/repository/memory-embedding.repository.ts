@@ -1,9 +1,9 @@
 import { Injectable } from "@nestjs/common";
-import { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
-import { eq, desc, sql } from "drizzle-orm";
-import { memoryEmbeddingTable } from "../table/memory-embedding.table";
-import { MemoryEmbeddingEntity } from "../../domain/entity/memory-embedding.entity";
+import type { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
+import { desc, eq, sql } from "drizzle-orm";
+import type { MemoryEmbeddingEntity } from "../../domain/entity/memory-embedding.entity";
 import { MemoryEmbeddingFactory } from "../factory/memory-embedding.factory";
+import { memoryEmbeddingTable } from "../table/memory-embedding.table";
 
 export interface EmbeddingSimilarityResult {
   id: string;
@@ -37,9 +37,13 @@ export class MemoryEmbeddingRepository {
     return MemoryEmbeddingFactory.createMany(rows);
   }
 
-  async findSimilar(userId: string, queryEmbedding: number[], limit = 5, threshold = 0.8): Promise<EmbeddingSimilarityResult[]> {
+  async findSimilar(
+    userId: string,
+    queryEmbedding: number[],
+    limit = 5,
+    threshold = 0.8,
+  ): Promise<EmbeddingSimilarityResult[]> {
     const vectorStr = `[${queryEmbedding.join(",")}]`;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- raw SQL query returns untyped result
     const results = await this.txHost.tx.execute(
       sql`SELECT id, content, emotional_tone, created_at,
           1 - (embedding <=> ${vectorStr}::vector) as similarity
@@ -48,9 +52,8 @@ export class MemoryEmbeddingRepository {
           AND embedding IS NOT NULL
           AND 1 - (embedding <=> ${vectorStr}::vector) > ${threshold}
         ORDER BY similarity DESC
-        LIMIT ${limit}`
+        LIMIT ${limit}`,
     );
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- raw SQL query returns untyped result
     return ("rows" in results ? results.rows : results) as unknown as EmbeddingSimilarityResult[];
   }
 }

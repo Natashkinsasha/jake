@@ -15,10 +15,8 @@ const cspDirectives = [
 const nextConfig = {
   output: "standalone",
   transpilePackages: ["@jake/shared"],
-images: {
-    remotePatterns: [
-      { protocol: "https", hostname: "lh3.googleusercontent.com" },
-    ],
+  images: {
+    remotePatterns: [{ protocol: "https", hostname: "lh3.googleusercontent.com" }],
   },
   async headers() {
     return [

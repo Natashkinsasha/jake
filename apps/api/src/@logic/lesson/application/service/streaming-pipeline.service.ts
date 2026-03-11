@@ -1,8 +1,7 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { LlmProvider } from "@lib/provider/src";
-import type { LlmMessage, LlmResponse } from "@lib/provider/src";
-import { SentenceBuffer } from "./sentence-buffer";
+import type { LlmMessage, LlmProvider, LlmResponse } from "@lib/provider/src";
+import { Injectable } from "@nestjs/common";
 import { parseEmotion } from "./emotion";
+import { SentenceBuffer } from "./sentence-buffer";
 
 export interface StreamChunk {
   chunkIndex: number;
@@ -24,15 +23,17 @@ export interface StreamCallbacks {
   onOnboardingComplete?: (data: { level: string }) => void;
   onVocabHighlight?(highlight: { word: string; translation: string; topic: string }): void;
   onVocabReviewed?(word: string): void;
-  onExercise?: (exercise: { exerciseId: string; type: string; pairs: Array<{ word: string; definition: string }> }) => void;
+  onExercise?: (exercise: {
+    exerciseId: string;
+    type: string;
+    pairs: Array<{ word: string; definition: string }>;
+  }) => void;
 }
 
 const MAX_BUFFER_AGE_MS = 500;
 
 @Injectable()
 export class StreamingPipelineService {
-  private readonly logger = new Logger(StreamingPipelineService.name);
-
   constructor(private llm: LlmProvider) {}
 
   async stream(
@@ -55,9 +56,9 @@ export class StreamingPipelineService {
 
     const flushIfStale = () => {
       if (
-        bufferStartTime !== null
-        && Date.now() - bufferStartTime >= MAX_BUFFER_AGE_MS
-        && sentenceBuffer.hasContent()
+        bufferStartTime !== null &&
+        Date.now() - bufferStartTime >= MAX_BUFFER_AGE_MS &&
+        sentenceBuffer.hasContent()
       ) {
         bufferStartTime = null;
         const flushed = sentenceBuffer.flush();

@@ -11,9 +11,7 @@ export default function LoginPage() {
             <span className="text-4xl font-bold text-white">J</span>
           </div>
           <h1 className="mb-2 text-3xl font-bold text-white">Jake</h1>
-          <p className="text-lg text-blue-100">
-            Your AI English tutor, always ready to chat
-          </p>
+          <p className="text-lg text-blue-100">Your AI English tutor, always ready to chat</p>
         </div>
 
         <div className="card">

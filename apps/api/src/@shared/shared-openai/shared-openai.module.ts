@@ -1,8 +1,8 @@
+import { OpenaiModule } from "@lib/openai/src";
 import { Module } from "@nestjs/common";
 import OpenAI from "openai";
-import { OpenaiModule } from "@lib/openai/src";
-import { SharedConfigModule } from "../shared-config/shared-config.module";
 import { EnvService } from "../shared-config/env.service";
+import { SharedConfigModule } from "../shared-config/shared-config.module";
 
 @Module({
   imports: [

@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
-import { TUTOR_PROFILES, getTutorProfile } from "../../domain/tutor-profiles";
-import { getVoicesByGender, getDefaultVoice } from "../../domain/tutor-voices";
+import { getTutorProfile, TUTOR_PROFILES } from "../../domain/tutor-profiles";
 import type { TutorGender, TutorNationality, TutorProfile, TutorVoice } from "../../domain/tutor-types";
+import { getDefaultVoice, getVoicesByGender } from "../../domain/tutor-voices";
 
 @Injectable()
 export class TutorService {

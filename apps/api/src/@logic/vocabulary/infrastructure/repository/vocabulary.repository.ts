@@ -1,9 +1,9 @@
 import { Injectable } from "@nestjs/common";
-import { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
-import { eq, desc, and, sql, inArray } from "drizzle-orm";
-import { vocabularyTable } from "../table/vocabulary.table";
-import { VocabularyEntity } from "../../domain/entity/vocabulary.entity";
+import type { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import type { VocabularyEntity } from "../../domain/entity/vocabulary.entity";
 import { VocabularyFactory } from "../factory/vocabulary.factory";
+import { vocabularyTable } from "../table/vocabulary.table";
 
 @Injectable()
 export class VocabularyRepository {
@@ -98,10 +98,7 @@ export class VocabularyRepository {
     const rows = await this.txHost.tx
       .select()
       .from(vocabularyTable)
-      .where(and(
-        eq(vocabularyTable.userId, userId),
-        sql`${vocabularyTable.status} != 'learned'`,
-      ))
+      .where(and(eq(vocabularyTable.userId, userId), sql`${vocabularyTable.status} != 'learned'`))
       .orderBy(desc(vocabularyTable.createdAt))
       .limit(limit);
     return VocabularyFactory.createMany(rows);

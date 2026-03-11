@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useCallback, useMemo, useEffect } from "react";
-import type { ExerciseData, ExerciseFeedbackData } from "@/types";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
+import type { ExerciseData, ExerciseFeedbackData } from "@/types";
 
 interface MatchingExerciseProps {
   exercise: ExerciseData;
@@ -13,7 +13,6 @@ interface MatchingExerciseProps {
 function shuffleArray<T>(arr: T[]): T[] {
   const shuffled = [...arr];
   for (let i = shuffled.length - 1; i > 0; i--) {
-    // eslint-disable-next-line sonarjs/pseudo-random -- non-security shuffle for UI display order
     const j = Math.floor(Math.random() * (i + 1));
     const temp = shuffled[i];
     shuffled[i] = shuffled[j] as T;
@@ -36,32 +35,35 @@ export function MatchingExercise({ exercise, feedback, onSubmit }: MatchingExerc
   const [matches, setMatches] = useState<Map<string, string>>(() => new Map());
   const [submitted, setSubmitted] = useState(false);
 
-  const shuffledDefinitions = useMemo(
-    () => shuffleArray(exercise.pairs.map((p) => p.definition)),
-    [exercise.pairs],
-  );
+  const shuffledDefinitions = useMemo(() => shuffleArray(exercise.pairs.map((p) => p.definition)), [exercise.pairs]);
 
   const words = exercise.pairs.map((p) => p.word);
   const isComplete = feedback != null;
 
-  const handleWordClick = useCallback((word: string) => {
-    if (submitted || isComplete) return;
-    setSelectedWord((prev) => (prev === word ? null : word));
-  }, [submitted, isComplete]);
+  const handleWordClick = useCallback(
+    (word: string) => {
+      if (submitted || isComplete) return;
+      setSelectedWord((prev) => (prev === word ? null : word));
+    },
+    [submitted, isComplete],
+  );
 
-  const handleDefinitionClick = useCallback((definition: string) => {
-    if (submitted || isComplete || !selectedWord) return;
+  const handleDefinitionClick = useCallback(
+    (definition: string) => {
+      if (submitted || isComplete || !selectedWord) return;
 
-    setMatches((prev) => {
-      const next = new Map(prev);
-      for (const [w, d] of next) {
-        if (d === definition) next.delete(w);
-      }
-      next.set(selectedWord, definition);
-      return next;
-    });
-    setSelectedWord(null);
-  }, [submitted, isComplete, selectedWord]);
+      setMatches((prev) => {
+        const next = new Map(prev);
+        for (const [w, d] of next) {
+          if (d === definition) next.delete(w);
+        }
+        next.set(selectedWord, definition);
+        return next;
+      });
+      setSelectedWord(null);
+    },
+    [submitted, isComplete, selectedWord],
+  );
 
   const handleSubmit = useCallback(() => {
     if (matches.size !== words.length) return;
@@ -78,8 +80,12 @@ export function MatchingExercise({ exercise, feedback, onSubmit }: MatchingExerc
   // Reset submitted state if server doesn't respond within 10s
   useEffect(() => {
     if (!submitted) return;
-    const timeout = setTimeout(() => { setSubmitted(false); }, 10_000);
-    return () => { clearTimeout(timeout); };
+    const timeout = setTimeout(() => {
+      setSubmitted(false);
+    }, 10_000);
+    return () => {
+      clearTimeout(timeout);
+    };
   }, [submitted]);
 
   // Feedback view after completion — shows correct/incorrect answers
@@ -88,29 +94,45 @@ export function MatchingExercise({ exercise, feedback, onSubmit }: MatchingExerc
     return (
       <div className="space-y-2.5 rounded-xl border border-white/[0.06] bg-white/[0.05] px-4 py-3 backdrop-blur-sm">
         <div className="flex items-center gap-2.5">
-          <div className={cn(
-            "w-5 h-5 rounded-full flex items-center justify-center",
-            isPerfect ? "bg-emerald-500/20" : "bg-amber-500/20",
-          )}>
+          <div
+            className={cn(
+              "w-5 h-5 rounded-full flex items-center justify-center",
+              isPerfect ? "bg-emerald-500/20" : "bg-amber-500/20",
+            )}
+          >
             {isPerfect ? (
-              <svg className="size-3 text-emerald-400" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
+              <svg
+                className="size-3 text-emerald-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={3}
+                stroke="currentColor"
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
               </svg>
             ) : (
-              <svg className="size-3 text-amber-400" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+              <svg
+                className="size-3 text-amber-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+                />
               </svg>
             )}
           </div>
-          <span className="text-sm font-medium text-white/60">
-            {isPerfect ? "Perfect!" : "Matching exercise"}
-          </span>
-          <span className={cn(
-            "text-xs font-medium px-2 py-0.5 rounded-full ml-auto",
-            isPerfect
-              ? "bg-emerald-500/15 text-emerald-300"
-              : "bg-amber-500/15 text-amber-300",
-          )}>
+          <span className="text-sm font-medium text-white/60">{isPerfect ? "Perfect!" : "Matching exercise"}</span>
+          <span
+            className={cn(
+              "text-xs font-medium px-2 py-0.5 rounded-full ml-auto",
+              isPerfect ? "bg-emerald-500/15 text-emerald-300" : "bg-amber-500/15 text-amber-300",
+            )}
+          >
             {feedback.score}
           </span>
         </div>
@@ -119,11 +141,23 @@ export function MatchingExercise({ exercise, feedback, onSubmit }: MatchingExerc
           {feedback.results.map((r) => (
             <div key={r.word} className="flex items-center gap-2 text-xs">
               {r.correct ? (
-                <svg className="size-3 shrink-0 text-emerald-400" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
+                <svg
+                  className="size-3 shrink-0 text-emerald-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={3}
+                  stroke="currentColor"
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
                 </svg>
               ) : (
-                <svg className="size-3 shrink-0 text-red-400" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
+                <svg
+                  className="size-3 shrink-0 text-red-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={3}
+                  stroke="currentColor"
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               )}
@@ -168,7 +202,9 @@ export function MatchingExercise({ exercise, feedback, onSubmit }: MatchingExerc
               <button
                 key={word}
                 type="button"
-                onClick={() => { handleWordClick(word); }}
+                onClick={() => {
+                  handleWordClick(word);
+                }}
                 disabled={submitted}
                 className={cn(
                   "w-full text-left px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 border",
@@ -196,7 +232,9 @@ export function MatchingExercise({ exercise, feedback, onSubmit }: MatchingExerc
               <button
                 key={def}
                 type="button"
-                onClick={() => { handleDefinitionClick(def); }}
+                onClick={() => {
+                  handleDefinitionClick(def);
+                }}
                 disabled={submitted || !selectedWord}
                 className={cn(
                   "w-full text-left px-3 py-2.5 rounded-xl text-xs leading-relaxed transition-all duration-200 border",

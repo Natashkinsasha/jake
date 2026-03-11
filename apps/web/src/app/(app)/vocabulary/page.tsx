@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { api } from "@/lib/api";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { useCallback, useEffect, useState } from "react";
 import { ErrorMessage } from "@/components/ui/ErrorMessage";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { api } from "@/lib/api";
 import type { VocabularyItem, VocabularyStats } from "@/types";
 
 const DEFAULT_STATUS_CONFIG = {
@@ -138,7 +138,9 @@ export default function VocabularyPage() {
     }
   }, [statusFilter, topicFilter]);
 
-  useEffect(() => { void fetchData(); }, [fetchData]);
+  useEffect(() => {
+    void fetchData();
+  }, [fetchData]);
 
   const handleDelete = async (id: string) => {
     try {
@@ -164,7 +166,13 @@ export default function VocabularyPage() {
           href="/dashboard"
           className="group mb-3 inline-flex items-center gap-1.5 text-sm text-gray-400 transition-colors hover:text-primary-600"
         >
-          <svg className="size-3.5 transition-transform group-hover:-translate-x-0.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+          <svg
+            className="size-3.5 transition-transform group-hover:-translate-x-0.5"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2.5}
+            stroke="currentColor"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
           </svg>
           Dashboard
@@ -187,11 +195,11 @@ export default function VocabularyPage() {
             <button
               key={f.value}
               type="button"
-              onClick={() => { setStatusFilter(f.value); }}
+              onClick={() => {
+                setStatusFilter(f.value);
+              }}
               className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
-                statusFilter === f.value
-                  ? "bg-white text-gray-900 shadow-sm"
-                  : "text-gray-500 hover:text-gray-700"
+                statusFilter === f.value ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
               }`}
             >
               {"dot" in f && <div className={`size-1.5 rounded-full ${f.dot}`} />}
@@ -204,12 +212,16 @@ export default function VocabularyPage() {
         {topics.length > 0 && (
           <select
             value={topicFilter}
-            onChange={(e) => { setTopicFilter(e.target.value); }}
+            onChange={(e) => {
+              setTopicFilter(e.target.value);
+            }}
             className="cursor-pointer rounded-xl border-0 bg-gray-100/80 px-3 py-2 text-xs font-medium text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary-500"
           >
             <option value="">All topics</option>
             {topics.map((t) => (
-              <option key={t} value={t}>{t.replaceAll("_", " ")}</option>
+              <option key={t} value={t}>
+                {t.replaceAll("_", " ")}
+              </option>
             ))}
           </select>
         )}
@@ -224,7 +236,14 @@ export default function VocabularyPage() {
 
       {/* Loading / Error */}
       {isLoading && <LoadingSpinner className="h-32" />}
-      {error && <ErrorMessage message={error} onRetry={() => { void fetchData(); }} />}
+      {error && (
+        <ErrorMessage
+          message={error}
+          onRetry={() => {
+            void fetchData();
+          }}
+        />
+      )}
 
       {/* Word list */}
       {!isLoading && words.length > 0 && (
@@ -241,9 +260,7 @@ export default function VocabularyPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline gap-2">
                     <span className="font-semibold text-gray-900">{word.word}</span>
-                    {word.translation && (
-                      <span className="text-sm text-gray-400">{word.translation}</span>
-                    )}
+                    {word.translation && <span className="text-sm text-gray-400">{word.translation}</span>}
                   </div>
                   <div className="mt-1.5 flex items-center gap-2">
                     {word.topic && (
@@ -257,12 +274,17 @@ export default function VocabularyPage() {
 
                 {/* Status & delete */}
                 <div className="flex shrink-0 items-center gap-2">
-                  <span className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider ${config.badge}`}>
+                  <span
+                    className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider ${config.badge}`}
+                  >
                     {config.label}
                   </span>
                   <button
                     type="button"
-                    onClick={(e) => { e.stopPropagation(); void handleDelete(word.id); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void handleDelete(word.id);
+                    }}
                     className="p-1 text-gray-300 transition-colors hover:text-red-400"
                     title="Remove word"
                   >
@@ -281,16 +303,23 @@ export default function VocabularyPage() {
       {!isLoading && words.length === 0 && !error && (
         <div className="animate-fade-in py-20 text-center opacity-0">
           <div className="mx-auto mb-4 flex size-16 items-center justify-center rounded-2xl bg-gray-100">
-            <svg className="size-7 text-gray-300" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+            <svg
+              className="size-7 text-gray-300"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
+              />
             </svg>
           </div>
           <p className="mb-1 text-lg font-semibold text-gray-300">No words yet</p>
           <p className="text-sm text-gray-400">
-            {statusFilter || topicFilter
-              ? "No words match your filters"
-              : "Words will appear here after your lessons"
-            }
+            {statusFilter || topicFilter ? "No words match your filters" : "Words will appear here after your lessons"}
           </p>
         </div>
       )}

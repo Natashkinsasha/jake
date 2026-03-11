@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import { GrammarProgressRepository } from "../infrastructure/repository/grammar-progress.repository";
-import { GrammarProgressEntity } from "../domain/entity/grammar-progress.entity";
+import type { GrammarProgressEntity } from "../domain/entity/grammar-progress.entity";
+import type { GrammarProgressRepository } from "../infrastructure/repository/grammar-progress.repository";
 
 @Injectable()
 export class ProgressContract {

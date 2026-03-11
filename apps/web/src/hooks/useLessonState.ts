@@ -1,12 +1,12 @@
-import { useState, useCallback, useRef } from "react";
-import { useWebSocket } from "./useWebSocket";
-import { useTutorTts } from "./useTutorTts";
-import { handleLessonEvent, type LessonEventData } from "./lesson/handleLessonEvent";
-import { handleCustomEvent } from "./lesson/customEventHandlers";
-import { processAction } from "./lesson/processAction";
-import type { LessonState, LessonRefs } from "./lesson/types";
-import { createLogger } from "./logger";
+import { useCallback, useRef, useState } from "react";
 import { WS_URL } from "@/lib/config";
+import { handleCustomEvent } from "./lesson/customEventHandlers";
+import { handleLessonEvent, type LessonEventData } from "./lesson/handleLessonEvent";
+import { processAction } from "./lesson/processAction";
+import type { LessonRefs, LessonState } from "./lesson/types";
+import { createLogger } from "./logger";
+import { useTutorTts } from "./useTutorTts";
+import { useWebSocket } from "./useWebSocket";
 
 const log = createLogger("Lesson");
 
@@ -63,7 +63,7 @@ export function useLessonState(token?: string | null) {
           return { ...prev, messages, status: "idle" };
         });
       } else {
-        setState((prev) => prev.status === "speaking" ? { ...prev, status: "idle" } : prev);
+        setState((prev) => (prev.status === "speaking" ? { ...prev, status: "idle" } : prev));
       }
       finalFullTextRef.current = null;
       pendingRevealTextRef.current = null;
@@ -133,22 +133,25 @@ export function useLessonState(token?: string | null) {
   }
   const refs = refsRef.current;
 
-  const handleEvent = useCallback((event: string, data: LessonEventData) => {
-    log("event:", event, data.text ? `"${data.text.slice(0, 50)}..."` : "");
+  const handleEvent = useCallback(
+    (event: string, data: LessonEventData) => {
+      log("event:", event, data.text ? `"${data.text.slice(0, 50)}..."` : "");
 
-    if (handleCustomEvent(event, data, refs, setState, log)) return;
+      if (handleCustomEvent(event, data, refs, setState, log)) return;
 
-    if (event === "tutor_message") {
-      refs.pendingTurns.current = Math.max(0, refs.pendingTurns.current - 1);
-    }
+      if (event === "tutor_message") {
+        refs.pendingTurns.current = Math.max(0, refs.pendingTurns.current - 1);
+      }
 
-    const action = handleLessonEvent(event, data, {
-      userSpeaking: refs.userSpeaking.current,
-      pendingTurns: refs.pendingTurns.current,
-    });
+      const action = handleLessonEvent(event, data, {
+        userSpeaking: refs.userSpeaking.current,
+        pendingTurns: refs.pendingTurns.current,
+      });
 
-    processAction(action, event, data, refs, setState, log);
-  }, [refs]);
+      processAction(action, event, data, refs, setState, log);
+    },
+    [refs],
+  );
 
   const { emit, connected } = useWebSocket({
     url: WS_URL,
@@ -174,7 +177,7 @@ export function useLessonState(token?: string | null) {
         const messages = [...prev.messages];
         const last = messages[messages.length - 1];
         if (last?.role === "user") {
-          messages[messages.length - 1] = { ...last, text: last.text + " " + trimmed };
+          messages[messages.length - 1] = { ...last, text: `${last.text} ${trimmed}` };
         } else {
           messages.push({ role: "user", text: trimmed, timestamp: Date.now() });
         }
@@ -212,7 +215,7 @@ export function useLessonState(token?: string | null) {
       const last = messages[messages.length - 1];
       if (last?.role === "assistant") {
         if (last.text) {
-          messages[messages.length - 1] = { ...last, text: last.text + "..." };
+          messages[messages.length - 1] = { ...last, text: `${last.text}...` };
         } else {
           messages.pop();
         }
@@ -234,10 +237,15 @@ export function useLessonState(token?: string | null) {
     sendVoiceSample,
     endLesson,
     interruptTutor,
-    submitExerciseAnswer: useCallback((exerciseId: string, answers: Array<{ word: string; definition: string }>) => {
-      emit("exercise_answer", { exerciseId, answers });
-    }, [emit]),
-    stopAllAudio: useCallback(() => { tts.stop(); }, [tts]),
+    submitExerciseAnswer: useCallback(
+      (exerciseId: string, answers: Array<{ word: string; definition: string }>) => {
+        emit("exercise_answer", { exerciseId, answers });
+      },
+      [emit],
+    ),
+    stopAllAudio: useCallback(() => {
+      tts.stop();
+    }, [tts]),
     setUserSpeaking,
     debugInfo: {
       voiceId: voiceIdRef.current,

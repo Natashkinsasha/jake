@@ -1,4 +1,4 @@
-import { type LessonContext } from "../dto/lesson-context";
+import type { LessonContext } from "../dto/lesson-context";
 import { buildFullSystemPrompt } from "./prompt-builder";
 
 function createMockContext(overrides: Partial<LessonContext> = {}): LessonContext {
@@ -198,9 +198,7 @@ describe("buildFullSystemPrompt", () => {
   });
 
   it("should include tutor system prompt when provided", () => {
-    const result = buildFullSystemPrompt(
-      createMockContext({ tutorPromptFragment: "Focus on business English." }),
-    );
+    const result = buildFullSystemPrompt(createMockContext({ tutorPromptFragment: "Focus on business English." }));
     expect(result).toContain("Focus on business English.");
   });
 
@@ -229,9 +227,7 @@ describe("buildFullSystemPrompt", () => {
   });
 
   it("should apply correct correction style description", () => {
-    const immediateResult = buildFullSystemPrompt(
-      createMockContext(),
-    );
+    const immediateResult = buildFullSystemPrompt(createMockContext());
     expect(immediateResult).toContain("Correct real grammar/vocabulary errors gently");
 
     const endResult = buildFullSystemPrompt(

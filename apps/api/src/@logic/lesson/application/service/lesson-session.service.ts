@@ -1,7 +1,7 @@
-import { Injectable, Logger } from "@nestjs/common";
-import { RedisService } from "@liaoliaots/nestjs-redis";
-import type Redis from "ioredis";
+import type { RedisService } from "@liaoliaots/nestjs-redis";
 import type { LlmMessage } from "@lib/provider/src";
+import { Injectable, Logger } from "@nestjs/common";
+import type Redis from "ioredis";
 import type { ParsedExercise } from "./exercise-tags";
 
 export interface LessonSession {
@@ -32,12 +32,7 @@ export class LessonSessionService {
   }
 
   async save(userId: string, session: LessonSession): Promise<void> {
-    await this.redis.set(
-      KEY_PREFIX + userId,
-      JSON.stringify(session),
-      "EX",
-      SESSION_TTL,
-    );
+    await this.redis.set(KEY_PREFIX + userId, JSON.stringify(session), "EX", SESSION_TTL);
   }
 
   async get(userId: string): Promise<LessonSession | null> {

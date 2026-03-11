@@ -1,5 +1,5 @@
-import { CanActivate, ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
-import { JwtService } from "@nestjs/jwt";
+import { type CanActivate, type ExecutionContext, Injectable, UnauthorizedException } from "@nestjs/common";
+import type { JwtService } from "@nestjs/jwt";
 import type { FastifyRequest } from "fastify";
 
 @Injectable()
@@ -27,6 +27,6 @@ export class JwtAuthGuard implements CanActivate {
     const auth = request.headers.authorization;
     if (!auth) return null;
     const [type, token] = auth.split(" ");
-    return type === "Bearer" ? token ?? null : null;
+    return type === "Bearer" ? (token ?? null) : null;
   }
 }

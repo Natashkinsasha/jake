@@ -1,7 +1,7 @@
 import { DrizzlePGModule } from "@knaadh/nestjs-drizzle-pg";
+import { Module } from "@nestjs/common";
 import { ClsPluginTransactional, getTransactionHostToken } from "@nestjs-cls/transactional";
 import { TransactionalAdapterDrizzleOrm } from "@nestjs-cls/transactional-adapter-drizzle-orm";
-import { Module } from "@nestjs/common";
 import { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
 import { ClsModule } from "nestjs-cls";
 

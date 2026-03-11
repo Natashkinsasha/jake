@@ -1,31 +1,28 @@
 import { Injectable } from "@nestjs/common";
-import { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
+import type { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
 import { eq } from "drizzle-orm";
+import type { UserEntity, UserWithPreferences } from "../../domain/entity/user.entity";
+import { UserFactory } from "../factory/user.factory";
+import type { InsertUser } from "../model/insert-user";
 import { userTable } from "../table/user.table";
 import { userPreferenceTable } from "../table/user-preference.table";
-import { UserEntity, UserWithPreferences } from "../../domain/entity/user.entity";
-import { UserFactory } from "../factory/user.factory";
-import { InsertUser } from "../model/insert-user";
 
 @Injectable()
 export class UserRepository {
-  constructor(private readonly txHost: AppDrizzleTransactionHost<{ user: typeof userTable; userPreference: typeof userPreferenceTable }>) {}
+  constructor(
+    private readonly txHost: AppDrizzleTransactionHost<{
+      user: typeof userTable;
+      userPreference: typeof userPreferenceTable;
+    }>,
+  ) {}
 
   async findByGoogleId(googleId: string): Promise<UserEntity | null> {
-    const [row] = await this.txHost.tx
-      .select()
-      .from(userTable)
-      .where(eq(userTable.googleId, googleId))
-      .limit(1);
+    const [row] = await this.txHost.tx.select().from(userTable).where(eq(userTable.googleId, googleId)).limit(1);
     return row ? UserFactory.create(row) : null;
   }
 
   async findById(id: string): Promise<UserEntity | null> {
-    const [row] = await this.txHost.tx
-      .select()
-      .from(userTable)
-      .where(eq(userTable.id, id))
-      .limit(1);
+    const [row] = await this.txHost.tx.select().from(userTable).where(eq(userTable.id, id)).limit(1);
     return row ? UserFactory.create(row) : null;
   }
 
@@ -61,38 +58,47 @@ export class UserRepository {
   }
 
   async resetUserFields(id: string): Promise<void> {
-    await this.txHost.tx.update(userTable).set({
-      currentLevel: null,
-      onboardingCompleted: false,
-      updatedAt: new Date(),
-    }).where(eq(userTable.id, id));
+    await this.txHost.tx
+      .update(userTable)
+      .set({
+        currentLevel: null,
+        onboardingCompleted: false,
+        updatedAt: new Date(),
+      })
+      .where(eq(userTable.id, id));
 
-    await this.txHost.tx.update(userPreferenceTable).set({
-      correctionStyle: "immediate",
-      explainGrammar: true,
-      speakingSpeed: "very_slow",
-      useNativeLanguage: false,
-      preferredExerciseTypes: [],
-      interests: [],
-      tutorGender: null,
-      tutorNationality: null,
-      tutorVoiceId: null,
-      updatedAt: new Date(),
-    }).where(eq(userPreferenceTable.userId, id));
+    await this.txHost.tx
+      .update(userPreferenceTable)
+      .set({
+        correctionStyle: "immediate",
+        explainGrammar: true,
+        speakingSpeed: "very_slow",
+        useNativeLanguage: false,
+        preferredExerciseTypes: [],
+        interests: [],
+        tutorGender: null,
+        tutorNationality: null,
+        tutorVoiceId: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(userPreferenceTable.userId, id));
   }
 
-  async updatePreferences(userId: string, data: Partial<{
-    correctionStyle: string;
-    explainGrammar: boolean;
-    speakingSpeed: string;
-    useNativeLanguage: boolean;
-    preferredExerciseTypes: string[];
-    interests: string[];
-    ttsModel: string;
-    tutorGender: string;
-    tutorNationality: string;
-    tutorVoiceId: string;
-  }>): Promise<void> {
+  async updatePreferences(
+    userId: string,
+    data: Partial<{
+      correctionStyle: string;
+      explainGrammar: boolean;
+      speakingSpeed: string;
+      useNativeLanguage: boolean;
+      preferredExerciseTypes: string[];
+      interests: string[];
+      ttsModel: string;
+      tutorGender: string;
+      tutorNationality: string;
+      tutorVoiceId: string;
+    }>,
+  ): Promise<void> {
     await this.txHost.tx.update(userPreferenceTable).set(data).where(eq(userPreferenceTable.userId, userId));
   }
 }

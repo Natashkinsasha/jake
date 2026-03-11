@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function useElapsedTimer(active: boolean, startedAt?: number | null) {
   const offsetRef = useRef(0);
@@ -15,8 +15,12 @@ export function useElapsedTimer(active: boolean, startedAt?: number | null) {
   useEffect(() => {
     if (!active) return;
     setElapsed(offsetRef.current);
-    const interval = setInterval(() => { setElapsed((s) => s + 1); }, 1000);
-    return () => { clearInterval(interval); };
+    const interval = setInterval(() => {
+      setElapsed((s) => s + 1);
+    }, 1000);
+    return () => {
+      clearInterval(interval);
+    };
   }, [active]);
 
   return elapsed;

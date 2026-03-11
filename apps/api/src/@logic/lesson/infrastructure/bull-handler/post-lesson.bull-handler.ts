@@ -1,17 +1,17 @@
-import { Logger } from "@nestjs/common";
+import { type PostLessonLlmResponse, PostLessonLlmResponseSchema } from "@jake/shared";
+import type { EmbeddingProvider, LlmProvider } from "@lib/provider/src";
 import { Processor } from "@nestjs/bullmq";
-import { Job } from "bullmq";
-import { ClsService } from "nestjs-cls";
-import { PostLessonLlmResponseSchema, PostLessonLlmResponse } from "@jake/shared";
+import { Logger } from "@nestjs/common";
 import { ClsWorkerHost } from "@shared/shared-cls/cls-worker-host";
 import { Transaction } from "@shared/shared-cls/transaction";
-import { LlmProvider, EmbeddingProvider } from "@lib/provider/src";
 import { QUEUE_NAMES } from "@shared/shared-job/queue-names";
-import { LessonRepository } from "../repository/lesson.repository";
-import { AuthContract } from "../../../auth/contract/auth.contract";
-import { VocabularyContract } from "../../../vocabulary/contract/vocabulary.contract";
-import { ProgressContract } from "../../../progress/contract/progress.contract";
-import { MemoryContract } from "../../../memory/contract/memory.contract";
+import type { Job } from "bullmq";
+import type { ClsService } from "nestjs-cls";
+import type { AuthContract } from "../../../auth/contract/auth.contract";
+import type { MemoryContract } from "../../../memory/contract/memory.contract";
+import type { ProgressContract } from "../../../progress/contract/progress.contract";
+import type { VocabularyContract } from "../../../vocabulary/contract/vocabulary.contract";
+import type { LessonRepository } from "../repository/lesson.repository";
 
 const SUMMARY_PROMPT = `Analyze the full lesson conversation and generate a structured summary.
 Return ONLY valid JSON:
@@ -91,9 +91,7 @@ export class PostLessonBullHandler extends ClsWorkerHost {
       newWords: summary.newWords.map((w) => w.word),
       errorsFound: summary.errorsFound,
       levelAssessment: summary.levelAssessment,
-      durationMinutes: Math.max(1, Math.round(
-        (Date.now() - lesson.startedAt.getTime()) / 60000,
-      )),
+      durationMinutes: Math.max(1, Math.round((Date.now() - lesson.startedAt.getTime()) / 60000)),
     });
 
     if (summary.levelAssessment) {
@@ -130,10 +128,10 @@ export class PostLessonBullHandler extends ClsWorkerHost {
     }
   }
 
-  private async summarizeLesson(conversationHistory: Array<{ role: string; content: string }>): Promise<PostLessonLlmResponse> {
-    const historyText = conversationHistory
-      .map((m) => `${m.role}: ${m.content}`)
-      .join("\n");
+  private async summarizeLesson(
+    conversationHistory: Array<{ role: string; content: string }>,
+  ): Promise<PostLessonLlmResponse> {
+    const historyText = conversationHistory.map((m) => `${m.role}: ${m.content}`).join("\n");
 
     return this.llm.generateJson(
       SUMMARY_PROMPT,

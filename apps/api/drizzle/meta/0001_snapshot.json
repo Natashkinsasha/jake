@@ -77,12 +77,8 @@
           "name": "user_preferences_user_id_users_id_fk",
           "tableFrom": "user_preferences",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -92,9 +88,7 @@
         "user_preferences_user_id_unique": {
           "name": "user_preferences_user_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "user_id"
-          ]
+          "columns": ["user_id"]
         }
       },
       "policies": {},
@@ -178,16 +172,12 @@
         "users_google_id_unique": {
           "name": "users_google_id_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "google_id"
-          ]
+          "columns": ["google_id"]
         },
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -286,12 +276,8 @@
           "name": "homework_user_id_users_id_fk",
           "tableFrom": "homework",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -299,12 +285,8 @@
           "name": "homework_lesson_id_lessons_id_fk",
           "tableFrom": "homework",
           "tableTo": "lessons",
-          "columnsFrom": [
-            "lesson_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["lesson_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -380,12 +362,8 @@
           "name": "lesson_messages_lesson_id_lessons_id_fk",
           "tableFrom": "lesson_messages",
           "tableTo": "lessons",
-          "columnsFrom": [
-            "lesson_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["lesson_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -528,12 +506,8 @@
           "name": "lessons_user_id_users_id_fk",
           "tableFrom": "lessons",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -541,12 +515,8 @@
           "name": "lessons_tutor_id_tutors_id_fk",
           "tableFrom": "lessons",
           "tableTo": "tutors",
-          "columnsFrom": [
-            "tutor_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["tutor_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -628,12 +598,8 @@
           "name": "memory_embeddings_user_id_users_id_fk",
           "tableFrom": "memory_embeddings",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -641,12 +607,8 @@
           "name": "memory_embeddings_lesson_id_lessons_id_fk",
           "tableFrom": "memory_embeddings",
           "tableTo": "lessons",
-          "columnsFrom": [
-            "lesson_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["lesson_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -757,12 +719,8 @@
           "name": "memory_facts_user_id_users_id_fk",
           "tableFrom": "memory_facts",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -868,12 +826,8 @@
           "name": "grammar_progress_user_id_users_id_fk",
           "tableFrom": "grammar_progress",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1014,12 +968,8 @@
           "name": "user_tutors_user_id_users_id_fk",
           "tableFrom": "user_tutors",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1027,12 +977,8 @@
           "name": "user_tutors_tutor_id_tutors_id_fk",
           "tableFrom": "user_tutors",
           "tableTo": "tutors",
-          "columnsFrom": [
-            "tutor_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["tutor_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1143,12 +1089,8 @@
           "name": "vocabulary_user_id_users_id_fk",
           "tableFrom": "vocabulary",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1156,12 +1098,8 @@
           "name": "vocabulary_lesson_id_lessons_id_fk",
           "tableFrom": "vocabulary",
           "tableTo": "lessons",
-          "columnsFrom": [
-            "lesson_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["lesson_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }

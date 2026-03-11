@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
-import { SelectLesson } from "../../infrastructure/model/select-lesson";
-import { LessonSummaryResponse } from "../../presentation/dto/response/lesson-summary.response";
+import type { SelectLesson } from "../../infrastructure/model/select-lesson";
+import type { LessonSummaryResponse } from "../../presentation/dto/response/lesson-summary.response";
 
 @Injectable()
 export class LessonMapper {

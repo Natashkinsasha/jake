@@ -1,6 +1,6 @@
-import { z } from "zod";
 import type Anthropic from "@anthropic-ai/sdk";
 import type { LlmMessage } from "@lib/provider/src";
+import { z } from "zod";
 import { AnthropicLlmProvider } from "./anthropic-llm.provider";
 
 describe("AnthropicLlmProvider", () => {
@@ -51,9 +51,7 @@ describe("AnthropicLlmProvider", () => {
 
       await provider.generate("System", [{ role: "user", content: "test" }], 2048);
 
-      expect(mockCreate).toHaveBeenCalledWith(
-        expect.objectContaining({ max_tokens: 2048 }),
-      );
+      expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({ max_tokens: 2048 }));
     });
 
     it("should concatenate multiple text blocks", async () => {
@@ -87,9 +85,9 @@ describe("AnthropicLlmProvider", () => {
     it("should propagate API errors", async () => {
       mockCreate.mockRejectedValue(new Error("API rate limit exceeded"));
 
-      await expect(
-        provider.generate("System", [{ role: "user", content: "test" }]),
-      ).rejects.toThrow("API rate limit exceeded");
+      await expect(provider.generate("System", [{ role: "user", content: "test" }])).rejects.toThrow(
+        "API rate limit exceeded",
+      );
     });
 
     it("should return empty text when no text blocks exist", async () => {
@@ -134,9 +132,7 @@ describe("AnthropicLlmProvider", () => {
 
       await provider.generateJson("System", [{ role: "user", content: "test" }], schema);
 
-      expect(mockCreate).toHaveBeenCalledWith(
-        expect.objectContaining({ max_tokens: 2048 }),
-      );
+      expect(mockCreate).toHaveBeenCalledWith(expect.objectContaining({ max_tokens: 2048 }));
     });
 
     it("should throw when no tool_use block in response", async () => {
@@ -146,9 +142,9 @@ describe("AnthropicLlmProvider", () => {
       };
       mockCreate.mockResolvedValue(mockResponse);
 
-      await expect(
-        provider.generateJson("System", [{ role: "user", content: "test" }], schema),
-      ).rejects.toThrow("No tool_use block");
+      await expect(provider.generateJson("System", [{ role: "user", content: "test" }], schema)).rejects.toThrow(
+        "No tool_use block",
+      );
     });
 
     it("should throw when schema validation fails", async () => {
@@ -158,9 +154,9 @@ describe("AnthropicLlmProvider", () => {
       };
       mockCreate.mockResolvedValue(mockResponse);
 
-      await expect(
-        provider.generateJson("System", [{ role: "user", content: "test" }], schema),
-      ).rejects.toThrow("validation failed");
+      await expect(provider.generateJson("System", [{ role: "user", content: "test" }], schema)).rejects.toThrow(
+        "validation failed",
+      );
     });
   });
 });

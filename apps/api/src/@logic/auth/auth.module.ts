@@ -1,7 +1,7 @@
 import { forwardRef, Module } from "@nestjs/common";
-import { SharedDrizzlePgModule } from "@shared/shared-drizzle-pg/shared-drizzle-pg.module";
 import { SharedAuthModule } from "@shared/shared-auth/shared-auth.module";
 import { SharedClsModule } from "@shared/shared-cls/shared-cls.module";
+import { SharedDrizzlePgModule } from "@shared/shared-drizzle-pg/shared-drizzle-pg.module";
 import { LessonModule } from "../lesson/lesson.module";
 import { MemoryModule } from "../memory/memory.module";
 import { ProgressModule } from "../progress/progress.module";

@@ -1,9 +1,9 @@
 import { Injectable } from "@nestjs/common";
-import { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
+import type { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
 import { eq } from "drizzle-orm";
-import { lessonMessageTable } from "../table/lesson-message.table";
-import { LessonMessageEntity } from "../../domain/entity/lesson-message.entity";
+import type { LessonMessageEntity } from "../../domain/entity/lesson-message.entity";
 import { LessonMessageFactory } from "../factory/lesson-message.factory";
+import { lessonMessageTable } from "../table/lesson-message.table";
 
 @Injectable()
 export class LessonMessageRepository {

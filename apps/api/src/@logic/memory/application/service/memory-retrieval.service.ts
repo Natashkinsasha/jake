@@ -1,7 +1,7 @@
+import type { EmbeddingProvider } from "@lib/provider/src";
 import { Injectable } from "@nestjs/common";
-import { EmbeddingProvider } from "@lib/provider/src";
-import { MemoryFactRepository } from "../../infrastructure/repository/memory-fact.repository";
-import { MemoryEmbeddingRepository } from "../../infrastructure/repository/memory-embedding.repository";
+import type { MemoryEmbeddingRepository } from "../../infrastructure/repository/memory-embedding.repository";
+import type { MemoryFactRepository } from "../../infrastructure/repository/memory-fact.repository";
 
 @Injectable()
 export class MemoryRetrievalService {

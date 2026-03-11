@@ -1,8 +1,7 @@
-import { Module } from "@nestjs/common";
-
 import { JobBoardModule } from "@lib/job-board/src";
-import { SharedConfigModule } from "../shared-config/shared-config.module";
+import { Module } from "@nestjs/common";
 import { EnvService } from "../shared-config/env.service";
+import { SharedConfigModule } from "../shared-config/shared-config.module";
 import { SharedJobModule } from "../shared-job";
 
 @Module({

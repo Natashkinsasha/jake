@@ -1,4 +1,4 @@
-import { pgTable, uuid, varchar, integer, timestamp, index } from "drizzle-orm/pg-core";
+import { index, integer, pgTable, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 import { userTable } from "../../../auth/infrastructure/table/user.table";
 import { lessonTable } from "../../../lesson/infrastructure/table/lesson.table";
 
@@ -6,7 +6,9 @@ export const vocabularyTable = pgTable(
   "vocabulary",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    userId: uuid("user_id").references(() => userTable.id, { onDelete: "cascade" }).notNull(),
+    userId: uuid("user_id")
+      .references(() => userTable.id, { onDelete: "cascade" })
+      .notNull(),
     word: varchar("word", { length: 255 }).notNull(),
     translation: varchar("translation", { length: 255 }),
     topic: varchar("topic", { length: 100 }),

@@ -1,10 +1,15 @@
-import { writeFileSync, unlinkSync } from "node:fs";
 import { randomUUID } from "node:crypto";
+import { unlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import {
+  AutoFeatureExtractor,
+  AutoModel,
+  type FeatureExtractor,
+  type PreTrainedModel,
+} from "@huggingface/transformers";
 import { Injectable, Logger } from "@nestjs/common";
-import { type PreTrainedModel, type FeatureExtractor, AutoModel, AutoFeatureExtractor } from "@huggingface/transformers";
-import { VoicePrintRepository } from "../../infrastructure/repository/voice-print.repository";
+import type { VoicePrintRepository } from "../../infrastructure/repository/voice-print.repository";
 
 const MODEL_ID = "onnx-community/wespeaker-voxceleb-resnet34-LM";
 const ENROLLMENT_SAMPLES = 3;
@@ -49,7 +54,7 @@ export class VoicePrintService {
     const pcm = await this.decodeAudio(audioBuffer);
     const embedding = await this.extractEmbedding(pcm);
     if (!embedding) {
-      this.logger.warn("Failed to extract embedding for user " + userId);
+      this.logger.warn(`Failed to extract embedding for user ${userId}`);
       return { status: "match" };
     }
 
@@ -69,7 +74,11 @@ export class VoicePrintService {
       writeFileSync(tmpPath, buffer);
       return await read_audio(tmpPath, 16000);
     } finally {
-      try { unlinkSync(tmpPath); } catch { /* ignore cleanup errors */ }
+      try {
+        unlinkSync(tmpPath);
+      } catch {
+        /* ignore cleanup errors */
+      }
     }
   }
 
@@ -77,18 +86,13 @@ export class VoicePrintService {
     try {
       await this.ensureLoaded();
       if (!this.featureExtractor || !this.model) throw new Error("Model not loaded");
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- transformers.js returns untyped tensors
       const inputs = await this.featureExtractor(pcm);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-argument -- untyped tensor input
       const output = await this.model(inputs);
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access -- accessing tensor property
       const embeddings = output.last_hidden_state;
       if (!this.dimLogged) {
-        // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- tensor dims
         this.logger.log(`Speaker embedding dims: [${embeddings.dims}], total: ${embeddings.data.length}`);
         this.dimLogged = true;
       }
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access -- tensor data
       return Array.from(embeddings.data as Float32Array);
     } catch (error) {
       this.logger.error(`Embedding extraction failed: ${error instanceof Error ? error.message : String(error)}`);
@@ -105,7 +109,7 @@ export class VoicePrintService {
     let averaged: number[];
 
     if (stored?.embedding) {
-      averaged = stored.embedding.map((v, i) => v + (((newEmbedding[i] ?? 0) - v) / count));
+      averaged = stored.embedding.map((v, i) => v + ((newEmbedding[i] ?? 0) - v) / count);
     } else {
       averaged = newEmbedding;
     }
@@ -127,7 +131,9 @@ export class VoicePrintService {
   }
 
   private cosineSimilarity(a: number[], b: number[]): number {
-    let dot = 0, normA = 0, normB = 0;
+    let dot = 0,
+      normA = 0,
+      normB = 0;
     for (const [i, av] of a.entries()) {
       const bv = b[i] ?? 0;
       dot += av * bv;

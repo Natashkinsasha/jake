@@ -1,4 +1,4 @@
-import { Catch, ArgumentsHost, HttpException, Logger } from "@nestjs/common";
+import { type ArgumentsHost, Catch, HttpException, Logger } from "@nestjs/common";
 import { BaseExceptionFilter } from "@nestjs/core";
 import type { FastifyReply } from "fastify";
 
@@ -8,7 +8,7 @@ export class HttpExceptionFilter extends BaseExceptionFilter {
 
   override catch(exception: unknown, host: ArgumentsHost) {
     if (host.getType() !== "http") {
-      super.catch(exception, host); // eslint-disable-line promise/valid-params -- NestJS BaseExceptionFilter.catch, not Promise.catch
+      super.catch(exception, host);
       return;
     }
 
@@ -21,7 +21,7 @@ export class HttpExceptionFilter extends BaseExceptionFilter {
       const message =
         typeof exceptionResponse === "string"
           ? exceptionResponse
-          : (exceptionResponse as Record<string, unknown>)["message"] ?? exception.message;
+          : ((exceptionResponse as Record<string, unknown>)["message"] ?? exception.message);
 
       if (status >= 500) {
         this.logger.error(`[${status}] ${String(message)}`, exception.stack);

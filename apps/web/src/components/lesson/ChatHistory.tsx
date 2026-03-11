@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
-import { MatchingExercise } from "./MatchingExercise";
-import type { ChatMessage, VocabHighlight } from "@/types";
-import { cn } from "@/lib/utils";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
+import { cn } from "@/lib/utils";
+import type { ChatMessage, VocabHighlight } from "@/types";
+import { MatchingExercise } from "./MatchingExercise";
 
 interface ChatHistoryProps {
   messages: ChatMessage[];
@@ -62,7 +62,13 @@ function VocabCard({
       <span className="text-[13px] text-gray-400">&mdash;</span>
       <span className="text-[13px] text-gray-500">{highlight.translation}</span>
       {saved ? (
-        <svg className="size-3.5 shrink-0 text-emerald-500" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+        <svg
+          className="size-3.5 shrink-0 text-emerald-500"
+          fill="none"
+          viewBox="0 0 24 24"
+          strokeWidth={2.5}
+          stroke="currentColor"
+        >
           <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
         </svg>
       ) : (
@@ -124,20 +130,19 @@ export function ChatHistory({
     if (isNearBottomRef.current) {
       scrollRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, isThinking]);
+  }, []);
 
   // Keep scrolled to bottom during text reveal (only if user hasn't scrolled up)
-  const lastMessageText = messages[messages.length - 1]?.text;
+  const _lastMessageText = messages[messages.length - 1]?.text;
   useEffect(() => {
     if (isNearBottomRef.current) {
       const el = containerRef.current;
       if (el) el.scrollTop = el.scrollHeight;
     }
-  }, [lastMessageText]);
+  }, []);
 
   return (
     <div ref={containerRef} onScroll={handleScroll} className="flex-1 space-y-3 overflow-y-auto px-4 pb-3">
-      {/* eslint-disable-next-line @eslint-react/no-array-index-key -- timestamp alone may not be unique */}
       {messages.map((msg, i) => {
         // Skip the active exercise — it's rendered in ExercisePanel below the chat
         if (msg.role === "exercise" && msg.exercise?.exerciseId === activeExerciseId) {
@@ -151,79 +156,87 @@ export function ChatHistory({
         }
 
         return (
-        <div key={`${msg.timestamp}-${msg.role}-${String(i)}`} className="animate-fade-in">
-          {msg.role === "exercise" && msg.exercise ? (
-            msg.exerciseFeedback ? (
-              /* Completed exercise — show results */
-              <MatchingExercise
-                exercise={msg.exercise}
-                feedback={msg.exerciseFeedback}
-                onSubmit={onExerciseSubmit ?? (() => {})}
-              />
-            ) : (
-              /* Skipped exercise — compact placeholder */
-              <div className="rounded-xl border border-white/[0.06] bg-white/[0.05] px-4 py-3 backdrop-blur-sm">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex size-5 items-center justify-center rounded-full bg-white/10">
-                    <svg className="size-3 text-white/30" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                    </svg>
+          <div key={`${msg.timestamp}-${msg.role}-${String(i)}`} className="animate-fade-in">
+            {msg.role === "exercise" && msg.exercise ? (
+              msg.exerciseFeedback ? (
+                /* Completed exercise — show results */
+                <MatchingExercise
+                  exercise={msg.exercise}
+                  feedback={msg.exerciseFeedback}
+                  onSubmit={onExerciseSubmit ?? (() => {})}
+                />
+              ) : (
+                /* Skipped exercise — compact placeholder */
+                <div className="rounded-xl border border-white/[0.06] bg-white/[0.05] px-4 py-3 backdrop-blur-sm">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex size-5 items-center justify-center rounded-full bg-white/10">
+                      <svg
+                        className="size-3 text-white/30"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        strokeWidth={2.5}
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
+                        />
+                      </svg>
+                    </div>
+                    <span className="text-sm text-white/30">Matching exercise</span>
+                    <span className="ml-auto text-xs text-white/20">skipped</span>
                   </div>
-                  <span className="text-sm text-white/30">Matching exercise</span>
-                  <span className="ml-auto text-xs text-white/20">skipped</span>
+                </div>
+              )
+            ) : msg.role === "user" ? (
+              /* User message — right aligned */
+              <div className="flex justify-end">
+                <div className="gradient-bg max-w-[80%] rounded-2xl rounded-br-md px-4 py-2.5 shadow-sm">
+                  <p className="text-[15px] leading-relaxed text-white">{msg.text}</p>
                 </div>
               </div>
-            )
-          ) : msg.role === "user" ? (
-            /* User message — right aligned */
-            <div className="flex justify-end">
-              <div className="gradient-bg max-w-[80%] rounded-2xl rounded-br-md px-4 py-2.5 shadow-sm">
-                <p className="text-[15px] leading-relaxed text-white">
-                  {msg.text}
-                </p>
-              </div>
-            </div>
-          ) : msg.text ? (
-            /* Tutor message — left aligned */
-            <div className="space-y-2">
-              <div className="flex justify-start">
-                <div className={cn(
-                  "bg-white/95 backdrop-blur-sm rounded-2xl rounded-bl-md px-4 py-2.5 max-w-[85%] shadow-sm",
-                  i === lastAssistantIdx && isLastAssistantNew ? "" : "opacity-70",
-                )}>
-                  <p className="text-[15px] leading-relaxed text-gray-800">
-                    {msg.text}
-                  </p>
+            ) : msg.text ? (
+              /* Tutor message — left aligned */
+              <div className="space-y-2">
+                <div className="flex justify-start">
+                  <div
+                    className={cn(
+                      "bg-white/95 backdrop-blur-sm rounded-2xl rounded-bl-md px-4 py-2.5 max-w-[85%] shadow-sm",
+                      i === lastAssistantIdx && isLastAssistantNew ? "" : "opacity-70",
+                    )}
+                  >
+                    <p className="text-[15px] leading-relaxed text-gray-800">{msg.text}</p>
+                  </div>
                 </div>
-              </div>
 
-              {/* Vocab cards inline */}
-              {msg.vocabHighlights && msg.vocabHighlights.length > 0 && (
-                <div className="flex flex-wrap gap-1.5 pl-1">
-                  {msg.vocabHighlights.map((h) => (
-                    <VocabCard
-                      key={h.word}
-                      highlight={h}
-                      lessonId={lessonId}
-                      isSaved={savedWordsRef.current.has(h.word.toLowerCase())}
-                      onSaved={(word) => {
-                        savedWordsRef.current.add(word.toLowerCase());
-                        onVocabSaved?.(word);
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          ) : (
-            /* Last empty assistant message = loading dots */
-            <div className="flex justify-start">
-              <div className="rounded-2xl rounded-bl-md bg-white/95 px-4 py-2.5 shadow-sm backdrop-blur-sm">
-                <ThinkingDots />
+                {/* Vocab cards inline */}
+                {msg.vocabHighlights && msg.vocabHighlights.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pl-1">
+                    {msg.vocabHighlights.map((h) => (
+                      <VocabCard
+                        key={h.word}
+                        highlight={h}
+                        lessonId={lessonId}
+                        isSaved={savedWordsRef.current.has(h.word.toLowerCase())}
+                        onSaved={(word) => {
+                          savedWordsRef.current.add(word.toLowerCase());
+                          onVocabSaved?.(word);
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
-          )}
-        </div>
+            ) : (
+              /* Last empty assistant message = loading dots */
+              <div className="flex justify-start">
+                <div className="rounded-2xl rounded-bl-md bg-white/95 px-4 py-2.5 shadow-sm backdrop-blur-sm">
+                  <ThinkingDots />
+                </div>
+              </div>
+            )}
+          </div>
         );
       })}
 

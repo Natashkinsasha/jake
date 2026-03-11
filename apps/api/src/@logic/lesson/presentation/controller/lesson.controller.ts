@@ -1,11 +1,11 @@
-import { Controller, Get, Param, Post, Body, Query, UseGuards, NotFoundException, HttpException } from "@nestjs/common";
-import { JwtAuthGuard } from "@shared/shared-auth/jwt-auth.guard";
+import { Body, Controller, Get, HttpException, NotFoundException, Param, Post, Query, UseGuards } from "@nestjs/common";
 import { CurrentUserId } from "@shared/shared-auth/current-user.decorator";
-import { EnvService } from "@shared/shared-config/env.service";
-import { LessonMaintainer } from "../../application/maintainer/lesson.maintainer";
-import { EndLessonBody } from "../dto/body/end-lesson.body";
-import { SttMetricsBody } from "../dto/body/stt-metrics.body";
+import { JwtAuthGuard } from "@shared/shared-auth/jwt-auth.guard";
+import type { EnvService } from "@shared/shared-config/env.service";
 import { withSpan } from "../../../llm/src/llm-tracing";
+import type { LessonMaintainer } from "../../application/maintainer/lesson.maintainer";
+import type { EndLessonBody } from "../dto/body/end-lesson.body";
+import type { SttMetricsBody } from "../dto/body/stt-metrics.body";
 
 @Controller("lessons")
 @UseGuards(JwtAuthGuard)

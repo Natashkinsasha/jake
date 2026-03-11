@@ -1,13 +1,13 @@
+import { API_URL } from "@/lib/config";
+import { getBackendToken } from "@/lib/session";
 import type {
   BackendUser,
-  UserPreferences,
-  LessonListItem,
   LessonDetail,
+  LessonListItem,
+  UserPreferences,
   VocabularyItem,
   VocabularyStats,
 } from "@/types";
-import { getBackendToken } from "@/lib/session";
-import { API_URL } from "@/lib/config";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const token = getBackendToken();
@@ -33,9 +33,7 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
       const body = (await res.json()) as { message?: string; error?: string };
       detail = body.message ?? body.error ?? "";
     } catch {}
-    throw new Error(
-      "API Error " + String(res.status) + " " + path + (detail ? ": " + detail : ""),
-    );
+    throw new Error(`API Error ${String(res.status)} ${path}${detail ? `: ${detail}` : ""}`);
   }
 
   return (await res.json()) as T;
@@ -94,7 +92,7 @@ export const api = {
       if (params?.offset != null) query.set("offset", String(params.offset));
       if (params?.limit != null) query.set("limit", String(params.limit));
       const qs = query.toString();
-      return request<VocabularyItem[]>("/vocabulary" + (qs ? "?" + qs : ""));
+      return request<VocabularyItem[]>(`/vocabulary${qs ? `?${qs}` : ""}`);
     },
     stats: () => request<VocabularyStats>("/vocabulary/stats"),
     topics: () => request<string[]>("/vocabulary/topics"),
