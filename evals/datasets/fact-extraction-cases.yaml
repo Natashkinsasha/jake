@@ -120,8 +120,9 @@
         return json.facts.some(f => f.category === 'education' || f.category === 'personal');
     - type: llm-rubric
       value: >
-        Mood should be "frustrated". Should extract facts about: studies English every day,
-        feels they make the same mistakes. No hallucinated facts.
+        Mood should be "frustrated". Should extract that the student studies English every day.
+        How they feel about their progress is a momentary state, which the prompt says to skip,
+        so it may be left out of facts. No hallucinated facts.
 
 - description: "Fact extraction — family facts"
   vars:

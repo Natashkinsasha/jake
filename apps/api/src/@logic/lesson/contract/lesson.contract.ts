@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import type { LessonRepository } from "../infrastructure/repository/lesson.repository";
+import { LessonRepository } from "../infrastructure/repository/lesson.repository";
 
 @Injectable()
 export class LessonContract {

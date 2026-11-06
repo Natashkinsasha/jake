@@ -1,11 +1,11 @@
 import { Body, Controller, Get, HttpException, NotFoundException, Param, Post, Query, UseGuards } from "@nestjs/common";
 import { CurrentUserId } from "@shared/shared-auth/current-user.decorator";
 import { JwtAuthGuard } from "@shared/shared-auth/jwt-auth.guard";
-import type { EnvService } from "@shared/shared-config/env.service";
+import { EnvService } from "@shared/shared-config/env.service";
 import { withSpan } from "../../../llm/src/llm-tracing";
-import type { LessonMaintainer } from "../../application/maintainer/lesson.maintainer";
-import type { EndLessonBody } from "../dto/body/end-lesson.body";
-import type { SttMetricsBody } from "../dto/body/stt-metrics.body";
+import { LessonMaintainer } from "../../application/maintainer/lesson.maintainer";
+import { EndLessonBody } from "../dto/body/end-lesson.body";
+import { SttMetricsBody } from "../dto/body/stt-metrics.body";
 
 @Controller("lessons")
 @UseGuards(JwtAuthGuard)
@@ -103,8 +103,8 @@ export class LessonController {
   }
 
   @Get(":id")
-  async getLesson(@Param("id") id: string) {
-    const lesson = await this.lessonMaintainer.getLesson(id);
+  async getLesson(@CurrentUserId() userId: string, @Param("id") id: string) {
+    const lesson = await this.lessonMaintainer.getLesson(id, userId);
     if (!lesson) {
       throw new NotFoundException("Lesson not found");
     }
@@ -112,7 +112,10 @@ export class LessonController {
   }
 
   @Post("end/:id")
-  async endLesson(@Param("id") id: string, @Body() body: EndLessonBody) {
+  async endLesson(@CurrentUserId() userId: string, @Param("id") id: string, @Body() body: EndLessonBody) {
+    if (!(await this.lessonMaintainer.ownsLesson(id, userId))) {
+      throw new NotFoundException("Lesson not found");
+    }
     await this.lessonMaintainer.endLesson(id, body.history);
     return { success: true };
   }

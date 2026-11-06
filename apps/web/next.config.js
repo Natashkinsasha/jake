@@ -15,8 +15,10 @@ const cspDirectives = [
 const nextConfig = {
   output: "standalone",
   transpilePackages: ["@jake/shared"],
+  // No image optimizer: Next 14's /_next/image has unpatched RCEs for AVIF/SVG sources, and the
+  // only remote image (the Google avatar) loads fine straight from the browser (see img-src below).
   images: {
-    remotePatterns: [{ protocol: "https", hostname: "lh3.googleusercontent.com" }],
+    unoptimized: true,
   },
   async headers() {
     return [

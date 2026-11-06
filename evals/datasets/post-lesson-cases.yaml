@@ -56,10 +56,12 @@
       value: |
         const json = JSON.parse(output);
         return typeof json.summary === 'string' && json.summary.length > 20;
+    # The student used these words correctly, so they are not new (the summary prompt's newWords rule)
     - type: javascript
       value: |
         const json = JSON.parse(output);
-        return Array.isArray(json.newWords) && json.newWords.length >= 1;
+        const words = (json.newWords || []).map((w) => w.word.toLowerCase());
+        return !words.includes('augment') && !words.includes('nevertheless');
     - type: javascript
       value: |
         const json = JSON.parse(output);
@@ -68,7 +70,7 @@
       value: >
         Summary should reflect an advanced-level conversation about AI and jobs.
         Few or no errors expected. Level assessment should be B2 or higher.
-        Words like "augment", "nevertheless" should appear in newWords.
+        "augment" and "nevertheless" were used correctly by the student, so they must not be listed as newWords.
 
 - description: "Post-lesson — mixed exercise lesson"
   vars:

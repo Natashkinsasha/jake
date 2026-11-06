@@ -1,7 +1,7 @@
 import { Controller, Get, Query, UseGuards } from "@nestjs/common";
 import { JwtAuthGuard } from "@shared/shared-auth/jwt-auth.guard";
-import type { TutorContract } from "../../contract/tutor.contract";
-import type { TutorGender } from "../../domain/tutor-types";
+import { TutorContract } from "../../contract/tutor.contract";
+import { TutorGender } from "../../domain/tutor-types";
 
 @Controller("tutor")
 @UseGuards(JwtAuthGuard)

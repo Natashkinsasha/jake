@@ -1,4 +1,4 @@
-import type { LlmProvider } from "@lib/provider/src";
+import { LlmProvider, LlmRefusalError } from "@lib/provider/src";
 import { Injectable, Logger } from "@nestjs/common";
 import { z } from "zod";
 import { withSpan } from "../llm-tracing";
@@ -81,8 +81,7 @@ export class ModerationService {
         SAFETY_CLASSIFIER_PROMPT,
         [{ role: "user", content: text }],
         ModerationResultSchema,
-        256,
-        "moderation.llm-classify",
+        { tier: "fast", maxTokens: 256, spanName: "moderation.llm-classify" },
       );
 
       return {
@@ -91,6 +90,12 @@ export class ModerationService {
         confidence: result.confidence,
       };
     } catch (error) {
+      // Fails open like any classifier failure; the tutor model's own refusal still discards a harmful
+      // turn. The reason keeps these visible in logs and traces.
+      if (error instanceof LlmRefusalError) {
+        this.logger.warn("LLM moderation classifier refused the message, allowing it");
+        return { isSafe: true, reason: "classifier_refused", confidence: 0 };
+      }
       this.logger.error(`LLM moderation failed: ${error instanceof Error ? error.message : String(error)}`);
       // Fail open — don't block if classifier is down
       return { isSafe: true, reason: null, confidence: 0 };

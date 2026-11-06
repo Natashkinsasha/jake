@@ -16,6 +16,12 @@ describe("parseEmotion", () => {
     expect(result).toEqual({ emotion: "neutral", text: "Hey there!" });
   });
 
+  it("should map another form of a listed emotion to it", () => {
+    expect(parseEmotion("<emotion>encouraged</emotion>Nice!").emotion).toBe("encouraging");
+    expect(parseEmotion("<emotion>empathic</emotion>Oh no.").emotion).toBe("empathetic");
+    expect(parseEmotion("<emotion>thoughtless</emotion>Hm.").emotion).toBe("neutral");
+  });
+
   it("should handle whitespace around tag", () => {
     const result = parseEmotion("  <emotion>excited</emotion>  Wow, amazing!");
     expect(result).toEqual({ emotion: "excited", text: "Wow, amazing!" });

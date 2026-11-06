@@ -1,4 +1,4 @@
-import type { RedisService } from "@liaoliaots/nestjs-redis";
+import { RedisService } from "@liaoliaots/nestjs-redis";
 import type { LlmMessage } from "@lib/provider/src";
 import { Injectable, Logger } from "@nestjs/common";
 import type Redis from "ioredis";
@@ -9,6 +9,7 @@ export interface LessonSession {
   systemPrompt: string;
   voiceId: string;
   speechSpeed: number;
+  // Append-only: every request extends the previous one byte for byte, which keeps the prompt cache warm.
   history: LlmMessage[];
   startedAt: number;
   isOnboarding?: boolean;
@@ -26,16 +27,25 @@ const KEY_PREFIX = "lesson:session:";
 export class LessonSessionService {
   private readonly logger = new Logger(LessonSessionService.name);
   private readonly redis: Redis;
+  // Every write is a read-modify-write of one JSON value, so writes for a user run one at a
+  // time; otherwise concurrent handlers drop each other's history or exercise. Assumes one API instance.
+  private readonly writeQueues = new Map<string, Promise<unknown>>();
 
   constructor(redisService: RedisService) {
     this.redis = redisService.getOrThrow();
   }
 
-  async save(userId: string, session: LessonSession): Promise<void> {
-    await this.redis.set(KEY_PREFIX + userId, JSON.stringify(session), "EX", SESSION_TTL);
+  save(userId: string, session: LessonSession): Promise<void> {
+    return this.serialize(userId, () => this.write(userId, session));
   }
 
   async get(userId: string): Promise<LessonSession | null> {
+    // Read after the writes already queued for this user, e.g. a turn committed a moment ago
+    await this.writeQueues.get(userId);
+    return this.read(userId);
+  }
+
+  private async read(userId: string): Promise<LessonSession | null> {
     const data = await this.redis.get(KEY_PREFIX + userId);
     if (!data) {
       return null;
@@ -48,52 +58,68 @@ export class LessonSessionService {
     }
   }
 
-  async delete(userId: string): Promise<void> {
-    await this.redis.del(KEY_PREFIX + userId);
+  delete(userId: string): Promise<void> {
+    return this.serialize(userId, async () => {
+      await this.redis.del(KEY_PREFIX + userId);
+    });
   }
 
-  async updateSpeechSpeed(userId: string, speed: number): Promise<void> {
-    const session = await this.get(userId);
-    if (!session) {
-      return;
-    }
-    session.speechSpeed = speed;
-    await this.save(userId, session);
+  updateSpeechSpeed(userId: string, speed: number): Promise<void> {
+    return this.update(userId, (session) => {
+      session.speechSpeed = speed;
+    });
   }
 
-  async setVoiceMismatch(userId: string, mismatch: boolean): Promise<void> {
-    const session = await this.get(userId);
-    if (!session) {
-      return;
-    }
-    session.voiceMismatch = mismatch;
-    await this.save(userId, session);
+  setVoiceMismatch(userId: string, mismatch: boolean): Promise<void> {
+    return this.update(userId, (session) => {
+      session.voiceMismatch = mismatch;
+    });
   }
 
-  async appendHistory(userId: string, ...messages: LlmMessage[]): Promise<void> {
-    const session = await this.get(userId);
-    if (!session) {
-      return;
-    }
-    session.history.push(...messages);
-    await this.save(userId, session);
+  appendHistory(userId: string, ...messages: LlmMessage[]): Promise<void> {
+    return this.update(userId, (session) => {
+      session.history.push(...messages);
+    });
   }
 
-  async setActiveExercise(userId: string, exerciseId: string, exercise: ParsedExercise): Promise<void> {
-    const session = await this.get(userId);
-    if (!session) {
-      return;
-    }
-    session.activeExercise = { id: exerciseId, exercise };
-    await this.save(userId, session);
+  setActiveExercise(userId: string, exerciseId: string, exercise: ParsedExercise): Promise<void> {
+    return this.update(userId, (session) => {
+      session.activeExercise = { id: exerciseId, exercise };
+    });
   }
 
-  async clearActiveExercise(userId: string): Promise<void> {
-    const session = await this.get(userId);
-    if (!session) {
-      return;
+  clearActiveExercise(userId: string): Promise<void> {
+    return this.update(userId, (session) => {
+      session.activeExercise = null;
+    });
+  }
+
+  private update(userId: string, mutate: (session: LessonSession) => void): Promise<void> {
+    return this.serialize(userId, async () => {
+      const session = await this.read(userId);
+      if (!session) {
+        return;
+      }
+      mutate(session);
+      await this.write(userId, session);
+    });
+  }
+
+  private async write(userId: string, session: LessonSession): Promise<void> {
+    await this.redis.set(KEY_PREFIX + userId, JSON.stringify(session), "EX", SESSION_TTL);
+  }
+
+  private async serialize<T>(userId: string, task: () => Promise<T>): Promise<T> {
+    const previous = this.writeQueues.get(userId) ?? Promise.resolve();
+    const current = previous.then(task);
+    const settled = current.catch(() => undefined);
+    this.writeQueues.set(userId, settled);
+    try {
+      return await current;
+    } finally {
+      if (this.writeQueues.get(userId) === settled) {
+        this.writeQueues.delete(userId);
+      }
     }
-    session.activeExercise = null;
-    await this.save(userId, session);
   }
 }

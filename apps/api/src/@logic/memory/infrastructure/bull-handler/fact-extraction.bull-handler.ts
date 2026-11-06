@@ -4,8 +4,8 @@ import { Logger } from "@nestjs/common";
 import { ClsWorkerHost } from "@shared/shared-cls/cls-worker-host";
 import { QUEUE_NAMES } from "@shared/shared-job/queue-names";
 import type { Job } from "bullmq";
-import type { ClsService } from "nestjs-cls";
-import type { FactExtractionService } from "../../application/service/fact-extraction.service";
+import { ClsService } from "nestjs-cls";
+import { FactExtractionService } from "../../application/service/fact-extraction.service";
 
 @Processor(QUEUE_NAMES.FACT_EXTRACTION)
 export class FactExtractionBullHandler extends ClsWorkerHost {

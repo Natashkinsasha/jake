@@ -1,52 +1,37 @@
 import { randomUUID } from "node:crypto";
-import type { LlmMessage } from "@lib/provider/src";
+import type { LlmMessage, LlmResponse } from "@lib/provider/src";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Injectable, Logger } from "@nestjs/common";
 import { QUEUE_NAMES } from "@shared/shared-job/queue-names";
 import type { Queue } from "bullmq";
-import type { AuthContract } from "../../../auth/contract/auth.contract";
-import { type ModerationService, SAFETY_RESPONSE } from "../../../llm/src/moderation/moderation.service";
-import type { LessonRepository } from "../../infrastructure/repository/lesson.repository";
-import type { LessonMessageRepository } from "../../infrastructure/repository/lesson-message.repository";
+import { AuthContract } from "../../../auth/contract/auth.contract";
+import {
+  type ModerationCheckResult,
+  ModerationService,
+  SAFETY_RESPONSE,
+} from "../../../llm/src/moderation/moderation.service";
+import { LessonRepository } from "../../infrastructure/repository/lesson.repository";
+import { LessonMessageRepository } from "../../infrastructure/repository/lesson-message.repository";
 import { parseEmotion } from "../service/emotion";
-import { ExerciseTagBuffer, extractExerciseTag } from "../service/exercise-tags";
-import type { LessonContextService } from "../service/lesson-context.service";
-import type { LessonResponseService } from "../service/lesson-response.service";
-import type { LessonSessionService } from "../service/lesson-session.service";
+import { ExerciseTagBuffer, type ParsedExercise } from "../service/exercise-tags";
+import { LessonContextService } from "../service/lesson-context.service";
+import { LessonResponseService } from "../service/lesson-response.service";
+import { type LessonSession, LessonSessionService } from "../service/lesson-session.service";
 import { buildFullSystemPrompt } from "../service/prompt-builder";
-import type { StreamCallbacks, StreamingPipelineService } from "../service/streaming-pipeline.service";
-import { stripUnknownTags, UnknownTagBuffer } from "../service/unknown-tags";
-import { extractVocabTags, VocabTagBuffer } from "../service/vocab-tags";
-
-const SET_SPEED_RE = /<set_speed>(very_slow|slow|natural|fast|very_fast)<\/set_speed>/g;
-
-const ONBOARDING_RE = /<onboarding\s+status="(complete|in_progress)"(?:\s+level="(A1|A2|B1|B2|C1|C2)")?\s*\/>/g;
-
-function stripOnboardingTags(text: string): { cleanText: string; onboardingComplete: boolean; level: string | null } {
-  let onboardingComplete = false;
-  let level: string | null = null;
-  const cleanText = text
-    .replaceAll(ONBOARDING_RE, (_, status: string, lvl: string | undefined) => {
-      if (status === "complete" && lvl) {
-        onboardingComplete = true;
-        level = lvl;
-      }
-      return "";
-    })
-    .trim();
-  return { cleanText, onboardingComplete, level };
-}
-
-function stripSpeedTags(text: string): { cleanText: string; speed: string | null } {
-  let speed: string | null = null;
-  const cleanText = text
-    .replaceAll(SET_SPEED_RE, (_, s: string) => {
-      speed = s;
-      return "";
-    })
-    .trim();
-  return { cleanText, speed };
-}
+import {
+  type StreamCallbacks,
+  StreamingPipelineService,
+  type StreamResult,
+} from "../service/streaming-pipeline.service";
+import {
+  BLOCKED_MESSAGE,
+  parseTutorReply,
+  stripOnboardingTags,
+  stripSpeedTags,
+  toTranscript,
+} from "../service/tutor-reply";
+import { UnknownTagBuffer } from "../service/unknown-tags";
+import { VocabTagBuffer } from "../service/vocab-tags";
 
 export function toSpeechSpeed(pref: string): number {
   switch (pref) {
@@ -75,6 +60,50 @@ function pickGreetingPrompt(): string {
   return GREETING_PROMPTS[Math.floor(Math.random() * GREETING_PROMPTS.length)] ?? GREETING_PROMPTS[0] ?? "";
 }
 
+// Sent as a system message right after the student's message: editing the system prompt
+// instead would invalidate the cached prompt and conversation for that turn.
+const VOICE_OBSERVATION =
+  "=== VOICE OBSERVATION ===\nThe student's voice sounds noticeably different from their usual voice today. They might be sick, tired, or feeling off. You can gently and naturally ask if they're feeling okay — don't make a big deal of it, just show you noticed. One brief mention is enough.";
+
+// Messages before the student's latest one that fact extraction gets as context.
+const FACT_CONTEXT_MESSAGES = 8;
+
+// Moderation normally answers within a second; past this the turn goes on without it, as on a failure
+const MODERATION_TIMEOUT_MS = 3000;
+
+// Used when the model refuses or returns nothing for the greeting
+const FALLBACK_GREETING = "<emotion>happy</emotion>Hey, great to see you! How are you doing today?";
+
+const NO_USAGE: LlmResponse = {
+  text: "",
+  inputTokens: 0,
+  outputTokens: 0,
+  cacheReadInputTokens: 0,
+  cacheCreationInputTokens: 0,
+  refused: false,
+};
+
+function withTimeout<T>(promise: Promise<T>, ms: number, onTimeout: () => T): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => resolve(onTimeout()), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error: unknown) => {
+        clearTimeout(timer);
+        reject(error);
+      },
+    );
+  });
+}
+
+// Chunks are sentences; join them the way the client shows them
+function joinChunks(text: string, chunk: string): string {
+  return text && !/^[,.\-!?;:'"]/.test(chunk) ? `${text} ${chunk}` : `${text}${chunk}`;
+}
+
 @Injectable()
 export class LessonMaintainer {
   private readonly logger = new Logger(LessonMaintainer.name);
@@ -92,9 +121,9 @@ export class LessonMaintainer {
     @InjectQueue(QUEUE_NAMES.FACT_EXTRACTION) private factQueue: Queue,
   ) {}
 
-  async getLesson(lessonId: string) {
+  async getLesson(lessonId: string, userId: string) {
     const lesson = await this.lessonRepository.findById(lessonId);
-    if (!lesson) {
+    if (lesson?.userId !== userId) {
       return null;
     }
     const messages = await this.messageRepository.findByLesson(lessonId);
@@ -112,6 +141,11 @@ export class LessonMaintainer {
         timestamp: m.timestamp,
       })),
     };
+  }
+
+  async ownsLesson(lessonId: string, userId: string): Promise<boolean> {
+    const lesson = await this.lessonRepository.findById(lessonId);
+    return lesson?.userId === userId;
   }
 
   async listLessons(userId: string, offset = 0, limit = 10) {
@@ -139,20 +173,22 @@ export class LessonMaintainer {
       [{ role: "user", content: pickGreetingPrompt() }],
       "lesson.greeting",
     );
-
-    const { cleanText: greetingText, speed: greetingSpeed } = stripSpeedTags(greeting.text);
-    const { emotion: greetingEmotion, text: greetingTextNoEmotion } = parseEmotion(greetingText);
-    const { cleanText: greetingNoOnboarding } = stripOnboardingTags(greetingTextNoEmotion);
-    const { cleanText: greetingCleanText, highlights: greetingHighlights } = extractVocabTags(greetingNoOnboarding);
+    let greetingText = greeting.text;
+    let reply = parseTutorReply(greetingText);
+    if (greeting.tokens.refused || !reply.cleanText) {
+      this.logger.warn(`Greeting ${greeting.tokens.refused ? "refused" : "empty"} for ${userId}, using the fallback`);
+      greetingText = FALLBACK_GREETING;
+      reply = parseTutorReply(greetingText);
+    }
 
     const lesson = await this.lessonRepository.createWithGreeting(
       {
         userId,
         lessonNumber: context.lessonNumber,
       },
-      greetingCleanText,
+      reply.cleanText,
     );
-    const speechSpeed = toSpeechSpeed(greetingSpeed ?? context.preferences.speakingSpeed);
+    const speechSpeed = toSpeechSpeed(reply.speed ?? context.preferences.speakingSpeed);
 
     return {
       lessonId: lesson.id,
@@ -160,28 +196,28 @@ export class LessonMaintainer {
       voiceId: context.tutorVoiceId,
       speechSpeed,
       ttsModel: context.preferences.ttsModel,
-      greeting: { text: greetingCleanText, emotion: greetingEmotion, vocabHighlights: greetingHighlights },
+      // rawText goes into the LLM history, the rest to the student
+      greeting: {
+        rawText: greetingText,
+        text: reply.cleanText,
+        emotion: reply.emotion,
+        vocabHighlights: reply.vocabHighlights,
+      },
       isOnboarding,
     };
   }
 
+  // Runs one turn and resolves once it is settled in history: committed, discarded, or recorded as
+  // interrupted when the signal aborts the stream. Await it before starting the next turn.
   async processTextMessageStreaming(
     userId: string,
     text: string,
     callbacks: StreamCallbacks,
     options?: { signal?: AbortSignal },
-  ) {
+  ): Promise<void> {
     const session = await this.sessionService.get(userId);
     if (!session) {
       return;
-    }
-
-    // Inject voice mismatch hint into system prompt (one-time)
-    let systemPrompt = session.systemPrompt;
-    if (session.voiceMismatch) {
-      systemPrompt +=
-        "\n\n=== VOICE OBSERVATION ===\nThe student's voice sounds noticeably different from their usual voice today. They might be sick, tired, or feeling off. You can gently and naturally ask if they're feeling okay — don't make a big deal of it, just show you noticed. One brief mention is enough.";
-      await this.sessionService.setVoiceMismatch(userId, false);
     }
 
     // Layer 1: Regex pre-filter (instant, <1ms)
@@ -192,27 +228,50 @@ export class LessonMaintainer {
       return;
     }
 
-    const updatedHistory: LlmMessage[] = [...session.history, { role: "user", content: text }];
+    // This turn's messages. The voice note stays pending in the session until it is stored with a reply.
+    const turn: LlmMessage[] = [{ role: "user", content: text }];
+    if (session.voiceMismatch) {
+      turn.push({ role: "system", content: VOICE_OBSERVATION });
+    }
 
     // Layer 2: LLM moderation runs in parallel with streaming.
     // Optimistic strategy: chunks are sent to client immediately (no buffering).
-    // If moderation flags the input, we discard the stream and send a safety response.
-    const moderationPromise = this.moderationService
-      .llmCheck(text, { userId, lessonId: session.lessonId })
-      .catch((err: unknown) => {
-        this.logger.error(
-          `LLM moderation failed, allowing message: ${err instanceof Error ? err.message : String(err)}`,
-        );
-        return { isSafe: true as const, reason: null };
-      });
+    // The verdict decides what reaches the history once the stream ends or is cut short.
+    const moderationPromise = withTimeout(
+      this.moderationService.llmCheck(text, { userId, lessonId: session.lessonId }),
+      MODERATION_TIMEOUT_MS,
+      (): ModerationCheckResult => {
+        this.logger.warn(`LLM moderation timed out after ${MODERATION_TIMEOUT_MS}ms, allowing message`);
+        return { isSafe: true, reason: null, confidence: 0 };
+      },
+    ).catch((err: unknown): ModerationCheckResult => {
+      this.logger.error(`LLM moderation failed, allowing message: ${err instanceof Error ? err.message : String(err)}`);
+      return { isSafe: true, reason: null, confidence: 0 };
+    });
 
     const vocabBuffer = new VocabTagBuffer();
     const exerciseBuffer = new ExerciseTagBuffer();
     const unknownTagBuffer = new UnknownTagBuffer();
+    // What the student has been shown so far, kept for a turn that gets cut short
+    let shownText = "";
+    // An exercise this reply opened; dropped again if the reply is discarded
+    let exerciseOpened = false;
+    const openExercise = (exercise: ParsedExercise) => {
+      const exerciseId = randomUUID();
+      exerciseOpened = true;
+      this.sessionService.setActiveExercise(userId, exerciseId, exercise).catch((error: unknown) => {
+        this.logger.error(`Failed to save the exercise: ${error instanceof Error ? error.message : String(error)}`);
+      });
+      callbacks.onExercise?.({ exerciseId, type: exercise.type, pairs: exercise.pairs });
+    };
+    const show = (chunkIndex: number, chunkText: string) => {
+      shownText = joinChunks(shownText, chunkText);
+      callbacks.onChunk({ chunkIndex, text: chunkText });
+    };
 
-    await this.streamingPipeline.stream(
-      systemPrompt,
-      updatedHistory,
+    const result = await this.streamingPipeline.stream(
+      session.systemPrompt,
+      [...session.history, ...turn],
       {
         onChunk: (chunk) => {
           this.logger.debug(`RAW chunk: "${chunk.text}"`);
@@ -233,18 +292,16 @@ export class LessonMaintainer {
 
           const { cleanText: finalText, exercise } = exerciseBuffer.push(cleanText);
           if (exercise) {
-            const exerciseId = randomUUID();
-            void this.sessionService.setActiveExercise(userId, exerciseId, exercise);
-            callbacks.onExercise?.({ exerciseId, type: exercise.type, pairs: exercise.pairs });
+            openExercise(exercise);
           }
 
           // Last step: catch any unknown XML tags that slipped through
           const safeText = unknownTagBuffer.push(finalText);
           if (safeText) {
-            callbacks.onChunk({ ...chunk, text: safeText });
+            show(chunk.chunkIndex, safeText);
           }
         },
-        onEnd: (result) => {
+        onEnd: () => {
           // Flush any remaining buffered vocab tags
           const remaining = vocabBuffer.flush();
           if (remaining.highlights.length > 0) {
@@ -257,103 +314,25 @@ export class LessonMaintainer {
             callbacks.onVocabReviewed?.(w);
           }
           if (remaining.cleanText) {
-            callbacks.onChunk({ chunkIndex: -1, text: remaining.cleanText });
+            show(-1, remaining.cleanText);
           }
 
           const exerciseRemaining = exerciseBuffer.flush();
           if (exerciseRemaining.exercise) {
-            const exerciseId = randomUUID();
-            void this.sessionService.setActiveExercise(userId, exerciseId, exerciseRemaining.exercise);
-            callbacks.onExercise?.({
-              exerciseId,
-              type: exerciseRemaining.exercise.type,
-              pairs: exerciseRemaining.exercise.pairs,
-            });
+            openExercise(exerciseRemaining.exercise);
           }
           if (exerciseRemaining.cleanText) {
             const safeRemaining = unknownTagBuffer.push(exerciseRemaining.cleanText);
             if (safeRemaining) {
-              callbacks.onChunk({ chunkIndex: -1, text: safeRemaining });
+              show(-1, safeRemaining);
             }
           }
 
           // Flush unknown tag buffer — catch any incomplete tags at stream end
           const unknownRemaining = unknownTagBuffer.flush();
           if (unknownRemaining) {
-            callbacks.onChunk({ chunkIndex: -1, text: unknownRemaining });
+            show(-1, unknownRemaining);
           }
-
-          void (async () => {
-            const modResult = await moderationPromise;
-
-            if (options?.signal?.aborted) {
-              return;
-            }
-
-            if (!modResult.isSafe) {
-              if (modResult.confidence < 0.7) {
-                this.logger.warn(
-                  `LLM moderation below threshold, allowing: reason=${modResult.reason}, confidence=${modResult.confidence}`,
-                );
-              } else {
-                this.logger.warn(
-                  `LLM flagged input from ${userId}: reason=${modResult.reason}, confidence=${modResult.confidence}`,
-                );
-
-                await this.sessionService.appendHistory(
-                  userId,
-                  { role: "user", content: text },
-                  { role: "assistant", content: SAFETY_RESPONSE },
-                );
-
-                callbacks.onDiscard?.(SAFETY_RESPONSE);
-                return;
-              }
-            }
-
-            this.logger.log(`RAW fullText: "${result.fullText}"`);
-            const { cleanText: textWithoutSpeed, speed } = stripSpeedTags(result.fullText);
-            const { text: textWithoutEmotion } = parseEmotion(textWithoutSpeed);
-            const {
-              cleanText: textWithoutOnboarding,
-              onboardingComplete,
-              level: onboardingLevel,
-            } = stripOnboardingTags(textWithoutEmotion);
-            if (onboardingComplete && onboardingLevel) {
-              await this.authContract.completeOnboarding(userId, onboardingLevel);
-              callbacks.onOnboardingComplete?.({ level: onboardingLevel });
-            }
-            const { cleanText: textWithoutExercise } = extractExerciseTag(textWithoutOnboarding);
-            const { cleanText: textWithoutVocab, highlights: endHighlights } = extractVocabTags(textWithoutExercise);
-            const cleanText = stripUnknownTags(textWithoutVocab);
-            if (endHighlights.length > 0) {
-              this.logger.log(`Vocab from fullText: ${endHighlights.map((h) => h.word).join(", ")}`);
-            }
-
-            if (speed) {
-              const numericSpeed = toSpeechSpeed(speed);
-              await this.sessionService.updateSpeechSpeed(userId, numericSpeed);
-              callbacks.onSpeedChange?.(speed);
-            }
-
-            await this.messageRepository.create({ lessonId: session.lessonId, role: "user", content: text });
-            await this.messageRepository.create({ lessonId: session.lessonId, role: "tutor", content: cleanText });
-
-            await this.factQueue.add("extract", {
-              userId,
-              lessonId: session.lessonId,
-              userMessage: text,
-              history: updatedHistory,
-            });
-
-            await this.sessionService.appendHistory(
-              userId,
-              { role: "user", content: text },
-              { role: "assistant", content: cleanText },
-            );
-
-            callbacks.onEnd({ ...result, fullText: cleanText });
-          })();
         },
         onEmotion: (emotion) => {
           callbacks.onEmotion?.(emotion);
@@ -364,11 +343,142 @@ export class LessonMaintainer {
       },
       { signal: options?.signal },
     );
+
+    const aborted = options?.signal?.aborted ?? false;
+    if (!(result || aborted)) {
+      // The stream failed and onError reported it; nothing is stored, a voice note stays pending
+      return;
+    }
+
+    try {
+      const flagged = this.isFlagged(userId, await moderationPromise);
+      if (result) {
+        const discarded = flagged || result.tokens.refused;
+        if (discarded && exerciseOpened) {
+          await this.sessionService.clearActiveExercise(userId);
+        }
+        await this.commitTurn(userId, session, text, turn, result, discarded, callbacks, aborted);
+      } else {
+        await this.recordInterruptedTurn(userId, session, text, turn, shownText, flagged);
+      }
+    } catch (error) {
+      callbacks.onError(error instanceof Error ? error : new Error(String(error)));
+    }
+  }
+
+  private isFlagged(userId: string, modResult: ModerationCheckResult): boolean {
+    if (modResult.isSafe) {
+      return false;
+    }
+    if (modResult.confidence < 0.7) {
+      this.logger.warn(
+        `LLM moderation below threshold, allowing: reason=${modResult.reason}, confidence=${modResult.confidence}`,
+      );
+      return false;
+    }
+    this.logger.warn(
+      `LLM flagged input from ${userId}: reason=${modResult.reason}, confidence=${modResult.confidence}`,
+    );
+    return true;
+  }
+
+  // A reply that finished streaming is stored even if the student then cut its playback short.
+  private async commitTurn(
+    userId: string,
+    session: LessonSession,
+    text: string,
+    turn: LlmMessage[],
+    result: StreamResult,
+    discarded: boolean,
+    callbacks: StreamCallbacks,
+    aborted: boolean,
+  ) {
+    if (discarded) {
+      // The message itself stays out of the context, or every later request would carry it
+      await this.sessionService.appendHistory(
+        userId,
+        { role: "user", content: BLOCKED_MESSAGE },
+        { role: "assistant", content: SAFETY_RESPONSE },
+      );
+      if (!aborted) {
+        callbacks.onDiscard?.(SAFETY_RESPONSE);
+      }
+      return;
+    }
+
+    this.logger.log(`RAW fullText: "${result.fullText}"`);
+    // The reply is stored exactly as generated, tags included: the model keeps seeing its
+    // own format, and the next request extends this one byte for byte (prompt cache).
+    await this.sessionService.appendHistory(userId, ...turn, { role: "assistant", content: result.fullText });
+    if (turn.length > 1) {
+      await this.sessionService.setVoiceMismatch(userId, false);
+    }
+
+    const reply = parseTutorReply(result.fullText);
+    if (reply.vocabHighlights.length > 0) {
+      this.logger.log(`Vocab from fullText: ${reply.vocabHighlights.map((h) => h.word).join(", ")}`);
+    }
+    if (reply.onboardingLevel) {
+      await this.authContract.completeOnboarding(userId, reply.onboardingLevel);
+      callbacks.onOnboardingComplete?.({ level: reply.onboardingLevel });
+    }
+    if (reply.speed) {
+      await this.sessionService.updateSpeechSpeed(userId, toSpeechSpeed(reply.speed));
+      callbacks.onSpeedChange?.(reply.speed);
+    }
+
+    await this.saveTurnRecords(userId, session, text, reply.cleanText);
+    if (!aborted) {
+      callbacks.onEnd({ ...result, fullText: reply.cleanText });
+    }
+  }
+
+  // The student cut the reply short: keep what they said and what they had been shown. A flagged
+  // turn leaves no trace: the student never heard a safety reply, and the partial answer to the
+  // flagged message shouldn't stay in context either.
+  private async recordInterruptedTurn(
+    userId: string,
+    session: LessonSession,
+    text: string,
+    turn: LlmMessage[],
+    shownText: string,
+    flagged: boolean,
+  ) {
+    if (flagged) {
+      return;
+    }
+    const shown = shownText.trim();
+    if (shown) {
+      await this.sessionService.appendHistory(userId, ...turn, { role: "assistant", content: `${shown}...` });
+      if (turn.length > 1) {
+        await this.sessionService.setVoiceMismatch(userId, false);
+      }
+    } else {
+      // A system note can't be stored without a reply after it; it stays pending for the next turn
+      await this.sessionService.appendHistory(userId, { role: "user", content: text });
+    }
+    await this.saveTurnRecords(userId, session, text, shown ? `${shown}...` : null);
+  }
+
+  private async saveTurnRecords(userId: string, session: LessonSession, text: string, tutorText: string | null) {
+    await this.messageRepository.create({ lessonId: session.lessonId, role: "user", content: text });
+    if (tutorText) {
+      await this.messageRepository.create({ lessonId: session.lessonId, role: "tutor", content: tutorText });
+    }
+
+    // Facts are read at the next lesson start; a short window of context keeps this call's cost flat
+    const context = session.history.filter((m) => m.role !== "system").slice(-FACT_CONTEXT_MESSAGES);
+    await this.factQueue.add("extract", {
+      userId,
+      lessonId: session.lessonId,
+      userMessage: text,
+      history: toTranscript(context),
+    });
   }
 
   private emitSafetyResponse(callbacks: StreamCallbacks) {
     callbacks.onChunk({ chunkIndex: 0, text: SAFETY_RESPONSE });
-    callbacks.onEnd({ fullText: SAFETY_RESPONSE, tokens: { text: "", inputTokens: 0, outputTokens: 0 } });
+    callbacks.onEnd({ fullText: SAFETY_RESPONSE, tokens: NO_USAGE });
   }
 
   async endLesson(lessonId: string, history: LlmMessage[]) {
@@ -376,7 +486,7 @@ export class LessonMaintainer {
 
     await this.postLessonQueue.add("process", {
       lessonId,
-      conversationHistory: history,
+      conversationHistory: toTranscript(history),
     });
   }
 }

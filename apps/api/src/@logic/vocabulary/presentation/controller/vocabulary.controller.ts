@@ -1,7 +1,7 @@
 import { Body, Controller, Delete, Get, NotFoundException, Param, Post, Query, UseGuards } from "@nestjs/common";
 import { CurrentUserId } from "@shared/shared-auth/current-user.decorator";
 import { JwtAuthGuard } from "@shared/shared-auth/jwt-auth.guard";
-import type { VocabularyContract } from "../../contract/vocabulary.contract";
+import { VocabularyContract } from "../../contract/vocabulary.contract";
 
 @Controller("vocabulary")
 @UseGuards(JwtAuthGuard)
