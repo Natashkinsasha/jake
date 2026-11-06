@@ -12,8 +12,12 @@ export interface LessonSession {
   // Append-only: every request extends the previous one byte for byte, which keeps the prompt cache warm.
   history: LlmMessage[];
   startedAt: number;
+  // Last time a socket opened or resumed this lesson; a finalize job scheduled earlier backs off
+  lastSeenAt?: number;
   isOnboarding?: boolean;
+  // Pending notes for the model, sent with the next turn and cleared once stored with a reply
   voiceMismatch?: boolean;
+  onboardingNoteLevel?: string | null;
   activeExercise?: {
     id: string;
     exercise: ParsedExercise;
@@ -70,9 +74,34 @@ export class LessonSessionService {
     });
   }
 
+  markSeen(userId: string): Promise<void> {
+    return this.update(userId, (session) => {
+      session.lastSeenAt = Date.now();
+    });
+  }
+
   setVoiceMismatch(userId: string, mismatch: boolean): Promise<void> {
     return this.update(userId, (session) => {
       session.voiceMismatch = mismatch;
+    });
+  }
+
+  // Onboarding ends mid-lesson: later turns get a note, since the lesson's system prompt can't change
+  completeOnboarding(userId: string, level: string): Promise<void> {
+    return this.update(userId, (session) => {
+      session.isOnboarding = false;
+      session.onboardingNoteLevel = level;
+    });
+  }
+
+  clearDeliveredNotes(userId: string, delivered: { voiceMismatch: boolean; onboardingNote: boolean }): Promise<void> {
+    return this.update(userId, (session) => {
+      if (delivered.voiceMismatch) {
+        session.voiceMismatch = false;
+      }
+      if (delivered.onboardingNote) {
+        session.onboardingNoteLevel = null;
+      }
     });
   }
 

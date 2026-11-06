@@ -61,6 +61,10 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(LessonGateway.name);
   // One turn per student, whichever socket it came from: they all share one history
   private turns = new Map<string, ActiveTurn>();
+  // Open sockets per student; a lesson is scheduled to finish only once the last one closes
+  private connections = new Map<string, Set<string>>();
+  // Lessons open one at a time per student, so a second socket resumes the lesson the first started
+  private opening = new Map<string, Promise<void>>();
 
   @WebSocketServer()
   server!: Server;
@@ -82,7 +86,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const token = (client.handshake.auth as Record<string, unknown>)["token"] ?? client.handshake.query["token"];
 
     if (token == null) {
-      client.emit("error", { message: "No auth token" });
+      client.emit("error", { message: "No auth token", fatal: true });
       client.disconnect();
       return;
     }
@@ -91,17 +95,45 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
       const payload = await this.jwtService.verifyAsync<{ sub: string }>(token as string);
       (client.data as SocketData) = { userId: payload.sub };
     } catch {
-      client.emit("error", { message: "Invalid token" });
+      client.emit("error", { message: "Invalid token", fatal: true });
       client.disconnect();
       return;
     }
 
+    if (client.disconnected) {
+      return; // closed during the token check, before handleDisconnect could see a user
+    }
     const userId = this.getUserId(client);
+    this.trackConnection(userId, client.id);
 
+    const previous = this.opening.get(userId) ?? Promise.resolve();
+    const opening = previous.then(() => this.openLesson(client, userId));
+    const settled = opening.then(noop, noop);
+    this.opening.set(userId, settled);
+    try {
+      await opening;
+    } finally {
+      if (this.opening.get(userId) === settled) {
+        this.opening.delete(userId);
+      }
+    }
+    // The socket may have closed while the lesson was starting, before there was a session to finish
+    if (client.disconnected && !this.connections.has(userId)) {
+      await this.scheduleFinalize(userId);
+    }
+  }
+
+  // Resumes the student's lesson, or starts one when there is none.
+  private async openLesson(client: Socket, userId: string) {
     try {
       // Check for existing session (reconnection)
       const existingSession = await this.sessionService.get(userId);
       if (existingSession) {
+        await this.sessionService.markSeen(userId);
+        // The job also checks lastSeenAt, so a failed removal only costs a no-op run later
+        await this.lessonMaintainer.cancelFinalize(existingSession.lessonId).catch((error: unknown) => {
+          this.logger.warn(`Failed to cancel lesson finalization: ${String(error)}`);
+        });
         client.emit("lesson_resumed", {
           lessonId: existingSession.lessonId,
           voiceId: existingSession.voiceId,
@@ -125,6 +157,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
         speechSpeed: result.speechSpeed,
         history: [{ role: "assistant", content: result.greeting.rawText }],
         startedAt: Date.now(),
+        lastSeenAt: Date.now(),
         isOnboarding: result.isOnboarding,
       });
 
@@ -146,23 +179,57 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
     } catch (error: unknown) {
       this.logger.error(`Failed to start lesson: ${error instanceof Error ? error.message : String(error)}`);
-      client.emit("error", { message: "Failed to start lesson" });
+      client.emit("error", { message: "Failed to start lesson", fatal: true });
       client.disconnect();
     }
   }
 
   async handleDisconnect(client: Socket) {
+    const userId = this.getUserId(client);
+    if (!userId) {
+      return; // never authenticated
+    }
     // A reconnected socket may already run the next turn; only stop this socket's own
-    if (this.turns.get(this.getUserId(client))?.clientId === client.id) {
+    if (this.turns.get(userId)?.clientId === client.id) {
       await this.abortTurn(client);
     }
+    if (this.untrackConnection(userId, client.id) === 0) {
+      await this.scheduleFinalize(userId);
+    }
+  }
+
+  private async scheduleFinalize(userId: string) {
+    try {
+      await this.lessonMaintainer.scheduleFinalize(userId);
+    } catch (error) {
+      this.logger.error(
+        `Failed to schedule lesson finalization: ${error instanceof Error ? error.message : String(error)}`,
+      );
+    }
+  }
+
+  private trackConnection(userId: string, clientId: string) {
+    const sockets = this.connections.get(userId) ?? new Set<string>();
+    sockets.add(clientId);
+    this.connections.set(userId, sockets);
+  }
+
+  // Returns how many sockets the student still has open.
+  private untrackConnection(userId: string, clientId: string): number {
+    const sockets = this.connections.get(userId);
+    sockets?.delete(clientId);
+    if (!sockets || sockets.size === 0) {
+      this.connections.delete(userId);
+      return 0;
+    }
+    return sockets.size;
   }
 
   @SubscribeMessage("text")
   async handleText(@ConnectedSocket() client: Socket, @MessageBody() data: unknown) {
     const parsed = wsTextMessageSchema.safeParse(data);
     if (!parsed.success) {
-      client.emit("error", { message: "Invalid text message" });
+      client.emit("error", { message: "Invalid text message", turn: true });
       return;
     }
 
@@ -305,7 +372,8 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
         },
         onError: (error) => {
           this.logger.error(`Streaming failed: ${error.message}`);
-          client.emit("error", { message: "Something went wrong!" });
+          // Only this reply failed: the client ends it and the lesson goes on
+          client.emit("error", { message: "Something went wrong!", turn: true, messageId });
         },
         onDiscard: (safetyText) => {
           client.emit("tutor_stream_end", { discarded: true, messageId });

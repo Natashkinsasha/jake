@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from "react";
 import { WS_URL } from "@/lib/config";
 import { handleCustomEvent } from "./lesson/customEventHandlers";
 import { handleLessonEvent, type LessonEventData } from "./lesson/handleLessonEvent";
-import { processAction } from "./lesson/processAction";
+import { processAction, withReplyText } from "./lesson/processAction";
 import type { LessonRefs, LessonState } from "./lesson/types";
 import { createLogger } from "./logger";
 import { useTutorTts } from "./useTutorTts";
@@ -17,13 +17,14 @@ export function useLessonState(token?: string | null) {
     status: "connecting",
     lessonEnded: false,
     error: null,
+    notice: null,
     startedAt: null,
   });
 
   const [ttsError, setTtsError] = useState<string | null>(null);
   const seenVocabRef = useRef<Set<string>>(new Set());
   const userSpeakingRef = useRef(false);
-  const pendingTurnsRef = useRef(0);
+  const awaitingReplyRef = useRef(false);
   const activeMessageIdRef = useRef<string | null>(null);
   const voiceIdRef = useRef<string | null>(null);
   const speechSpeedRef = useRef<number>(1.0);
@@ -37,12 +38,29 @@ export function useLessonState(token?: string | null) {
   const pendingRevealTextRef = useRef<string | null>(null);
   const finalFullTextRef = useRef<string | null>(null);
   const revealedLenRef = useRef(0);
+  const ttsFailedRef = useRef(false);
 
   const tts = useTutorTts({
     onError: (message) => {
       log("TTS error:", message);
       greetingPlayingRef.current = false;
+      ttsFailedRef.current = true;
       setTtsError(message);
+
+      // Without audio nothing reveals the text or ends the turn, so show what there is now.
+      // A reply still streaming finishes in processStreamEnd.
+      const text = finalFullTextRef.current ?? pendingRevealTextRef.current;
+      const finished = !streamStartedRef.current;
+      setState((prev) => ({
+        ...prev,
+        messages: text ? withReplyText(prev.messages, text) : prev.messages,
+        status: finished ? "idle" : prev.status,
+      }));
+      if (finished) {
+        finalFullTextRef.current = null;
+        pendingRevealTextRef.current = null;
+        revealedLenRef.current = 0;
+      }
     },
     onAllDone: () => {
       greetingPlayingRef.current = false;
@@ -126,13 +144,14 @@ export function useLessonState(token?: string | null) {
       emotion: emotionRef,
       greetingPlaying: greetingPlayingRef,
       seenVocab: seenVocabRef,
-      pendingTurns: pendingTurnsRef,
+      awaitingReply: awaitingReplyRef,
       activeMessageId: activeMessageIdRef,
       streamStarted: streamStartedRef,
       streamText: streamTextRef,
       pendingRevealText: pendingRevealTextRef,
       finalFullText: finalFullTextRef,
       revealedLen: revealedLenRef,
+      ttsFailed: ttsFailedRef,
       userSpeaking: userSpeakingRef,
       tts: ttsRef,
     };
@@ -147,13 +166,9 @@ export function useLessonState(token?: string | null) {
         return;
       }
 
-      if (event === "tutor_message") {
-        refs.pendingTurns.current = Math.max(0, refs.pendingTurns.current - 1);
-      }
-
       const action = handleLessonEvent(event, data, {
         userSpeaking: refs.userSpeaking.current,
-        pendingTurns: refs.pendingTurns.current,
+        awaitingReply: refs.awaitingReply.current,
       });
 
       processAction(action, event, data, refs, setState, log);
@@ -172,7 +187,7 @@ export function useLessonState(token?: string | null) {
       if (!text.trim()) {
         return;
       }
-      pendingTurnsRef.current++;
+      awaitingReplyRef.current = true;
       emotionRef.current = "neutral";
       const trimmed = text.trim();
       const messageId = crypto.randomUUID();

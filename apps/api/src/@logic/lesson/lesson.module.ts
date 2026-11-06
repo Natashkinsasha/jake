@@ -21,6 +21,7 @@ import { LessonSessionService } from "./application/service/lesson-session.servi
 import { StreamingPipelineService } from "./application/service/streaming-pipeline.service";
 import { VoicePrintService } from "./application/service/voice-print.service";
 import { LessonContract } from "./contract/lesson.contract";
+import { LessonFinalizeBullHandler } from "./infrastructure/bull-handler/lesson-finalize.bull-handler";
 import { PostLessonBullHandler } from "./infrastructure/bull-handler/post-lesson.bull-handler";
 import { LessonRepository } from "./infrastructure/repository/lesson.repository";
 import { LessonMessageRepository } from "./infrastructure/repository/lesson-message.repository";
@@ -39,6 +40,7 @@ import { LessonGateway } from "./presentation/gateway/lesson.gateway";
     SharedClsModule,
     JobModule.registerQueue({ name: QUEUE_NAMES.POST_LESSON }),
     JobModule.registerQueue({ name: QUEUE_NAMES.FACT_EXTRACTION }),
+    JobModule.registerQueue({ name: QUEUE_NAMES.LESSON_FINALIZE }),
     forwardRef(() => AuthModule),
     MemoryModule,
     VocabularyModule,
@@ -57,6 +59,7 @@ import { LessonGateway } from "./presentation/gateway/lesson.gateway";
     LessonRepository,
     LessonMessageRepository,
     PostLessonBullHandler,
+    LessonFinalizeBullHandler,
     VoicePrintService,
     VoicePrintRepository,
     LessonContract,

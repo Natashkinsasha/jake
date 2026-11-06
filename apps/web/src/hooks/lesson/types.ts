@@ -6,7 +6,9 @@ export interface LessonState {
   messages: ChatMessage[];
   status: LessonStatus;
   lessonEnded: boolean;
+  // A fatal error ends the lesson screen; a notice is only shown as a toast
   error: string | null;
+  notice: { message: string; at: number } | null;
   startedAt: number | null;
 }
 
@@ -38,13 +40,16 @@ export interface LessonRefs {
   emotion: MutableRefObject<string>;
   greetingPlaying: MutableRefObject<boolean>;
   seenVocab: MutableRefObject<Set<string>>;
-  pendingTurns: MutableRefObject<number>;
+  // The student sent a message the server hasn't answered yet
+  awaitingReply: MutableRefObject<boolean>;
   activeMessageId: MutableRefObject<string | null>;
   streamStarted: MutableRefObject<boolean>;
   streamText: MutableRefObject<string>;
   pendingRevealText: MutableRefObject<string | null>;
   finalFullText: MutableRefObject<string | null>;
   revealedLen: MutableRefObject<number>;
+  // TTS failed for the current reply: show its text directly instead of revealing it with the audio
+  ttsFailed: MutableRefObject<boolean>;
   userSpeaking: MutableRefObject<boolean>;
   tts: MutableRefObject<TtsApi>;
 }

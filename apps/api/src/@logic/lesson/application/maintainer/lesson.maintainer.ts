@@ -65,11 +65,35 @@ function pickGreetingPrompt(): string {
 const VOICE_OBSERVATION =
   "=== VOICE OBSERVATION ===\nThe student's voice sounds noticeably different from their usual voice today. They might be sick, tired, or feeling off. You can gently and naturally ask if they're feeling okay — don't make a big deal of it, just show you noticed. One brief mention is enough.";
 
+const onboardingDoneNote = (level: string) =>
+  `=== ONBOARDING COMPLETE ===\nOnboarding is finished: the student's level is ${level}. Stop the onboarding questions and the <onboarding> tags, and carry on with a normal lesson at that level.`;
+
+// Notes the session holds for the model, delivered together as one system message after the
+// student's next message (two system messages in a row would be rejected).
+function pendingNotes(session: LessonSession): string[] {
+  const notes: string[] = [];
+  if (session.voiceMismatch) {
+    notes.push(VOICE_OBSERVATION);
+  }
+  if (session.onboardingNoteLevel) {
+    notes.push(onboardingDoneNote(session.onboardingNoteLevel));
+  }
+  return notes;
+}
+
 // Messages before the student's latest one that fact extraction gets as context.
 const FACT_CONTEXT_MESSAGES = 8;
 
 // Moderation normally answers within a second; past this the turn goes on without it, as on a failure
 const MODERATION_TIMEOUT_MS = 3000;
+
+// How long a student may stay away before a lesson they left is ended for them
+const FINALIZE_AFTER_MS = 30 * 60 * 1000;
+
+const finalizeJobId = (lessonId: string) => `finalize-${lessonId}`;
+
+// Retried jobs whose ids make a second run for the same lesson a no-op
+const RETRIED_JOB = { attempts: 3, backoff: { type: "exponential", delay: 10_000 } };
 
 // Used when the model refuses or returns nothing for the greeting
 const FALLBACK_GREETING = "<emotion>happy</emotion>Hey, great to see you! How are you doing today?";
@@ -119,6 +143,7 @@ export class LessonMaintainer {
     private moderationService: ModerationService,
     @InjectQueue(QUEUE_NAMES.POST_LESSON) private postLessonQueue: Queue,
     @InjectQueue(QUEUE_NAMES.FACT_EXTRACTION) private factQueue: Queue,
+    @InjectQueue(QUEUE_NAMES.LESSON_FINALIZE) private finalizeQueue: Queue,
   ) {}
 
   async getLesson(lessonId: string, userId: string) {
@@ -228,10 +253,11 @@ export class LessonMaintainer {
       return;
     }
 
-    // This turn's messages. The voice note stays pending in the session until it is stored with a reply.
+    // This turn's messages. Notes stay pending in the session until they are stored with a reply.
     const turn: LlmMessage[] = [{ role: "user", content: text }];
-    if (session.voiceMismatch) {
-      turn.push({ role: "system", content: VOICE_OBSERVATION });
+    const notes = pendingNotes(session);
+    if (notes.length > 0) {
+      turn.push({ role: "system", content: notes.join("\n\n") });
     }
 
     // Layer 2: LLM moderation runs in parallel with streaming.
@@ -410,16 +436,16 @@ export class LessonMaintainer {
     // The reply is stored exactly as generated, tags included: the model keeps seeing its
     // own format, and the next request extends this one byte for byte (prompt cache).
     await this.sessionService.appendHistory(userId, ...turn, { role: "assistant", content: result.fullText });
-    if (turn.length > 1) {
-      await this.sessionService.setVoiceMismatch(userId, false);
-    }
+    await this.clearDeliveredNotes(userId, session, turn);
 
     const reply = parseTutorReply(result.fullText);
     if (reply.vocabHighlights.length > 0) {
       this.logger.log(`Vocab from fullText: ${reply.vocabHighlights.map((h) => h.word).join(", ")}`);
     }
-    if (reply.onboardingLevel) {
+    // The onboarding prompt asks for the tag on every reply, so only the first completion counts
+    if (reply.onboardingLevel && session.isOnboarding) {
       await this.authContract.completeOnboarding(userId, reply.onboardingLevel);
+      await this.sessionService.completeOnboarding(userId, reply.onboardingLevel);
       callbacks.onOnboardingComplete?.({ level: reply.onboardingLevel });
     }
     if (reply.speed) {
@@ -450,14 +476,21 @@ export class LessonMaintainer {
     const shown = shownText.trim();
     if (shown) {
       await this.sessionService.appendHistory(userId, ...turn, { role: "assistant", content: `${shown}...` });
-      if (turn.length > 1) {
-        await this.sessionService.setVoiceMismatch(userId, false);
-      }
+      await this.clearDeliveredNotes(userId, session, turn);
     } else {
       // A system note can't be stored without a reply after it; it stays pending for the next turn
       await this.sessionService.appendHistory(userId, { role: "user", content: text });
     }
     await this.saveTurnRecords(userId, session, text, shown ? `${shown}...` : null);
+  }
+
+  private async clearDeliveredNotes(userId: string, session: LessonSession, turn: LlmMessage[]) {
+    if (turn.length > 1) {
+      await this.sessionService.clearDeliveredNotes(userId, {
+        voiceMismatch: session.voiceMismatch ?? false,
+        onboardingNote: Boolean(session.onboardingNoteLevel),
+      });
+    }
   }
 
   private async saveTurnRecords(userId: string, session: LessonSession, text: string, tutorText: string | null) {
@@ -481,12 +514,47 @@ export class LessonMaintainer {
     callbacks.onEnd({ fullText: SAFETY_RESPONSE, tokens: NO_USAGE });
   }
 
+  // Called when the student's last connection closes. Without it, a lesson left by closing the
+  // tab stays active forever and never gets its summary, vocabulary and progress.
+  async scheduleFinalize(userId: string) {
+    const session = await this.sessionService.get(userId);
+    if (!session) {
+      return;
+    }
+    const jobId = finalizeJobId(session.lessonId);
+    // A finished or failed job with the same id would make this add a silent no-op
+    await this.finalizeQueue.remove(jobId).catch(() => 0);
+    await this.finalizeQueue.add(
+      "finalize",
+      { userId, lessonId: session.lessonId, scheduledAt: Date.now() },
+      { ...RETRIED_JOB, jobId, delay: FINALIZE_AFTER_MS },
+    );
+  }
+
+  async cancelFinalize(lessonId: string) {
+    await this.finalizeQueue.remove(finalizeJobId(lessonId));
+  }
+
+  // Returns false when the lesson was already ended, replaced by a newer one, or resumed after the
+  // job was scheduled (removing the job can fail once it has started running).
+  async finalizeAbandonedLesson(userId: string, lessonId: string, scheduledAt: number): Promise<boolean> {
+    const session = await this.sessionService.get(userId);
+    if (session?.lessonId !== lessonId || (session.lastSeenAt ?? 0) > scheduledAt) {
+      return false;
+    }
+    await this.endLesson(lessonId, session.history);
+    await this.sessionService.delete(userId);
+    return true;
+  }
+
   async endLesson(lessonId: string, history: LlmMessage[]) {
     await this.lessonRepository.complete(lessonId, {});
 
-    await this.postLessonQueue.add("process", {
-      lessonId,
-      conversationHistory: toTranscript(history),
-    });
+    // One summary per lesson, even if it is ended twice (the button, then the finalize job)
+    await this.postLessonQueue.add(
+      "process",
+      { lessonId, conversationHistory: toTranscript(history) },
+      { ...RETRIED_JOB, jobId: `post-lesson-${lessonId}` },
+    );
   }
 }

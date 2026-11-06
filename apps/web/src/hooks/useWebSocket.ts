@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import type { LessonEventData } from "./lesson/handleLessonEvent";
+import { createLogger } from "./logger";
 import { useCallbackRef } from "./useCallbackRef";
 
 interface UseWebSocketOptions {
@@ -8,6 +9,8 @@ interface UseWebSocketOptions {
   token: string | null;
   onEvent: (event: string, data: LessonEventData) => void;
 }
+
+const log = createLogger("ws");
 
 export function useWebSocket({ url, token, onEvent }: UseWebSocketOptions) {
   const socketRef = useRef<Socket | null>(null);
@@ -30,8 +33,10 @@ export function useWebSocket({ url, token, onEvent }: UseWebSocketOptions) {
     socket.on("disconnect", () => {
       setConnected(false);
     });
-    socket.on("connect_error", (_err) => {
-      onEventRef.current("error", { message: "Connection failed" });
+    // socket.io keeps retrying after a failed attempt (an API redeploy, a network blip); the screen
+    // shows "connecting" meanwhile. Errors that end the lesson come from the server as `fatal`.
+    socket.on("connect_error", (err) => {
+      log("connect failed, retrying:", err.message);
     });
 
     const events = [

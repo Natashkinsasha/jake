@@ -9,7 +9,7 @@ import { MatchingExercise } from "./MatchingExercise";
 interface ChatHistoryProps {
   messages: ChatMessage[];
   isThinking: boolean;
-  isTutorActive?: boolean;
+  isSpeaking?: boolean;
   lessonId?: string | null;
   onVocabSaved?: (word: string) => void;
   onExerciseSubmit?: (exerciseId: string, answers: Array<{ word: string; definition: string }>) => void;
@@ -224,7 +224,7 @@ function MessageBubble({
 export function ChatHistory({
   messages,
   isThinking,
-  isTutorActive = false,
+  isSpeaking = false,
   lessonId,
   onVocabSaved,
   onExerciseSubmit,
@@ -247,14 +247,17 @@ export function ChatHistory({
   }, []);
 
   // Only auto-scroll if user hasn't scrolled up to read old messages
+  const messageCount = messages.length;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: a new message or the thinking dots trigger the scroll
   useEffect(() => {
     if (isNearBottomRef.current) {
       scrollRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, []);
+  }, [messageCount, isThinking]);
 
   // Keep scrolled to bottom during text reveal (only if user hasn't scrolled up)
-  const _lastMessageText = messages.at(-1)?.text;
+  const lastMessageText = messages.at(-1)?.text;
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the revealed text triggers the scroll
   useEffect(() => {
     if (isNearBottomRef.current) {
       const el = containerRef.current;
@@ -262,7 +265,7 @@ export function ChatHistory({
         el.scrollTop = el.scrollHeight;
       }
     }
-  }, []);
+  }, [lastMessageText]);
 
   return (
     <div ref={containerRef} onScroll={handleScroll} className="flex-1 space-y-3 overflow-y-auto px-4 pb-3">
@@ -295,7 +298,7 @@ export function ChatHistory({
       })}
 
       {/* Thinking indicator — only when not already speaking */}
-      {isThinking && !isTutorActive && (
+      {isThinking && !isSpeaking && (
         <div className="flex animate-fade-in justify-start">
           <div className="rounded-2xl rounded-bl-sm border border-white/[0.06] bg-white/[0.07] px-4 py-2.5 backdrop-blur-sm">
             <ThinkingDots />
