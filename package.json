@@ -31,12 +31,23 @@
       "esbuild": ">=0.25.0",
       "glob": ">=10.5.0",
       "express-rate-limit": ">=8.2.2",
-      "tar": ">=7.5.10",
+      "tar": ">=7.5.19",
       "serialize-javascript": ">=7.0.3",
       "lodash": ">=4.17.23",
       "webpack": ">=5.104.1",
       "@tootallnate/once": ">=3.0.1",
-      "tmp": ">=0.2.4"
+      "tmp": ">=0.2.4",
+      "proxy-addr": "^2.0.8",
+      "protobufjs@7": "^7.5.5",
+      "protobufjs@8": "^8.0.1"
+    },
+    "auditConfig": {
+      "ignoreGhsas": [
+        "GHSA-72c6-fx6q-fr5w",
+        "GHSA-p293-qw3h-jr36",
+        "GHSA-2xp9-vwfh-vxw4",
+        "GHSA-2464-fhr4-w9xw"
+      ]
     }
   },
   "volta": {
