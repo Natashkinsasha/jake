@@ -69,6 +69,7 @@ function handleLessonResumed(data: LessonEventData, refs: LessonRefs, setState: 
     status: "idle",
     lessonEnded: false,
     error: null,
+    notice: null,
     startedAt: d.startedAt ?? null,
   });
 }
