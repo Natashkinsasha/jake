@@ -34,6 +34,7 @@ export function LessonScreen({ token }: LessonScreenProps) {
     startedAt,
     lessonEnded: serverLessonEnded,
     error: lessonError,
+    notice,
     ttsError,
     sendText,
     sendVoiceSample,
@@ -211,7 +212,14 @@ export function LessonScreen({ token }: LessonScreenProps) {
     }
   }, [stt.error, showToast]);
 
-  // Error — go back to dashboard
+  // A failed reply or a rejected request: tell the student, the lesson goes on
+  useEffect(() => {
+    if (notice) {
+      showToast(notice.message, "error");
+    }
+  }, [notice, showToast]);
+
+  // Fatal error — go back to dashboard
   useEffect(() => {
     if (lessonError) {
       stt.disable();
@@ -267,7 +275,7 @@ export function LessonScreen({ token }: LessonScreenProps) {
       <ChatHistory
         messages={messages}
         isThinking={status === "thinking"}
-        isTutorActive={isTutorActive}
+        isSpeaking={isPlaying || status === "speaking"}
         lessonId={lessonId}
         onExerciseSubmit={submitExerciseAnswer}
         activeExerciseId={activeExercise?.exerciseId}

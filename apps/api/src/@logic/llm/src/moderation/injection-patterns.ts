@@ -3,6 +3,9 @@ interface QuickCheckResult {
   pattern?: string;
 }
 
+// Only phrases that are never ordinary learner speech: a match blocks the message without an LLM
+// check. Role-play requests ("act as a waiter", "pretend you are my boss") are core practice, so
+// anything ambiguous is left to the LLM classifier.
 const INJECTION_PATTERNS: { regex: RegExp; label: string }[] = [
   {
     regex: /ignore\s+(all\s+)?(previous|prior)\s+instructions/i,
@@ -17,26 +20,6 @@ const INJECTION_PATTERNS: { regex: RegExp; label: string }[] = [
     label: "forget instructions",
   },
   {
-    regex: /you\s+are\s+now\s+(a|an|my)\b/i,
-    label: "you are now",
-  },
-  {
-    regex: /act\s+as\s+(a|an|if)\b/i,
-    label: "act as",
-  },
-  {
-    regex: /pretend\s+(you\s+are|to\s+be|you'?re)\b/i,
-    label: "pretend you are",
-  },
-  {
-    regex: /\bDAN\b.+\bmode\b/i,
-    label: "DAN mode",
-  },
-  {
-    regex: /\bjailbreak\b/i,
-    label: "jailbreak",
-  },
-  {
     regex: /reveal\s+(your\s+)?(system\s+)?instructions/i,
     label: "reveal instructions",
   },
@@ -45,16 +28,16 @@ const INJECTION_PATTERNS: { regex: RegExp; label: string }[] = [
     label: "show system prompt",
   },
   {
-    regex: /what\s+(is|are)\s+your\s+(system\s+)?instructions/i,
-    label: "what are your instructions",
-  },
-  {
     regex: /output\s+(your\s+)?(initial|system|original)\s+prompt/i,
     label: "output system prompt",
   },
   {
     regex: /\[\s*system\s*\]/i,
     label: "[system] tag injection",
+  },
+  {
+    regex: /\bDAN\s+mode\b/,
+    label: "DAN mode",
   },
   {
     regex: /\bdo\s+anything\s+now\b/i,

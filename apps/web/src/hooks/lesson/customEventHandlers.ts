@@ -28,7 +28,18 @@ function handleLessonStarted(data: LessonEventData, refs: LessonRefs, setState: 
     refs.emotion.current = d.emotion;
   }
   refs.greetingPlaying.current = true;
-  setState((prev) => ({ ...prev, startedAt: Date.now() }));
+  setState((prev) => {
+    // The socket reconnected after the server ended the old lesson (the student was away too long):
+    // the new lesson starts with an empty chat
+    const replaced = Boolean(prev.lessonId && data.lessonId && prev.lessonId !== data.lessonId);
+    return {
+      ...prev,
+      startedAt: Date.now(),
+      ...(replaced
+        ? { messages: [], notice: { message: "Your previous lesson was saved. Starting a new one.", at: Date.now() } }
+        : {}),
+    };
+  });
 }
 
 function handleLessonResumed(data: LessonEventData, refs: LessonRefs, setState: SetLessonState): void {
@@ -142,7 +153,7 @@ function handleExercise(data: LessonEventData, setState: SetLessonState): void {
   });
 }
 
-function handleExerciseFeedback(data: LessonEventData, refs: LessonRefs, setState: SetLessonState): void {
+function handleExerciseFeedback(data: LessonEventData, setState: SetLessonState): void {
   const d = data as ExtendedData<{
     exerciseId?: string;
     results?: Array<{ word: string; correct: boolean; correctDefinition: string }>;
@@ -164,7 +175,6 @@ function handleExerciseFeedback(data: LessonEventData, refs: LessonRefs, setStat
     }
     return { ...prev, messages };
   });
-  refs.pendingTurns.current = Math.max(0, refs.pendingTurns.current - 1);
 }
 
 /**
@@ -200,7 +210,7 @@ export function handleCustomEvent(
       handleExercise(data, setState);
       return true;
     case "exercise_feedback":
-      handleExerciseFeedback(data, refs, setState);
+      handleExerciseFeedback(data, setState);
       return true;
     default:
       return false;

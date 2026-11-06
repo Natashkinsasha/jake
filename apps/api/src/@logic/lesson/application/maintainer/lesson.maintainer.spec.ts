@@ -41,6 +41,21 @@ class FakeSessions {
   setVoiceMismatch = jest.fn(async (_userId: string, mismatch: boolean) => {
     this.session.voiceMismatch = mismatch;
   });
+  completeOnboarding = jest.fn(async (_userId: string, level: string) => {
+    this.session.isOnboarding = false;
+    this.session.onboardingNoteLevel = level;
+  });
+  clearDeliveredNotes = jest.fn(
+    async (_userId: string, delivered: { voiceMismatch: boolean; onboardingNote: boolean }) => {
+      if (delivered.voiceMismatch) {
+        this.session.voiceMismatch = false;
+      }
+      if (delivered.onboardingNote) {
+        this.session.onboardingNoteLevel = null;
+      }
+    },
+  );
+  delete = jest.fn(async () => undefined);
   updateSpeechSpeed = jest.fn(async () => undefined);
   setActiveExercise = jest.fn(async () => undefined);
   clearActiveExercise = jest.fn(async () => undefined);
@@ -57,6 +72,8 @@ describe("LessonMaintainer", () => {
   let sessions: FakeSessions;
   let messageRepository: { create: jest.Mock };
   let factQueue: { add: jest.Mock };
+  let postLessonQueue: { add: jest.Mock };
+  let finalizeQueue: { add: jest.Mock; remove: jest.Mock };
   let responseService: { generate: jest.Mock };
   let lessonRepository: { createWithGreeting: jest.Mock; findById: jest.Mock };
   let llmCheck: jest.Mock;
@@ -70,6 +87,8 @@ describe("LessonMaintainer", () => {
     sessions = new FakeSessions();
     messageRepository = { create: jest.fn(async () => undefined) };
     factQueue = { add: jest.fn(async () => undefined) };
+    postLessonQueue = { add: jest.fn(async () => undefined) };
+    finalizeQueue = { add: jest.fn(async () => undefined), remove: jest.fn(async () => 1) };
     responseService = { generate: jest.fn() };
     lessonRepository = {
       createWithGreeting: jest.fn(async () => ({ id: "lesson-2" })),
@@ -115,15 +134,16 @@ describe("LessonMaintainer", () => {
 
     maintainer = new LessonMaintainer(
       { completeOnboarding: jest.fn() } as unknown as AuthContract,
-      lessonRepository as unknown as LessonRepository,
+      { ...lessonRepository, complete: jest.fn() } as unknown as LessonRepository,
       messageRepository as unknown as LessonMessageRepository,
       { build: async () => lessonContext } as unknown as LessonContextService,
       responseService as unknown as LessonResponseService,
       pipeline as unknown as StreamingPipelineService,
       sessions as unknown as LessonSessionService,
       moderation as unknown as ModerationService,
-      { add: jest.fn() } as unknown as Queue,
+      postLessonQueue as unknown as Queue,
       factQueue as unknown as Queue,
+      finalizeQueue as unknown as Queue,
     );
   });
 
@@ -295,6 +315,60 @@ describe("LessonMaintainer", () => {
       expect(callbacks.onSpeedChange).toHaveBeenCalledWith("slow");
       expect(callbacks.onEnd).not.toHaveBeenCalled();
       expect(factQueue.add).toHaveBeenCalled();
+    });
+  });
+
+  describe("onboarding", () => {
+    it("completes onboarding once and tells the model on the next turn", async () => {
+      sessions.session.isOnboarding = true;
+      script.fullText = 'Great! <onboarding status="complete" level="B1"/>';
+      await runTurn("I use English at work every day").done;
+
+      script.fullText = 'Sure! <onboarding status="complete" level="B1"/>';
+      await runTurn("Let's talk about travel").done;
+
+      expect(sessions.completeOnboarding).toHaveBeenCalledTimes(1);
+      expect(streamedHistory.slice(-2)).toEqual([
+        { role: "user", content: "Let's talk about travel" },
+        { role: "system", content: expect.stringContaining("level is B1") },
+      ]);
+      expect(sessions.session.onboardingNoteLevel).toBeNull();
+    });
+  });
+
+  describe("abandoned lessons", () => {
+    it("schedules, cancels and runs the finalization of a lesson the student left", async () => {
+      await maintainer.scheduleFinalize("u1");
+      expect(finalizeQueue.remove).toHaveBeenCalledWith("finalize-lesson-1");
+      expect(finalizeQueue.add).toHaveBeenCalledWith(
+        "finalize",
+        { userId: "u1", lessonId: "lesson-1", scheduledAt: expect.any(Number) },
+        expect.objectContaining({ jobId: "finalize-lesson-1", delay: expect.any(Number), attempts: 3 }),
+      );
+
+      await maintainer.cancelFinalize("lesson-1");
+      expect(finalizeQueue.remove).toHaveBeenCalledTimes(2);
+
+      expect(await maintainer.finalizeAbandonedLesson("u1", "lesson-1", Date.now())).toBe(true);
+      expect(postLessonQueue.add).toHaveBeenCalledWith(
+        "process",
+        expect.objectContaining({ lessonId: "lesson-1" }),
+        expect.objectContaining({ jobId: "post-lesson-lesson-1" }),
+      );
+      expect(sessions.delete).toHaveBeenCalledWith("u1");
+    });
+
+    it("leaves a lesson alone once a newer one replaced it", async () => {
+      expect(await maintainer.finalizeAbandonedLesson("u1", "lesson-0", Date.now())).toBe(false);
+      expect(postLessonQueue.add).not.toHaveBeenCalled();
+    });
+
+    it("leaves a lesson alone once the student came back after the job was scheduled", async () => {
+      const scheduledAt = Date.now() - 60_000;
+      sessions.session.lastSeenAt = Date.now();
+
+      expect(await maintainer.finalizeAbandonedLesson("u1", "lesson-1", scheduledAt)).toBe(false);
+      expect(sessions.delete).not.toHaveBeenCalled();
     });
   });
 

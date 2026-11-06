@@ -7,11 +7,14 @@ export interface LessonEventData {
   fullText?: string;
   messageId?: string;
   discarded?: boolean;
+  // error events: fatal ends the lesson screen, turn means the reply in flight failed
+  fatal?: boolean;
+  turn?: boolean;
 }
 
 interface EventContext {
   userSpeaking: boolean;
-  pendingTurns: number;
+  awaitingReply: boolean;
 }
 
 export type LessonAction =
@@ -20,6 +23,7 @@ export type LessonAction =
   | { type: "stream_chunk"; chunkIndex: number; text: string; messageId?: string }
   | { type: "stream_end"; fullText: string; messageId?: string }
   | { type: "stream_discard" }
+  | { type: "turn_error"; message: string; messageId?: string }
   | { type: "discard" };
 
 export function handleLessonEvent(event: string, data: LessonEventData, ctx: EventContext): LessonAction {
@@ -28,7 +32,8 @@ export function handleLessonEvent(event: string, data: LessonEventData, ctx: Eve
       return { type: "set_state", patch: { lessonId: data.lessonId, status: "idle" } };
 
     case "tutor_message": {
-      const shouldDiscard = ctx.userSpeaking || ctx.pendingTurns > 1;
+      // A safety reply to a message the student has already followed up on is stale
+      const shouldDiscard = ctx.userSpeaking || ctx.awaitingReply;
       if (shouldDiscard) {
         return { type: "discard" };
       }
@@ -77,8 +82,16 @@ export function handleLessonEvent(event: string, data: LessonEventData, ctx: Eve
     case "lesson_ended":
       return { type: "set_state", patch: { status: "idle", lessonEnded: true } };
 
-    case "error":
-      return { type: "set_state", patch: { status: "idle", error: data.message ?? "Something went wrong" } };
+    case "error": {
+      const message = data.message ?? "Something went wrong";
+      if (data.fatal) {
+        return { type: "set_state", patch: { status: "idle", error: message } };
+      }
+      if (data.turn) {
+        return { type: "turn_error", message, messageId: data.messageId };
+      }
+      return { type: "set_state", patch: { notice: { message, at: Date.now() } } };
+    }
 
     default:
       return { type: "discard" };
