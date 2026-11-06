@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import type { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
+import { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
 import { and, desc, eq, gt, isNull, or } from "drizzle-orm";
 import type { MemoryFactEntity } from "../../domain/entity/memory-fact.entity";
 import { MemoryFactFactory } from "../factory/memory-fact.factory";

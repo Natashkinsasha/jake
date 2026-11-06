@@ -1,6 +1,6 @@
-import type { RedisService } from "@liaoliaots/nestjs-redis";
+import { RedisService } from "@liaoliaots/nestjs-redis";
 import { Injectable } from "@nestjs/common";
-import type { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
+import { AppDrizzleTransactionHost } from "@shared/shared-drizzle-pg/app-drizzle-transaction-host";
 import { sql } from "drizzle-orm";
 import type Redis from "ioredis";
 

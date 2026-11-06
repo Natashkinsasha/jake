@@ -1,17 +1,17 @@
 import { type PostLessonLlmResponse, PostLessonLlmResponseSchema } from "@jake/shared";
-import type { EmbeddingProvider, LlmProvider } from "@lib/provider/src";
+import { EmbeddingProvider, LlmProvider } from "@lib/provider/src";
 import { Processor } from "@nestjs/bullmq";
 import { Logger } from "@nestjs/common";
 import { ClsWorkerHost } from "@shared/shared-cls/cls-worker-host";
 import { Transaction } from "@shared/shared-cls/transaction";
 import { QUEUE_NAMES } from "@shared/shared-job/queue-names";
 import type { Job } from "bullmq";
-import type { ClsService } from "nestjs-cls";
-import type { AuthContract } from "../../../auth/contract/auth.contract";
-import type { MemoryContract } from "../../../memory/contract/memory.contract";
-import type { ProgressContract } from "../../../progress/contract/progress.contract";
-import type { VocabularyContract } from "../../../vocabulary/contract/vocabulary.contract";
-import type { LessonRepository } from "../repository/lesson.repository";
+import { ClsService } from "nestjs-cls";
+import { AuthContract } from "../../../auth/contract/auth.contract";
+import { MemoryContract } from "../../../memory/contract/memory.contract";
+import { ProgressContract } from "../../../progress/contract/progress.contract";
+import { VocabularyContract } from "../../../vocabulary/contract/vocabulary.contract";
+import { LessonRepository } from "../repository/lesson.repository";
 
 const SUMMARY_PROMPT = `Analyze the full lesson conversation and generate a structured summary.
 Return ONLY valid JSON:
@@ -137,8 +137,7 @@ export class PostLessonBullHandler extends ClsWorkerHost {
       SUMMARY_PROMPT,
       [{ role: "user", content: historyText }],
       PostLessonLlmResponseSchema,
-      undefined,
-      "post-lesson.summary",
+      { spanName: "post-lesson.summary" },
     );
   }
 }

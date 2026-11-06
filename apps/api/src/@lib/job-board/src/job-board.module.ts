@@ -5,10 +5,10 @@ import type { FastifyBasicAuthOptions } from "@fastify/basic-auth";
 import basicAuth from "@fastify/basic-auth";
 import type { DynamicModule, ModuleMetadata, NestModule, Type } from "@nestjs/common";
 import { HttpStatus, Module, UnauthorizedException } from "@nestjs/common";
-import type { HttpAdapterHost, ModuleRef } from "@nestjs/core";
+import { HttpAdapterHost, ModuleRef } from "@nestjs/core";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 
-import type { QueueRegistryService } from "../../job/src";
+import { QueueRegistryService } from "../../job/src";
 
 export interface JobBoardModuleOptions {
   route: string;

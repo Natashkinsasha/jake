@@ -1,136 +1,171 @@
 import type Anthropic from "@anthropic-ai/sdk";
 import { ANTHROPIC_CLIENT } from "@lib/anthropic/src";
-import type { LlmMessage, LlmResponse, LlmStreamCallbacks } from "@lib/provider/src";
-import { LlmProvider } from "@lib/provider/src";
+import type { LlmMessage, LlmRequestOptions, LlmResponse, LlmStreamCallbacks, LlmTier } from "@lib/provider/src";
+import { LlmProvider, LlmRefusalError } from "@lib/provider/src";
 import { Inject, Injectable, Logger } from "@nestjs/common";
 import type { ZodSchema } from "zod";
-import { zodToJsonSchema } from "zod-to-json-schema";
 import { withSpan } from "./llm-tracing";
+import { toStructuredOutputSchema } from "./structured-output-schema";
+
+type Effort = "low" | "medium" | "high";
+type ThinkingConfig = { type: "between_tools" } | { type: "disabled" };
+
+interface ModelProfile {
+  model: string;
+  thinking: ThinkingConfig;
+  effort: Effort;
+}
+
+// Voice replies need a short time to first token: no extended thinking, low effort.
+// between_tools is the lowest thinking setting on Sonnet 5.5 (it rejects "disabled");
+// Haiku 5.5 accepts "disabled" at effort high or below.
+const MODEL_PROFILES: Record<LlmTier, ModelProfile> = {
+  main: { model: "claude-sonnet-5-5", thinking: { type: "between_tools" }, effort: "low" },
+  fast: { model: "claude-haiku-5-5", thinking: { type: "disabled" }, effort: "low" },
+};
+
+// Request fields newer than the pinned SDK types (@anthropic-ai/sdk 0.39):
+// thinking.between_tools, output_config and mid-conversation system messages.
+export interface AnthropicMessageParam {
+  role: LlmMessage["role"];
+  content: string | Anthropic.TextBlockParam[];
+}
+
+interface MessageRequest {
+  model: string;
+  max_tokens: number;
+  thinking: ThinkingConfig;
+  output_config: { effort: Effort; format?: { type: "json_schema"; schema: Record<string, unknown> } };
+  system: Anthropic.TextBlockParam[];
+  messages: AnthropicMessageParam[];
+}
+
+const EPHEMERAL = { type: "ephemeral" } as const;
+
+// Drops what the API would reject (empty turns, system notes out of place) and, for multi-turn
+// chats, marks the last user message as a cache breakpoint. The breakpoint stays on the user
+// message, not on a trailing system note, so the cached prefix is always part of stored history.
+export function toAnthropicMessages(messages: LlmMessage[], cacheConversation: boolean): AnthropicMessageParam[] {
+  const nonEmpty = messages.filter((m) => m.content.trim() !== "");
+  const result: AnthropicMessageParam[] = nonEmpty
+    .filter(
+      (m, i) =>
+        m.role !== "system" ||
+        (nonEmpty[i - 1]?.role === "user" && (i === nonEmpty.length - 1 || nonEmpty[i + 1]?.role === "assistant")),
+    )
+    .map((m) => ({ role: m.role, content: m.content }));
+
+  if (cacheConversation) {
+    for (let i = result.length - 1; i >= 0; i--) {
+      const message = result[i];
+      if (message?.role === "user" && typeof message.content === "string") {
+        result[i] = { role: "user", content: [{ type: "text", text: message.content, cache_control: EPHEMERAL }] };
+        break;
+      }
+    }
+  }
+  return result;
+}
+
+function textOf(content: Anthropic.ContentBlock[]): string {
+  return content
+    .filter((block): block is Anthropic.TextBlock => block.type === "text")
+    .map((block) => block.text)
+    .join("");
+}
+
+function toResponse(
+  text: string,
+  usage: Anthropic.Usage | null,
+  outputTokens: number,
+  stopReason: string | null,
+): LlmResponse {
+  return {
+    text,
+    inputTokens: usage?.input_tokens ?? 0,
+    outputTokens,
+    cacheReadInputTokens: usage?.cache_read_input_tokens ?? 0,
+    cacheCreationInputTokens: usage?.cache_creation_input_tokens ?? 0,
+    refused: stopReason === "refusal",
+  };
+}
+
+function formatUsage(r: LlmResponse): string {
+  return `input=${r.inputTokens}, cacheRead=${r.cacheReadInputTokens}, cacheWrite=${r.cacheCreationInputTokens}, output=${r.outputTokens}`;
+}
 
 @Injectable()
 export class AnthropicLlmProvider extends LlmProvider {
   private readonly logger = new Logger(AnthropicLlmProvider.name);
-  private readonly MODEL = "claude-sonnet-4-20250514";
 
   constructor(@Inject(ANTHROPIC_CLIENT) private client: Anthropic) {
     super();
   }
 
-  async generate(
-    systemPrompt: string,
-    messages: LlmMessage[],
-    maxTokens = 1024,
-    spanName?: string,
-  ): Promise<LlmResponse> {
-    const doGenerate = async (): Promise<LlmResponse> => {
-      this.logger.debug(`LLM request: model=${this.MODEL}, maxTokens=${maxTokens}, messages=${messages.length}`);
+  async generate(systemPrompt: string, messages: LlmMessage[], options?: LlmRequestOptions): Promise<LlmResponse> {
+    const profile = MODEL_PROFILES[options?.tier ?? "main"];
+    const request = this.buildRequest(profile, systemPrompt, messages, options?.maxTokens ?? 1024, options);
 
-      try {
-        const response = await this.client.messages.create({
-          model: this.MODEL,
-          max_tokens: maxTokens,
-          system: [{ type: "text" as const, text: systemPrompt, cache_control: { type: "ephemeral" as const } }],
-          messages,
-        });
-
-        const text = response.content
-          .filter((block): block is Anthropic.TextBlock => block.type === "text")
-          .map((block) => block.text)
-          .join("");
-
-        this.logger.debug(
-          `LLM response: inputTokens=${response.usage.input_tokens}, outputTokens=${response.usage.output_tokens}`,
-        );
-
-        return {
-          text,
-          inputTokens: response.usage.input_tokens,
-          outputTokens: response.usage.output_tokens,
-        };
-      } catch (error) {
-        this.logger.error(`LLM request failed: ${error instanceof Error ? error.message : String(error)}`);
-        throw error;
-      }
-    };
-
-    if (!spanName) {
-      return doGenerate();
-    }
-
-    return withSpan(spanName, { provider: "anthropic", model: this.MODEL, method: "generate" }, doGenerate, (res) => ({
-      input_tokens: res.inputTokens,
-      output_tokens: res.outputTokens,
-    }));
+    return this.call(options?.spanName, "generate", request, async () => {
+      const response = await this.client.messages.create(
+        request as unknown as Anthropic.MessageCreateParamsNonStreaming,
+      );
+      const result = toResponse(
+        textOf(response.content),
+        response.usage,
+        response.usage.output_tokens,
+        response.stop_reason,
+      );
+      return { response: result, value: result };
+    });
   }
 
   async generateStream(
     systemPrompt: string,
     messages: LlmMessage[],
     callbacks: LlmStreamCallbacks,
-    options?: { maxTokens?: number; signal?: AbortSignal; spanName?: string },
+    options?: LlmRequestOptions & { signal?: AbortSignal },
   ): Promise<LlmResponse> {
-    const doStream = async (): Promise<LlmResponse> => {
-      const maxTokens = options?.maxTokens ?? 1024;
-      this.logger.debug(`LLM stream request: model=${this.MODEL}, maxTokens=${maxTokens}, messages=${messages.length}`);
+    const profile = MODEL_PROFILES[options?.tier ?? "main"];
+    const request = this.buildRequest(profile, systemPrompt, messages, options?.maxTokens ?? 1024, options);
+    const signal = options?.signal;
 
-      try {
-        const stream = await this.client.messages.create({
-          model: this.MODEL,
-          max_tokens: maxTokens,
-          system: [{ type: "text" as const, text: systemPrompt, cache_control: { type: "ephemeral" as const } }],
-          messages,
-          stream: true,
-        });
+    return this.call(
+      options?.spanName,
+      "generateStream",
+      request,
+      async () => {
+        const stream = await this.client.messages.create(
+          { ...request, stream: true } as unknown as Anthropic.MessageCreateParamsStreaming,
+          { signal },
+        );
 
-        let fullText = "";
-        let inputTokens = 0;
+        let text = "";
+        let usage: Anthropic.Usage | null = null;
         let outputTokens = 0;
+        let stopReason: string | null = null;
 
         for await (const event of stream) {
-          if (options?.signal?.aborted) {
+          if (signal?.aborted) {
             break;
           }
 
           if (event.type === "message_start") {
-            inputTokens = event.message.usage.input_tokens;
-            outputTokens = event.message.usage.output_tokens;
+            usage = event.message.usage;
           } else if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
-            fullText += event.delta.text;
+            text += event.delta.text;
             callbacks.onText(event.delta.text);
           } else if (event.type === "message_delta") {
+            stopReason = event.delta.stop_reason;
             outputTokens = event.usage.output_tokens;
           }
         }
 
-        const result: LlmResponse = {
-          text: fullText,
-          inputTokens,
-          outputTokens,
-        };
-
-        this.logger.debug(`LLM stream done: inputTokens=${result.inputTokens}, outputTokens=${result.outputTokens}`);
+        const result = toResponse(text, usage, outputTokens, stopReason);
         callbacks.onDone(result);
-
-        return result;
-      } catch (error) {
-        if (options?.signal?.aborted) {
-          this.logger.debug("LLM stream aborted");
-          throw error;
-        }
-        this.logger.error(`LLM stream failed: ${error instanceof Error ? error.message : String(error)}`);
-        throw error;
-      }
-    };
-
-    if (!options?.spanName) {
-      return doStream();
-    }
-
-    return withSpan(
-      options.spanName,
-      { provider: "anthropic", model: this.MODEL, method: "generateStream" },
-      doStream,
-      (res) => ({ input_tokens: res.inputTokens, output_tokens: res.outputTokens }),
+        return { response: result, value: result };
+      },
+      signal,
     );
   }
 
@@ -138,105 +173,109 @@ export class AnthropicLlmProvider extends LlmProvider {
     systemPrompt: string,
     messages: LlmMessage[],
     schema: ZodSchema<T>,
-    maxTokens = 2048,
-    spanName?: string,
+    options?: LlmRequestOptions,
   ): Promise<T> {
-    const doGenerateJson = async (): Promise<T> => {
-      // biome-ignore lint/suspicious/noExplicitAny: existing code
-      const jsonSchema = zodToJsonSchema(schema as any, { target: "openApi3" });
-      this.logger.debug(`LLM tool_use request: model=${this.MODEL}, maxTokens=${maxTokens}`);
+    const profile = MODEL_PROFILES[options?.tier ?? "main"];
+    const request = this.buildRequest(profile, systemPrompt, messages, options?.maxTokens ?? 4096, options);
+    request.output_config.format = { type: "json_schema", schema: toStructuredOutputSchema(schema) };
 
+    return this.call(options?.spanName, "generateJson", request, async () => {
+      const response = await this.client.messages.create(
+        request as unknown as Anthropic.MessageCreateParamsNonStreaming,
+      );
+      const stopReason: string | null = response.stop_reason;
+      const result = toResponse(textOf(response.content), response.usage, response.usage.output_tokens, stopReason);
+
+      if (result.refused) {
+        throw new LlmRefusalError("LLM refused to return structured output");
+      }
+      if (stopReason === "max_tokens") {
+        throw new Error(`LLM structured output was cut off at max_tokens=${request.max_tokens}`);
+      }
+      return { response: result, value: this.parseJson(result.text, schema) };
+    });
+  }
+
+  private buildRequest(
+    profile: ModelProfile,
+    systemPrompt: string,
+    messages: LlmMessage[],
+    maxTokens: number,
+    options: LlmRequestOptions | undefined,
+  ): MessageRequest {
+    return {
+      model: profile.model,
+      max_tokens: maxTokens,
+      thinking: profile.thinking,
+      output_config: { effort: profile.effort },
+      system: [{ type: "text", text: systemPrompt, cache_control: EPHEMERAL }],
+      messages: toAnthropicMessages(messages, options?.cacheConversation ?? false),
+    };
+  }
+
+  // Logs, traces (with cache usage) and error-reports one API call.
+  private async call<T>(
+    spanName: string | undefined,
+    method: string,
+    request: MessageRequest,
+    fn: () => Promise<{ response: LlmResponse; value: T }>,
+    signal?: AbortSignal,
+  ): Promise<T> {
+    const run = async () => {
+      this.logger.debug(
+        `LLM ${method} request: model=${request.model}, maxTokens=${request.max_tokens}, messages=${request.messages.length}`,
+      );
       try {
-        const response = await this.client.messages.create({
-          model: this.MODEL,
-          max_tokens: maxTokens,
-          system: [{ type: "text" as const, text: systemPrompt, cache_control: { type: "ephemeral" as const } }],
-          messages,
-          tools: [
-            {
-              name: "output",
-              description: "Return the structured result",
-              input_schema: jsonSchema as Anthropic.Tool.InputSchema,
-            },
-          ],
-          tool_choice: { type: "tool", name: "output" },
-        });
-
-        const toolBlock = response.content.find((block): block is Anthropic.ToolUseBlock => block.type === "tool_use");
-        if (!toolBlock) {
-          throw new Error("No tool_use block in LLM response");
+        const outcome = await fn();
+        this.logger.debug(`LLM ${method} done: ${formatUsage(outcome.response)}`);
+        if (outcome.response.refused) {
+          this.logger.warn(`LLM ${method} refused: model=${request.model}`);
         }
-
-        this.logger.debug(
-          `LLM tool_use response: inputTokens=${response.usage.input_tokens}, outputTokens=${response.usage.output_tokens}`,
-        );
-
-        // LLMs sometimes return stringified JSON instead of an object
-        // biome-ignore lint/suspicious/noExplicitAny: existing code
-        let raw: any = toolBlock.input;
-        if (typeof raw === "string") {
-          try {
-            raw = JSON.parse(raw);
-          } catch (parseError) {
-            // biome-ignore lint/nursery/useErrorCause: ES2021 target
-            throw new Error(`LLM returned a non-JSON string instead of an object: ${parseError}`);
-          }
-        }
-
-        let sanitized = this.sanitizeNullStrings(raw);
-        let result = schema.safeParse(sanitized);
-
-        // LLMs sometimes return a bare value instead of a single-element array
-        if (!result.success) {
-          const arrayIssues = result.error.issues.filter((i) => i.code === "invalid_type" && i.expected === "array");
-          if (arrayIssues.length > 0) {
-            sanitized = this.coerceToArrays(
-              sanitized,
-              arrayIssues.map((i) => i.path),
-            );
-            result = schema.safeParse(sanitized);
-          }
-        }
-
-        if (!result.success) {
-          this.logger.error(`LLM tool_use validation failed: ${JSON.stringify(result.error.issues)}`);
-          throw new Error(`LLM response validation failed: ${result.error.issues.map((i) => i.message).join(", ")}`);
-        }
-
-        return result.data;
+        return outcome;
       } catch (error) {
-        this.logger.error(`LLM tool_use failed: ${error instanceof Error ? error.message : String(error)}`);
+        if (signal?.aborted) {
+          this.logger.debug(`LLM ${method} aborted`);
+        } else {
+          this.logger.error(`LLM ${method} failed: ${error instanceof Error ? error.message : String(error)}`);
+        }
         throw error;
       }
     };
 
     if (!spanName) {
-      return doGenerateJson();
+      return (await run()).value;
     }
 
-    return withSpan(spanName, { provider: "anthropic", model: this.MODEL, method: "generateJson" }, doGenerateJson);
+    const outcome = await withSpan(
+      spanName,
+      { provider: "anthropic", model: request.model, method },
+      run,
+      ({ response }) => ({
+        input_tokens: response.inputTokens,
+        cache_read_input_tokens: response.cacheReadInputTokens,
+        cache_creation_input_tokens: response.cacheCreationInputTokens,
+        output_tokens: response.outputTokens,
+        refused: response.refused,
+      }),
+    );
+    return outcome.value;
   }
 
-  // Wrap bare values in arrays at the specified paths
-  // biome-ignore lint/suspicious/noExplicitAny: existing code
-  private coerceToArrays(obj: any, paths: (string | number)[][]): any {
-    const copy = JSON.parse(JSON.stringify(obj));
-    for (const path of paths) {
-      // biome-ignore lint/suspicious/noExplicitAny: existing code
-      let target: any = copy;
-      for (let i = 0; i < path.length - 1; i++) {
-        const segment = path[i];
-        target = segment != null ? target?.[segment] : undefined;
-      }
-      const key = path.at(-1);
-      if (key == null) {
-        continue;
-      }
-      if (target != null && !Array.isArray(target[key])) {
-        target[key] = target[key] == null ? [] : [target[key]];
-      }
+  private parseJson<T>(text: string, schema: ZodSchema<T>): T {
+    let raw: unknown;
+    try {
+      raw = JSON.parse(text);
+    } catch (parseError) {
+      // biome-ignore lint/nursery/useErrorCause: ES2021 target
+      throw new Error(`LLM returned invalid JSON: ${parseError}`);
     }
-    return copy;
+
+    const result = schema.safeParse(this.sanitizeNullStrings(raw));
+    if (!result.success) {
+      this.logger.error(`LLM structured output validation failed: ${JSON.stringify(result.error.issues)}`);
+      throw new Error(`LLM response validation failed: ${result.error.issues.map((i) => i.message).join(", ")}`);
+    }
+    return result.data;
   }
 
   // LLMs sometimes return "null" string instead of JSON null

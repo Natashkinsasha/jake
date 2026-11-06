@@ -41,13 +41,33 @@ export function parseEmotion(text: string): { emotion: Emotion; text: string } {
   }
 
   const emotionName = match[1] as string;
-  const isValid = EMOTIONS.includes(emotionName as Emotion);
   const cleanText = text.replace(EMOTION_RE, "").trim();
 
   return {
-    emotion: isValid ? (emotionName as Emotion) : "neutral",
+    emotion: resolveEmotion(emotionName),
     text: cleanText,
   };
+}
+
+// Other forms of listed words the model sometimes writes ("encouraged" for "encouraging")
+const EMOTION_ALIASES: Record<string, Emotion> = {
+  encouraged: "encouraging",
+  encourage: "encouraging",
+  empathic: "empathetic",
+  empathy: "empathetic",
+  excitement: "excited",
+  exciting: "excited",
+  curiosity: "curious",
+  surprise: "surprised",
+  pride: "proud",
+  happiness: "happy",
+};
+
+function resolveEmotion(name: string): Emotion {
+  if (EMOTIONS.includes(name as Emotion)) {
+    return name as Emotion;
+  }
+  return EMOTION_ALIASES[name.toLowerCase()] ?? "neutral";
 }
 
 export function getVoiceSettingsForEmotion(emotion: Emotion): VoiceSettings {

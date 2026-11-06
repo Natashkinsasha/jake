@@ -5,13 +5,24 @@ prompts:
     raw: file://prompts/multi-turn.json
 
 providers:
-  - id: anthropic:messages:claude-sonnet-4-20250514
+  # Same model settings as the API's "main" profile (apps/api/src/@logic/llm/src/anthropic-llm.provider.ts)
+  - id: anthropic:messages:claude-sonnet-5-5
     config:
       max_tokens: 512
+      thinking:
+        type: between_tools
+      effort: low
 
 defaultTest:
   options:
-    provider: anthropic:messages:claude-sonnet-4-20250514
+    # Sonnet 5.5 rejects promptfoo's default temperature 0; setting thinking makes promptfoo omit it
+    provider:
+      id: anthropic:messages:claude-sonnet-5-5
+      config:
+        max_tokens: 2048
+        thinking:
+          type: between_tools
+        effort: high
     transform: "output.replace(/^```(?:json)?\\n?/gm, '').replace(/^```$/gm, '').replace(/<emotion>\\w+<\\/emotion>/g, '').trim()"
 
 tests:

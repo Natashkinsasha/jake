@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import type { MemoryEmbeddingRepository } from "../../infrastructure/repository/memory-embedding.repository";
+import { MemoryEmbeddingRepository } from "../../infrastructure/repository/memory-embedding.repository";
 
 @Injectable()
 export class EmotionalContextService {

@@ -13,7 +13,7 @@ Real-time voice-based English tutor powered by AI. Students have natural convers
 | Database | PostgreSQL 16 + pgvector |
 | ORM | Drizzle ORM |
 | Job Queue | BullMQ (Redis 7) |
-| LLM | Anthropic Claude Sonnet 4 |
+| LLM | Anthropic Claude Sonnet 5.5 (lessons), Claude Haiku 5.5 (moderation) |
 | Embeddings | OpenAI `text-embedding-3-small` (1536 dims) |
 | TTS | ElevenLabs `eleven_turbo_v2_5` |
 | STT | Deepgram Nova-3 (client-side streaming) |
@@ -224,7 +224,7 @@ All external AI services are abstracted behind **abstract provider classes** usi
 
 | Abstract class | Contract | Implementation |
 |---------------|----------|----------------|
-| `LlmProvider` | `generate()`, `generateJson<T>()` | `AnthropicLlmProvider` (Claude Sonnet 4) |
+| `LlmProvider` | `generate()`, `generateStream()`, `generateJson<T>()` | `AnthropicLlmProvider` (Claude Sonnet 5.5 / Haiku 5.5) |
 | `EmbeddingProvider` | `embed()` | `OpenAiEmbeddingProvider` (text-embedding-3-small) |
 | `SttProvider` | `transcribe()` | `DeepgramSttProvider` (Nova-3) |
 | `TtsProvider` | `synthesize()` | `ElevenLabsTtsProvider` (eleven_turbo_v2_5) |
@@ -322,7 +322,7 @@ docker image prune -f
 
 | Service | Model | Purpose |
 |---------|-------|---------|
-| Anthropic | Claude Sonnet 4 | Conversation, fact extraction, lesson summary |
+| Anthropic | Claude Sonnet 5.5, Claude Haiku 5.5 | Conversation, fact extraction, lesson summary; moderation (Haiku) |
 | OpenAI | `text-embedding-3-small` | 1536-dim embeddings for semantic memory |
 | ElevenLabs | `eleven_turbo_v2_5` | Text-to-speech (MP3) |
 | Deepgram | Nova-3 | Real-time speech-to-text (client WebSocket) |

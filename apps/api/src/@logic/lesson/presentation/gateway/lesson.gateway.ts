@@ -1,6 +1,5 @@
-import type { LlmMessage } from "@lib/provider/src";
 import { Logger, UseGuards } from "@nestjs/common";
-import type { JwtService } from "@nestjs/jwt";
+import { JwtService } from "@nestjs/jwt";
 import {
   ConnectedSocket,
   MessageBody,
@@ -10,19 +9,30 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from "@nestjs/websockets";
+import { EnvService } from "@shared/shared-config/env.service";
 import { WsAuthGuard } from "@shared/shared-ws/ws-auth.guard";
-import type { Server, Socket } from "socket.io";
+import { type Server, Socket } from "socket.io";
 import { z } from "zod";
-import { type LessonMaintainer, toSpeechSpeed } from "../../application/maintainer/lesson.maintainer";
-import type { LessonSessionService } from "../../application/service/lesson-session.service";
-import type { VoicePrintService } from "../../application/service/voice-print.service";
+import { LessonMaintainer, toSpeechSpeed } from "../../application/maintainer/lesson.maintainer";
+import { LessonSessionService } from "../../application/service/lesson-session.service";
+import { toTranscript } from "../../application/service/tutor-reply";
+import { VoicePrintService } from "../../application/service/voice-print.service";
 
 interface SocketData {
   userId: string;
   voiceSampleProcessed?: boolean;
 }
 
+interface ActiveTurn {
+  clientId: string;
+  controller: AbortController;
+  // Resolves once the maintainer has stored the turn, however it ended
+  settled: Promise<void>;
+}
+
 const MAX_VOICE_SAMPLE_BYTES = 512 * 1024; // 512KB
+
+const noop = () => undefined;
 
 const wsTextMessageSchema = z.object({
   text: z.string().min(1),
@@ -49,9 +59,8 @@ const wsExerciseAnswerSchema = z.object({
 @UseGuards(WsAuthGuard)
 export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(LessonGateway.name);
-  private abortControllers = new Map<string, AbortController>();
-  private sentChunksText = new Map<string, string>();
-  private pendingUserText = new Map<string, string>();
+  // One turn per student, whichever socket it came from: they all share one history
+  private turns = new Map<string, ActiveTurn>();
 
   @WebSocketServer()
   server!: Server;
@@ -61,6 +70,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private sessionService: LessonSessionService,
     private jwtService: JwtService,
     private voicePrintService: VoicePrintService,
+    private env: EnvService,
   ) {}
 
   private getUserId(client: Socket): string {
@@ -98,7 +108,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
           speechSpeed: existingSession.speechSpeed,
           isOnboarding: existingSession.isOnboarding,
           startedAt: existingSession.startedAt,
-          history: existingSession.history.map((m) => ({
+          history: toTranscript(existingSession.history).map((m) => ({
             role: m.role,
             text: m.content,
           })),
@@ -113,7 +123,7 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
         systemPrompt: result.systemPrompt,
         voiceId: result.voiceId,
         speechSpeed: result.speechSpeed,
-        history: [{ role: "assistant", content: result.greeting.text }],
+        history: [{ role: "assistant", content: result.greeting.rawText }],
         startedAt: Date.now(),
         isOnboarding: result.isOnboarding,
       });
@@ -123,7 +133,8 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
         voiceId: result.voiceId,
         speechSpeed: result.speechSpeed,
         ttsModel: result.ttsModel,
-        systemPrompt: result.systemPrompt,
+        // For the debug panel only: the prompt carries the student's facts and the prompt rules
+        ...(this.env.get("NODE_ENV") === "production" ? {} : { systemPrompt: result.systemPrompt }),
         emotion: result.greeting.emotion,
         isOnboarding: result.isOnboarding,
       });
@@ -140,11 +151,11 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
   }
 
-  handleDisconnect(client: Socket) {
-    this.abortControllers.get(client.id)?.abort();
-    this.abortControllers.delete(client.id);
-    this.sentChunksText.delete(client.id);
-    this.pendingUserText.delete(client.id);
+  async handleDisconnect(client: Socket) {
+    // A reconnected socket may already run the next turn; only stop this socket's own
+    if (this.turns.get(this.getUserId(client))?.clientId === client.id) {
+      await this.abortTurn(client);
+    }
   }
 
   @SubscribeMessage("text")
@@ -155,101 +166,12 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    const userId = this.getUserId(client);
-
-    // Cancel any in-flight generation
-    this.abortControllers.get(client.id)?.abort();
-    const abortController = new AbortController();
-    this.abortControllers.set(client.id, abortController);
-
-    const messageId = parsed.data.messageId;
-
-    this.sentChunksText.set(client.id, "");
-    this.pendingUserText.set(client.id, parsed.data.text);
-
-    client.emit("status", { state: "thinking" });
-
-    await this.lessonMaintainer.processTextMessageStreaming(
-      userId,
-      parsed.data.text,
-      {
-        onChunk: (chunk) => {
-          const current = this.sentChunksText.get(client.id) ?? "";
-          const sep = current && !/^[,.\-!?;:'"]/.test(chunk.text) ? " " : "";
-          this.sentChunksText.set(client.id, current + sep + chunk.text);
-          client.emit("tutor_chunk", { ...chunk, messageId });
-        },
-        onEnd: (result) => {
-          this.abortControllers.delete(client.id);
-          this.sentChunksText.delete(client.id);
-          this.pendingUserText.delete(client.id);
-          client.emit("tutor_stream_end", {
-            fullText: result.fullText,
-            messageId,
-          });
-        },
-        onError: (error) => {
-          this.abortControllers.delete(client.id);
-          this.sentChunksText.delete(client.id);
-          this.pendingUserText.delete(client.id);
-          this.logger.error(`Streaming failed: ${error.message}`);
-          client.emit("error", { message: "Something went wrong!" });
-        },
-        onDiscard: (safetyText) => {
-          this.abortControllers.delete(client.id);
-          this.sentChunksText.delete(client.id);
-          this.pendingUserText.delete(client.id);
-          client.emit("tutor_stream_end", { discarded: true, messageId });
-          client.emit("tutor_message", { text: safetyText });
-        },
-        onSpeedChange: (speed) => {
-          client.emit("speed_updated", { speed });
-        },
-        onEmotion: (emotion) => {
-          client.emit("tutor_emotion", { emotion, messageId });
-        },
-        onOnboardingComplete: (data) => {
-          client.emit("onboarding_completed", data);
-        },
-        onVocabHighlight: (highlight) => {
-          this.logger.log(`Emitting vocab_highlight to client: ${JSON.stringify(highlight)}`);
-          client.emit("vocab_highlight", highlight);
-        },
-        onVocabReviewed: (word) => {
-          this.logger.log(`Emitting vocab_reviewed to client: ${word}`);
-          client.emit("vocab_reviewed", { word });
-        },
-        onExercise: (exercise) => {
-          client.emit("exercise", exercise);
-        },
-      },
-      { signal: abortController.signal },
-    );
+    await this.runTurn(client, parsed.data.text, parsed.data.messageId);
   }
 
   @SubscribeMessage("interrupt")
   async handleInterrupt(@ConnectedSocket() client: Socket) {
-    const controller = this.abortControllers.get(client.id);
-    if (controller) {
-      controller.abort();
-      this.abortControllers.delete(client.id);
-
-      const partialText = this.sentChunksText.get(client.id);
-      const userText = this.pendingUserText.get(client.id);
-      this.sentChunksText.delete(client.id);
-      this.pendingUserText.delete(client.id);
-
-      const messages: LlmMessage[] = [];
-      if (userText?.trim()) {
-        messages.push({ role: "user", content: userText.trim() });
-      }
-      if (partialText?.trim()) {
-        messages.push({ role: "assistant", content: `${partialText.trim()}...` });
-      }
-      if (messages.length > 0) {
-        await this.sessionService.appendHistory(this.getUserId(client), ...messages);
-      }
-
+    if (await this.abortTurn(client)) {
       this.logger.debug(`Interrupted streaming for ${client.id}`);
     }
   }
@@ -351,60 +273,101 @@ export class LessonGateway implements OnGatewayConnection, OnGatewayDisconnect {
         ? `[Exercise result: ${score} correct. Mistakes: ${mistakes.join("; ")}]`
         : `[Exercise result: ${score} correct. Perfect score!]`;
 
-    await this.sessionService.appendHistory(userId, { role: "user", content: historyEntry });
     await this.sessionService.clearActiveExercise(userId);
 
-    // Trigger tutor response to comment on the exercise result
-    await this.streamToClient(client, userId, historyEntry);
+    // The result goes to the tutor as the next user message; the turn records it in history
+    await this.runTurn(client, historyEntry);
   }
 
-  private async streamToClient(client: Socket, userId: string, text: string) {
-    const abortController = new AbortController();
-    this.abortControllers.set(client.id, abortController);
-    this.sentChunksText.set(client.id, "");
+  // Streams the tutor's reply to `text`. A reply still in flight is stopped and stored first,
+  // so this request extends the history the student actually heard.
+  private async runTurn(client: Socket, text: string, messageId?: string) {
+    const userId = this.getUserId(client);
+    while (this.turns.has(userId)) {
+      await this.abortTurn(client);
+    }
 
-    await this.lessonMaintainer.processTextMessageStreaming(
+    const controller = new AbortController();
+    client.emit("status", { state: "thinking" });
+
+    const settled = this.lessonMaintainer.processTextMessageStreaming(
       userId,
       text,
       {
         onChunk: (chunk) => {
-          const current = this.sentChunksText.get(client.id) ?? "";
-          const sep = current && !/^[,.\-!?;:'"]/.test(chunk.text) ? " " : "";
-          this.sentChunksText.set(client.id, current + sep + chunk.text);
-          client.emit("tutor_chunk", chunk);
+          client.emit("tutor_chunk", { ...chunk, messageId });
         },
         onEnd: (result) => {
-          this.abortControllers.delete(client.id);
-          this.sentChunksText.delete(client.id);
-          client.emit("tutor_stream_end", { fullText: result.fullText });
+          client.emit("tutor_stream_end", {
+            fullText: result.fullText,
+            messageId,
+          });
         },
         onError: (error) => {
-          this.abortControllers.delete(client.id);
-          this.sentChunksText.delete(client.id);
           this.logger.error(`Streaming failed: ${error.message}`);
+          client.emit("error", { message: "Something went wrong!" });
+        },
+        onDiscard: (safetyText) => {
+          client.emit("tutor_stream_end", { discarded: true, messageId });
+          client.emit("tutor_message", { text: safetyText });
         },
         onSpeedChange: (speed) => {
           client.emit("speed_updated", { speed });
         },
         onEmotion: (emotion) => {
-          client.emit("tutor_emotion", { emotion });
+          client.emit("tutor_emotion", { emotion, messageId });
+        },
+        onOnboardingComplete: (data) => {
+          client.emit("onboarding_completed", data);
         },
         onVocabHighlight: (highlight) => {
+          this.logger.log(`Emitting vocab_highlight to client: ${JSON.stringify(highlight)}`);
           client.emit("vocab_highlight", highlight);
         },
         onVocabReviewed: (word) => {
+          this.logger.log(`Emitting vocab_reviewed to client: ${word}`);
           client.emit("vocab_reviewed", { word });
         },
         onExercise: (exercise) => {
           client.emit("exercise", exercise);
         },
       },
-      { signal: abortController.signal },
+      { signal: controller.signal },
     );
+    const turn: ActiveTurn = { clientId: client.id, controller, settled: settled.then(noop, noop) };
+    this.turns.set(userId, turn);
+
+    try {
+      await settled;
+    } finally {
+      this.forgetTurn(userId, turn);
+    }
+  }
+
+  // Stops the reply in flight and waits until the maintainer has stored that turn, applying the
+  // moderation verdict. Returns false when nothing was in flight.
+  private async abortTurn(client: Socket): Promise<boolean> {
+    const userId = this.getUserId(client);
+    const turn = this.turns.get(userId);
+    if (!turn) {
+      return false;
+    }
+    turn.controller.abort();
+    await turn.settled;
+    this.forgetTurn(userId, turn);
+    return true;
+  }
+
+  private forgetTurn(userId: string, turn: ActiveTurn) {
+    if (this.turns.get(userId) === turn) {
+      this.turns.delete(userId);
+    }
   }
 
   @SubscribeMessage("end_lesson")
   async handleEndLesson(@ConnectedSocket() client: Socket) {
+    // The reply in flight belongs to the lesson: stop it and store it before the summary job
+    await this.abortTurn(client);
     const session = await this.sessionService.get(this.getUserId(client));
     if (!session) {
       return;

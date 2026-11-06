@@ -1,11 +1,11 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import type { JwtService } from "@nestjs/jwt";
+import { JwtService } from "@nestjs/jwt";
 import { Transaction } from "@shared/shared-cls/transaction";
-import type { LessonContract } from "../../../lesson/contract/lesson.contract";
-import type { MemoryContract } from "../../../memory/contract/memory.contract";
-import type { ProgressContract } from "../../../progress/contract/progress.contract";
-import type { VocabularyContract } from "../../../vocabulary/contract/vocabulary.contract";
-import type { UserRepository } from "../../infrastructure/repository/user.repository";
+import { LessonContract } from "../../../lesson/contract/lesson.contract";
+import { MemoryContract } from "../../../memory/contract/memory.contract";
+import { ProgressContract } from "../../../progress/contract/progress.contract";
+import { VocabularyContract } from "../../../vocabulary/contract/vocabulary.contract";
+import { UserRepository } from "../../infrastructure/repository/user.repository";
 import type { GoogleAuthBody } from "../../presentation/dto/body/google-auth.body";
 import type { UpdatePreferencesBody } from "../../presentation/dto/body/update-preferences.body";
 

@@ -1,7 +1,7 @@
 import { type FactExtractionResult, FactExtractionResultSchema } from "@jake/shared";
-import type { LlmMessage, LlmProvider } from "@lib/provider/src";
+import { type LlmMessage, LlmProvider } from "@lib/provider/src";
 import { Injectable } from "@nestjs/common";
-import type { MemoryFactRepository } from "../../infrastructure/repository/memory-fact.repository";
+import { MemoryFactRepository } from "../../infrastructure/repository/memory-fact.repository";
 
 const TEMPORARY_FACT_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
@@ -45,8 +45,7 @@ export class FactExtractionService {
       FACT_EXTRACTION_PROMPT,
       [...history, { role: "user", content: userMessage }],
       FactExtractionResultSchema,
-      undefined,
-      "memory.fact-extraction",
+      { spanName: "memory.fact-extraction" },
     );
 
     for (const fact of result.facts) {

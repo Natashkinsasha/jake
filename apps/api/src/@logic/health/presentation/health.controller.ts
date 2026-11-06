@@ -1,5 +1,5 @@
 import { Controller, Get } from "@nestjs/common";
-import type { HealthMaintainer } from "../application/health.maintainer";
+import { HealthMaintainer } from "../application/health.maintainer";
 
 @Controller("health")
 export class HealthController {

@@ -1,12 +1,12 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
-import type { AuthContract } from "../../../auth/contract/auth.contract";
-import type { MemoryContract } from "../../../memory/contract/memory.contract";
-import type { ProgressContract } from "../../../progress/contract/progress.contract";
+import { AuthContract } from "../../../auth/contract/auth.contract";
+import { MemoryContract } from "../../../memory/contract/memory.contract";
+import { ProgressContract } from "../../../progress/contract/progress.contract";
 import { getTutorProfile } from "../../../tutor/domain/tutor-profiles";
 import type { TutorGender, TutorNationality } from "../../../tutor/domain/tutor-types";
 import { getDefaultVoice, getVoicesByGender } from "../../../tutor/domain/tutor-voices";
-import type { VocabularyContract } from "../../../vocabulary/contract/vocabulary.contract";
-import type { LessonRepository } from "../../infrastructure/repository/lesson.repository";
+import { VocabularyContract } from "../../../vocabulary/contract/vocabulary.contract";
+import { LessonRepository } from "../../infrastructure/repository/lesson.repository";
 import type { LessonContext } from "../dto/lesson-context";
 
 @Injectable()

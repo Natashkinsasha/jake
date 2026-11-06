@@ -21,7 +21,7 @@ AI-powered English tutor with real-time voice lessons. Student speaks → Deepgr
 - **DB**: PostgreSQL 16 (pgvector), Drizzle ORM
 - **Queue**: BullMQ + Redis 7
 - **Auth**: Google OAuth → NextAuth (web) → JWT (API)
-- **AI**: Claude Sonnet 4 (`claude-sonnet-4-20250514`)
+- **AI**: Claude Sonnet 5.5 (`claude-sonnet-5-5`) for lessons and extraction, Claude Haiku 5.5 (`claude-haiku-5-5`) for moderation
 - **TTS**: ElevenLabs (`eleven_turbo_v2_5`)
 - **STT**: Deepgram (`nova-3`) — client-side WebSocket streaming
 - **Embeddings**: OpenAI (`text-embedding-3-small`, 1536 dims)
@@ -130,7 +130,7 @@ Each domain module in `@logic/` follows this structure:
 | **auth**       | Google OAuth, user management, JWT signing                                           |
 | **lesson**     | Real-time voice lessons, WebSocket gateway, audio pipeline                           |
 | **tutor**      | Tutor profiles (personality, voice, system prompt)                                   |
-| **llm**        | AnthropicLlmProvider — `generate()`, `generateStream()`, `generateJson<T>()` w/ Zod. Includes `ModerationService` (regex + LLM safety filter, logged to Langfuse via `withSpan()`) |
+| **llm**        | AnthropicLlmProvider — `generate()`, `generateStream()`, `generateJson<T>()` (structured outputs + Zod). Model profiles per tier (`main`/`fast`) live in `MODEL_PROFILES`. Includes `ModerationService` (regex + LLM safety filter, logged to Langfuse via `withSpan()`) |
 | **voice**      | ElevenLabs TTS (`synthesize()`) + Deepgram STT (`transcribe()`)                     |
 | **embedding**  | OpenAI embeddings (1536-dim vectors)                                                 |
 | **memory**     | Two-tier memory: structured facts + vector embeddings                                |
@@ -170,13 +170,15 @@ SharedConfigModule, SharedDrizzlePgModule, SharedRedisModule, SharedAuthModule, 
 3. Claude generates greeting → ElevenLabs synthesizes → sent as `lesson_started`
 4. User speaks → Deepgram (client-side) transcribes → `text` event sent
 5. Regex pre-filter (instant) → flagged messages get `tutor_message` with safety response
-6. LLM moderation (Haiku) runs in parallel with Sonnet streaming; chunks buffered until moderation resolves. If flagged → discard chunks, send safety response via `tutor_stream_end`
+6. LLM moderation (Haiku) runs in parallel with Sonnet streaming; chunks go out immediately. If moderation flags the message or the model refuses (`stop_reason: "refusal"`) → `tutor_stream_end` with `discarded: true`, then the safety response as `tutor_message`
 7. Streaming: Claude generates response → sentence buffer → TTS per sentence → `tutor_chunk` events → `tutor_stream_end` with full text
 8. On disconnect/end → lesson saved to DB → `post-lesson` BullMQ job runs async (summary, vocabulary, progress, memory)
 
 ### Session
 
-Redis-backed (TTL 2h). Stores: lessonId, systemPrompt, voiceId, speechSpeed, history[].
+Redis-backed (TTL 2h). Stores: lessonId, systemPrompt, voiceId, speechSpeed, history[]. Writes are serialized per user.
+
+`history` is the exact LLM conversation and is append-only: raw tutor replies with control tags, plus `role: "system"` notes after a user message. Clients, the DB and downstream prompts get `toTranscript(history)`.
 
 ## STT (Client-Side Deepgram)
 
@@ -256,3 +258,5 @@ LANGFUSE_BASE_URL=<url>
 5. **WebSocket buffer**: Configured at 10MB (`maxHttpBufferSize`) for base64 audio chunks.
 6. **Transactions**: Use `@Transactional()` decorator with CLS plugin for implicit propagation.
 7. **.env symlink**: Root `.env` is symlinked to `apps/api/.env`.
+8. **No `import type` for injected classes**: Nest DI and `ZodValidationPipe` read `emitDecoratorMetadata`; a type-only import of a constructor dependency or a `@Body()` DTO becomes `Function` at runtime and the app fails to boot (or skips validation). Biome's `useImportType` is off for `apps/api` for this reason.
+9. **Prompt caching**: the system prompt and the conversation up to the last user message are cached. Never edit the system prompt or earlier history mid-lesson: put per-turn notes into a `role: "system"` message after the user message and store it with the turn. Check `cacheRead`/`cacheWrite` in the `LLM ... done` debug logs or the Langfuse span metadata.

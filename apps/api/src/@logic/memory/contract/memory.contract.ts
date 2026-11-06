@@ -1,8 +1,8 @@
 import { Injectable } from "@nestjs/common";
-import type { MemoryRetrievalService } from "../application/service/memory-retrieval.service";
+import { MemoryRetrievalService } from "../application/service/memory-retrieval.service";
 import type { MemoryEmbeddingEntity } from "../domain/entity/memory-embedding.entity";
-import type { MemoryEmbeddingRepository } from "../infrastructure/repository/memory-embedding.repository";
-import type { MemoryFactRepository } from "../infrastructure/repository/memory-fact.repository";
+import { MemoryEmbeddingRepository } from "../infrastructure/repository/memory-embedding.repository";
+import { MemoryFactRepository } from "../infrastructure/repository/memory-fact.repository";
 import type { memoryEmbeddingTable } from "../infrastructure/table/memory-embedding.table";
 
 @Injectable()

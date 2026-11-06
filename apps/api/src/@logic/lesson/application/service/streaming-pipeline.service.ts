@@ -1,4 +1,4 @@
-import type { LlmMessage, LlmProvider, LlmResponse } from "@lib/provider/src";
+import { type LlmMessage, LlmProvider, type LlmResponse } from "@lib/provider/src";
 import { Injectable } from "@nestjs/common";
 import { parseEmotion } from "./emotion";
 import { SentenceBuffer } from "./sentence-buffer";
@@ -41,7 +41,7 @@ export class StreamingPipelineService {
     history: LlmMessage[],
     callbacks: StreamCallbacks,
     options?: { signal?: AbortSignal },
-  ): Promise<void> {
+  ): Promise<StreamResult | null> {
     const sentenceBuffer = new SentenceBuffer();
     let chunkIndex = 0;
     let bufferStartTime: number | null = null;
@@ -121,22 +121,21 @@ export class StreamingPipelineService {
             }
           },
         },
-        { signal: options?.signal, spanName: "lesson.stream" },
+        { signal: options?.signal, spanName: "lesson.stream", cacheConversation: true },
       );
 
       if (options?.signal?.aborted) {
-        return;
+        return null;
       }
 
-      callbacks.onEnd({
-        fullText: llmResponse.text,
-        tokens: llmResponse,
-      });
+      const result: StreamResult = { fullText: llmResponse.text, tokens: llmResponse };
+      callbacks.onEnd(result);
+      return result;
     } catch (error) {
-      if (options?.signal?.aborted) {
-        return;
+      if (!options?.signal?.aborted) {
+        callbacks.onError(error instanceof Error ? error : new Error(String(error)));
       }
-      callbacks.onError(error instanceof Error ? error : new Error(String(error)));
+      return null;
     }
   }
 }

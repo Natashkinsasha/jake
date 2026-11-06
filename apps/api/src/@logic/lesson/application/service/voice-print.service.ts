@@ -9,7 +9,7 @@ import {
   type PreTrainedModel,
 } from "@huggingface/transformers";
 import { Injectable, Logger } from "@nestjs/common";
-import type { VoicePrintRepository } from "../../infrastructure/repository/voice-print.repository";
+import { VoicePrintRepository } from "../../infrastructure/repository/voice-print.repository";
 
 const MODEL_ID = "onnx-community/wespeaker-voxceleb-resnet34-LM";
 const ENROLLMENT_SAMPLES = 3;
